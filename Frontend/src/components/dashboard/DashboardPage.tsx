@@ -282,7 +282,7 @@ export function DashboardPage() {
   const sortedProductionLogs = useMemo(
     () =>
       [...data.productionMaterialLogs].sort((left, right) =>
-        `${right.productionDate} ${right.batchNo}`.localeCompare(`${left.productionDate} ${left.batchNo}`),
+        `${right.token} ${right.bagSize}`.localeCompare(`${left.token} ${left.bagSize}`),
       ),
     [data.productionMaterialLogs],
   );

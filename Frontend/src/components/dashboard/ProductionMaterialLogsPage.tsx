@@ -61,7 +61,7 @@ export function ProductionMaterialLogsPage() {
   const sortedEntries = useMemo(
     () =>
       [...entries].sort((left, right) =>
-        `${right.productionDate} ${right.batchNo}`.localeCompare(`${left.productionDate} ${left.batchNo}`),
+        `${right.token} ${right.bagSize}`.localeCompare(`${left.token} ${left.bagSize}`),
       ),
     [entries],
   );
