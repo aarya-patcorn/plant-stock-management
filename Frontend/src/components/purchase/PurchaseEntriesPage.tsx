@@ -24,7 +24,7 @@ import {
 import LoadingLoader from "@/components/ui/LoadingLoader";
 
 const rawMaterialOptions = ["Cement", "Sand", "Chemical", "Packaging", "Spares", "Other"];
-const unitOptions = ["kg", "ltr", "mt", "pcs", "bags", "ml", "nos", "others"];
+const unitOptions = ["kg", "ltr", "pcs", "bags", "ml", "nos", "others"];
 const packagingBagColorOptions = ["White", "Grey"];
 const packagingBagOptions = ["K50", "K60", "K70", "K80", "K90", "Kamdhenu X"];
 const bucketSizeOptions = ["1L", "5L"];
@@ -213,6 +213,10 @@ function normalizeTimeForInput(value: string) {
   return `${String(hours).padStart(2, "0")}:${match[2]}`;
 }
 
+function normalizeUnitForEdit(value: string) {
+  return value.trim().toLowerCase() === "mt" ? "kg" : value;
+}
+
 function getAttachmentLink(value: string) {
   const trimmedValue = value.trim();
 
@@ -346,6 +350,7 @@ export function PurchaseEntriesPage() {
     setEditingEntry({
       ...entry,
       time: normalizeTimeForInput(entry.time),
+      unit: normalizeUnitForEdit(entry.unit),
     });
   };
 
@@ -472,14 +477,7 @@ export function PurchaseEntriesPage() {
                 <h3 className="text-sm font-semibold text-foreground">Record details</h3>
                 <p className="mt-1 text-xs text-muted-foreground">Basic identifiers, date, time, and unit information.</p>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field htmlFor="edit-id" label="ID">
-                <Input
-                  disabled
-                  id="edit-id"
-                  value={editingEntry.id}
-                />
-              </Field>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <Field htmlFor="edit-date" label="Date">
                 <Input
                   id="edit-date"

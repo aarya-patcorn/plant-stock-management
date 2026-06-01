@@ -34,6 +34,12 @@ export type PurchaseEntry = {
   remarks: string;
 };
 
+export type ManufacturingProductItem = {
+  token: string;
+  bagSize: string;
+  totalBagsProduced: string;
+};
+
 export type ManufacturingEntry = {
   id: string;
   productionDate: string;
@@ -45,6 +51,7 @@ export type ManufacturingEntry = {
   finishedProductName: string;
   bagSize: string;
   totalBagsProduced: string;
+  productItems: ManufacturingProductItem[];
   wastageQty: string;
   wastageReason: string;
   rawMaterialNames: string;
@@ -215,17 +222,36 @@ function normalizePurchaseEntry(entry: unknown): PurchaseEntry {
 function normalizeManufacturingEntry(entry: unknown): ManufacturingEntry {
   const record = typeof entry === "object" && entry !== null ? (entry as Record<string, unknown>) : {};
   const rawMaterials = Array.isArray(record.rawMaterials) ? record.rawMaterials as Array<Record<string, unknown>> : [];
+  const productItemsSource = Array.isArray(record.productItems)
+    ? record.productItems as Array<Record<string, unknown>>
+    : [];
+  const productItems = productItemsSource.length > 0
+    ? productItemsSource.map((item) => ({
+        token: stringifyValue(item.token),
+        bagSize: stringifyValue(item.bagSize),
+        totalBagsProduced: stringifyValue(item.totalBagsProduced),
+      }))
+    : [{
+        token: stringifyValue(record.token),
+        bagSize: stringifyValue(record.bagSize),
+        totalBagsProduced: stringifyValue(record.totalBagsProduced),
+      }].filter((item) => item.token || item.bagSize || item.totalBagsProduced);
+  const totalBagsProduced = productItems.length > 0
+    ? String(productItems.reduce((sum, item) => sum + (Number(item.totalBagsProduced) || 0), 0))
+    : stringifyValue(record.totalBagsProduced);
+
   return {
     id: stringifyValue(record.id ?? record._id),
     productionDate: normalizeDate(record.productionDate ?? record.date),
     tphBatch: stringifyValue(record.tphBatch),
     batchNo: stringifyValue(record.batchNo),
     productCategory: stringifyValue(record.productCategory),
-    token: stringifyValue(record.token),
+    token: productItems.map((item) => item.token).filter(Boolean).join(", ") || stringifyValue(record.token),
     color: stringifyValue(record.color ?? record.productColor),
     finishedProductName: stringifyValue(record.finishedProductName ?? record.productName),
-    bagSize: stringifyValue(record.bagSize),
-    totalBagsProduced: stringifyValue(record.totalBagsProduced),
+    bagSize: productItems.map((item) => item.bagSize).filter(Boolean).join(", ") || stringifyValue(record.bagSize),
+    totalBagsProduced,
+    productItems,
     wastageQty: stringifyValue(record.wastageQty),
     wastageReason: stringifyValue(record.wastageReason),
     rawMaterialNames: rawMaterials.map((item) => stringifyValue(item.rawMaterialName)).filter(Boolean).join(", "),

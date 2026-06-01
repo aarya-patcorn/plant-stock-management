@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -17,7 +18,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   fetchDispatchEntries,
+  fetchProductionMaterialLogs,
   type DispatchEntry,
+  type ProductionMaterialLog,
   updateDispatchEntry,
 } from "@/lib/api";
 import LoadingLoader from "@/components/ui/LoadingLoader";
@@ -75,6 +78,7 @@ export function DispatchEntriesPage() {
   const [loadError, setLoadError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [productionEntries, setProductionEntries] = useState<ProductionMaterialLog[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -99,6 +103,28 @@ export function DispatchEntriesPage() {
       .finally(() => {
         if (isMounted) {
           setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void fetchProductionMaterialLogs()
+      .then((entries) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setProductionEntries(entries.filter((entry) => entry.productCategory && entry.productName));
+      })
+      .catch(() => {
+        if (isMounted) {
+          setProductionEntries([]);
         }
       });
 
@@ -132,6 +158,10 @@ export function DispatchEntriesPage() {
     });
   };
 
+  const updateEditingEntry = (updates: Partial<DispatchEntry>) => {
+    setEditingEntry((current) => (current ? { ...current, ...updates } : current));
+  };
+
   const handleUpdate = async () => {
     if (!editingEntry) {
       return;
@@ -162,6 +192,116 @@ export function DispatchEntriesPage() {
       setIsUpdating(false);
     }
   };
+
+  const productCategories = useMemo(
+    () => Array.from(new Set(productionEntries.map((entry) => entry.productCategory))).filter(Boolean),
+    [productionEntries],
+  );
+
+  const productNames = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productionEntries
+            .filter((entry) => entry.productCategory === editingEntry?.productCategory)
+            .map((entry) => entry.productName),
+        ),
+      ).filter(Boolean),
+    [editingEntry?.productCategory, productionEntries],
+  );
+
+  const productColors = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productionEntries
+            .filter(
+              (entry) =>
+                entry.productCategory === editingEntry?.productCategory &&
+                entry.productName === editingEntry?.productName,
+            )
+            .map((entry) => entry.productColor),
+        ),
+      ).filter(Boolean),
+    [editingEntry?.productCategory, editingEntry?.productName, productionEntries],
+  );
+
+  const isTileCleanerSelected = editingEntry?.productCategory === "Tile Cleaner";
+
+  const tokenOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productionEntries
+            .filter(
+              (entry) =>
+                entry.productCategory === editingEntry?.productCategory &&
+                entry.productName === editingEntry?.productName,
+            )
+            .map((entry) => entry.token),
+        ),
+      ).filter(Boolean),
+    [editingEntry?.productCategory, editingEntry?.productName, productionEntries],
+  );
+
+  const bagSizes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productionEntries
+            .filter(
+              (entry) =>
+                entry.productCategory === editingEntry?.productCategory &&
+                entry.productName === editingEntry?.productName &&
+                (isTileCleanerSelected || entry.productColor === editingEntry?.productColor) &&
+                (!editingEntry?.token || entry.token === editingEntry.token),
+            )
+            .map((entry) => entry.bagSize),
+        ),
+      ).filter(Boolean),
+    [
+      editingEntry?.bagSize,
+      editingEntry?.productCategory,
+      editingEntry?.productColor,
+      editingEntry?.productName,
+      editingEntry?.token,
+      isTileCleanerSelected,
+      productionEntries,
+    ],
+  );
+
+  const selectedProductionEntry = useMemo(
+    () =>
+      productionEntries.find(
+        (entry) =>
+          entry.productCategory === editingEntry?.productCategory &&
+          entry.productName === editingEntry?.productName &&
+          (!editingEntry?.token || entry.token === editingEntry.token) &&
+          (isTileCleanerSelected || entry.productColor === editingEntry?.productColor) &&
+          entry.bagSize === editingEntry?.bagSize,
+      ),
+    [
+      editingEntry?.bagSize,
+      editingEntry?.productCategory,
+      editingEntry?.productColor,
+      editingEntry?.productName,
+      editingEntry?.token,
+      isTileCleanerSelected,
+      productionEntries,
+    ],
+  );
+
+  useEffect(() => {
+    if (!selectedProductionEntry) {
+      return;
+    }
+
+    setEditingEntry((current) =>
+      current && current.quantity !== String(selectedProductionEntry.currentQuantity)
+        ? { ...current, quantity: String(selectedProductionEntry.currentQuantity) }
+        : current,
+    );
+  }, [selectedProductionEntry]);
 
   return (
     <div className="space-y-6">
@@ -195,10 +335,7 @@ export function DispatchEntriesPage() {
                 <h3 className="text-sm font-semibold text-foreground">Dispatch details</h3>
                 <p className="mt-1 text-xs text-muted-foreground">Core dispatch identity, date, time, and token information.</p>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field htmlFor="edit-id" label="ID">
-                <Input disabled id="edit-id" value={editingEntry.id} />
-              </Field>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <Field htmlFor="edit-date" label="Date">
                 <Input
                   id="edit-date"
@@ -220,13 +357,25 @@ export function DispatchEntriesPage() {
                 />
               </Field>
               <Field htmlFor="edit-token" label="Token">
-                <Input
+                <Select
                   id="edit-token"
+                  disabled
                   value={editingEntry.token}
                   onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, token: event.target.value } : current)
+                    updateEditingEntry({
+                      token: event.target.value,
+                      bagSize: "",
+                      quantity: "",
+                    })
                   }
-                />
+                >
+                  <option value="">Select token type</option>
+                  {tokenOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
               </Field>
               </div>
             </div>
@@ -247,35 +396,74 @@ export function DispatchEntriesPage() {
                 />
               </Field>
               <Field htmlFor="edit-productCategory" label="Product Category">
-                <Input
+                <Select
                   id="edit-productCategory"
+                  disabled
                   value={editingEntry.productCategory}
                   onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, productCategory: event.target.value } : current)
+                    updateEditingEntry({
+                      productCategory: event.target.value,
+                      productName: "",
+                      token: "",
+                      productColor: "",
+                      bagSize: "",
+                      quantity: "",
+                    })
                   }
-                />
+                >
+                  <option value="">Select category</option>
+                  {productCategories.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
               </Field>
               <Field htmlFor="edit-productName" label="Product Name">
-                <Input
+                <Select
                   id="edit-productName"
+                  disabled
                   value={editingEntry.productName}
                   onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, productName: event.target.value } : current)
+                    updateEditingEntry({
+                      productName: event.target.value,
+                      token: "",
+                      productColor: "",
+                      bagSize: "",
+                      quantity: "",
+                    })
                   }
-                />
+                >
+                  <option value="">Select product</option>
+                  {productNames.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
               </Field>
               <Field htmlFor="edit-productColor" label="Product Color">
-                <Input
+                <Select
                   id="edit-productColor"
-                  disabled={editingEntry.productCategory === "Tile Cleaner"}
-                  placeholder={
-                    editingEntry.productCategory === "Tile Cleaner" ? "Not applicable for Tile Cleaner" : undefined
-                  }
-                  value={editingEntry.productColor}
+                  disabled
+                  value={isTileCleanerSelected ? "" : editingEntry.productColor}
                   onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, productColor: event.target.value } : current)
+                    updateEditingEntry({
+                      productColor: event.target.value,
+                      bagSize: "",
+                      quantity: "",
+                    })
                   }
-                />
+                >
+                  <option value="">
+                    {isTileCleanerSelected ? "Not applicable for Tile Cleaner" : "Select color"}
+                  </option>
+                  {productColors.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
               </Field>
               </div>
             </div>
@@ -287,17 +475,28 @@ export function DispatchEntriesPage() {
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Field htmlFor="edit-bagSize" label="Bag Size">
-                <Input
+                <Select
                   id="edit-bagSize"
+                  disabled
                   value={editingEntry.bagSize}
                   onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, bagSize: event.target.value } : current)
+                    updateEditingEntry({
+                      bagSize: event.target.value,
+                    })
                   }
-                />
+                >
+                  <option value="">Select bag size</option>
+                  {bagSizes.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
               </Field>
               <Field htmlFor="edit-quantity" label="Stock">
                 <Input
                   id="edit-quantity"
+                  disabled
                   value={editingEntry.quantity}
                   onChange={(event) =>
                     setEditingEntry((current) => current ? { ...current, quantity: event.target.value } : current)
@@ -307,6 +506,7 @@ export function DispatchEntriesPage() {
               <Field htmlFor="edit-totalBags" label="Departed Bags">
                 <Input
                   id="edit-totalBags"
+                  disabled
                   value={editingEntry.totalBags}
                   onChange={(event) =>
                     setEditingEntry((current) => current ? { ...current, totalBags: event.target.value } : current)
@@ -402,7 +602,7 @@ export function DispatchEntriesPage() {
                   id="edit-notes"
                   value=""
                   readOnly
-                  placeholder="Dispatch entry update actions are local until sheet API support is added."
+                  placeholder="Dispatch records do not include an attachment field."
                 />
               </Field>
             </div>
