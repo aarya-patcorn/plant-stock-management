@@ -30,7 +30,9 @@ export type PurchaseEntry = {
   unloadBy: string;
   currentStock: string;
   usedInProduction: string;
-  attachFile: string;
+  attachFile?: string;
+  attachFileName?: string;
+  attachFileId?: string;
   remarks: string;
 };
 
@@ -111,12 +113,16 @@ function getApiErrorMessage(responseData: ApiResponse, fallback: string) {
 }
 
 async function requestApi(endpoint: string, options: RequestInit = {}, fallbackMessage = "Request failed.") {
+  const isFormDataBody = typeof FormData !== "undefined" && options.body instanceof FormData;
+  const headers = new Headers(options.headers ?? {});
+
+  if (!isFormDataBody && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(apiUrl(endpoint), {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
+    headers,
   });
 
   const responseText = await response.text();
@@ -129,12 +135,37 @@ async function requestApi(endpoint: string, options: RequestInit = {}, fallbackM
   return responseData;
 }
 
-export async function submitEntry(formType: FormType, payload: FormPayload) {
-  return requestApi(endpointByFormType[formType], { method: "POST", body: JSON.stringify(payload) }, "Unable to save entry.");
+export async function submitEntry(
+  formType: FormType,
+  payload: FormPayload,
+  file?: File | null,
+) {
+  const formData = new FormData();
+
+  Object.entries(payload).forEach(([key, value]) => {
+    formData.append(key, String(value ?? ""));
+  });
+
+  if (file) {
+    formData.append("attachFile", file);
+  }
+
+  return requestApi(
+    endpointByFormType[formType],
+    {
+      method: "POST",
+      body: formData,
+    },
+    "Unable to save entry.",
+  );
 }
 
-export async function updatePurchaseEntry(payload: PurchaseEntry) {
-  return requestApi("/api/purchases/" + payload.id, { method: "PUT", body: JSON.stringify(payload) }, "Unable to update purchase entry.");
+export async function updatePurchaseEntry(payload: PurchaseEntry | FormData) {
+  const body = typeof FormData !== "undefined" && payload instanceof FormData
+    ? payload
+    : JSON.stringify(payload);
+
+  return requestApi("/api/purchases/" + (payload instanceof FormData ? String(payload.get("id") || "") : payload.id), { method: "PUT", body }, "Unable to update purchase entry.");
 }
 
 export async function updateManufacturingEntry(payload: ManufacturingEntry) {
@@ -185,6 +216,36 @@ export async function fetchProductionMaterialLogs() {
   return entries.map(normalizeProductionMaterialLog);
 }
 
+export async function fetchWastageQty(params: {
+  tphBatch: string;
+  productCategory: string;
+  finishedProductName: string;
+}) {
+  const query = new URLSearchParams({
+    tphBatch: params.tphBatch.trim(),
+    productCategory: params.productCategory.trim(),
+    finishedProductName: params.finishedProductName.trim(),
+  }); 
+
+  const responseData = await requestApi(`/api/wastage?${query.toString()}`, {}, "Unable to fetch wastage quantity.");
+  const data = typeof responseData?.data === "object" && responseData?.data !== null
+    ? responseData.data as Record<string, unknown>
+    : {};
+
+  return Number(data.wastageQty || 0);
+}
+
+export async function reduceWastageQty(payload: {
+  tphBatch: string;
+  finishedProductName: string;
+  packedWastage: number;
+}) {
+  return requestApi("/api/wastage/reduce", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  }, "Unable to reduce wastage quantity.");
+}
+
 export async function fetchDispatchEntries() {
   const responseData = await requestApi("/api/dispatch", {}, "Unable to fetch dispatch entries.");
   const entries = Array.isArray(responseData?.data) ? responseData.data : [];
@@ -193,6 +254,17 @@ export async function fetchDispatchEntries() {
 
 function normalizePurchaseEntry(entry: unknown): PurchaseEntry {
   const record = typeof entry === "object" && entry !== null ? entry as Record<string, unknown> : {};
+  const legacyAttachment = typeof record.attachFile === "object" && record.attachFile !== null
+    ? record.attachFile as Record<string, unknown>
+    : null;
+  const attachFile = stringifyValue(
+    typeof record.attachFile === "string"
+      ? record.attachFile
+      : legacyAttachment?.url,
+  );
+  const attachFileName = stringifyValue(record.attachFileName ?? legacyAttachment?.fileName);
+  const attachFileId = stringifyValue(record.attachFileId ?? legacyAttachment?.fileId ?? legacyAttachment?.publicId);
+
   return {
     id: stringifyValue(record.id ?? record._id),
     serialNo: stringifyValue(record.serialNo ?? record.serial_no),
@@ -214,7 +286,9 @@ function normalizePurchaseEntry(entry: unknown): PurchaseEntry {
     unloadBy: stringifyValue(record.unloadBy),
     currentStock: stringifyValue(record.currentStock ?? record.current_quantity ?? record.availableStock),
     usedInProduction: stringifyValue(record.usedInProduction ?? record.usedInProductionStock ?? record.used_stock),
-    attachFile: stringifyValue(record.attachFile),
+    attachFile: attachFile || undefined,
+    attachFileName: attachFileName || undefined,
+    attachFileId: attachFileId || undefined,
     remarks: stringifyValue(record.remarks),
   };
 }

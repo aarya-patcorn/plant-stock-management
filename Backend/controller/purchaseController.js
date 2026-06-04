@@ -1,5 +1,6 @@
 const PurchaseEntry = require("../model/PurchaseEntry");
 const Inventory = require("../model/Inventory");
+const uploadFileToDriveViaAppsScript = require("../config/googleAppsScriptUpload");
 
 const parseNumber = (value) => {
   const num = Number(value);
@@ -24,8 +25,37 @@ const convertToKg = (quantity, unit) => {
   return qty;
 };
 
-const normalizePurchaseData = (data) => {
+const normalizeAttachmentFields = (data, existingPurchase = null, uploadedAttachment = null) => {
+  if (uploadedAttachment) {
+    return {
+      attachFile: normalizeText(uploadedAttachment.fileUrl),
+      attachFileName: normalizeText(uploadedAttachment.fileName),
+      attachFileId: normalizeText(uploadedAttachment.fileId),
+    };
+  }
+
+  const attachFile = normalizeText(data.attachFile);
+  const attachFileName = normalizeText(data.attachFileName);
+  const attachFileId = normalizeText(data.attachFileId);
+
+  if (attachFile || attachFileName || attachFileId) {
+    return {
+      attachFile,
+      attachFileName,
+      attachFileId,
+    };
+  }
+
+  return {
+    attachFile: normalizeText(existingPurchase?.attachFile),
+    attachFileName: normalizeText(existingPurchase?.attachFileName),
+    attachFileId: normalizeText(existingPurchase?.attachFileId),
+  };
+};
+
+const normalizePurchaseData = (data, existingPurchase = null, uploadedAttachment = null) => {
   const quantityPurchased = convertToKg(data.quantityPurchased ?? data.purchaseStock, data.unit);
+  const attachmentFields = normalizeAttachmentFields(data, existingPurchase, uploadedAttachment);
 
   return {
     date: data.date || "",
@@ -45,8 +75,8 @@ const normalizePurchaseData = (data) => {
     supplierName: data.supplierName || "",
     invoiceNo: data.invoiceNo || "",
     unloadBy: data.unloadBy || "",
-    attachFile: data.attachFile || "",
     remarks: data.remarks || "",
+    ...attachmentFields,
   };
 };
 
@@ -75,7 +105,6 @@ const getInventoryUnit = (unit) => {
 const addPurchaseToInventory = async (purchaseData, quantity) => {
   const filter = buildInventoryFilter(purchaseData);
   const inventory = await Inventory.findOne(filter);
-
   const inventoryUnit = getInventoryUnit(purchaseData.unit);
 
   if (!inventory) {
@@ -86,14 +115,12 @@ const addPurchaseToInventory = async (purchaseData, quantity) => {
       currentStock: quantity,
       unit: inventoryUnit,
     });
-
     return;
   }
 
   inventory.purchaseStock += quantity;
   inventory.currentStock += quantity;
   inventory.unit = inventoryUnit;
-
   await inventory.save();
 };
 
@@ -105,7 +132,7 @@ const reducePurchaseFromInventory = async (purchaseData, quantity) => {
     throw new Error("Inventory item not found");
   }
 
-  if (inventory.purchaseStock < quantity) {
+  if (inventory.currentStock < quantity) {
     throw new Error("Cannot reduce stock. Stock already used in production.");
   }
 
@@ -114,14 +141,72 @@ const reducePurchaseFromInventory = async (purchaseData, quantity) => {
   await inventory.save();
 };
 
+const sameInventoryTarget = (left, right) =>
+  JSON.stringify(buildInventoryFilter(left)) === JSON.stringify(buildInventoryFilter(right));
+
+const updatePurchaseInventory = async (oldPurchaseData, newPurchaseData) => {
+  const oldQuantity = parseNumber(oldPurchaseData.quantityPurchased);
+  const newQuantity = parseNumber(newPurchaseData.quantityPurchased);
+
+  if (sameInventoryTarget(oldPurchaseData, newPurchaseData)) {
+    const filter = buildInventoryFilter(oldPurchaseData);
+    const inventory = await Inventory.findOne(filter);
+
+    if (!inventory) {
+      throw new Error("Inventory item not found");
+    }
+
+    const delta = newQuantity - oldQuantity;
+
+    if (delta < 0 && inventory.currentStock < Math.abs(delta)) {
+      throw new Error("Cannot reduce stock. Stock already used in production.");
+    }
+
+    inventory.purchaseStock += delta;
+    inventory.currentStock += delta;
+    inventory.unit = getInventoryUnit(newPurchaseData.unit);
+    await inventory.save();
+    return;
+  }
+
+  const oldFilter = buildInventoryFilter(oldPurchaseData);
+  const oldInventory = await Inventory.findOne(oldFilter);
+
+  if (!oldInventory) {
+    throw new Error("Existing inventory item not found");
+  }
+
+  if (oldInventory.currentStock < oldQuantity) {
+    throw new Error("Cannot move purchase entry. Some stock is already used in production.");
+  }
+
+  oldInventory.purchaseStock = Math.max(0, oldInventory.purchaseStock - oldQuantity);
+  oldInventory.currentStock = Math.max(0, oldInventory.currentStock - oldQuantity);
+  await oldInventory.save();
+
+  await addPurchaseToInventory(newPurchaseData, newQuantity);
+};
+
 const createPurchaseEntry = async (req, res) => {
   try {
-    const purchaseData = normalizePurchaseData(req.body);
+    let uploadedAttachment = null;
+
+    if (req.file) {
+      try {
+        uploadedAttachment = await uploadFileToDriveViaAppsScript(req.file);
+      } catch (error) {
+        console.error("Apps Script upload failed:", error);
+        return res.status(500).json({ success: false, message: error.message || "Unable to upload attachment via Apps Script." });
+      }
+    }
+
+    const purchaseData = normalizePurchaseData(req.body, null, uploadedAttachment);
     const purchase = await PurchaseEntry.create(purchaseData);
     await addPurchaseToInventory(purchaseData, purchaseData.quantityPurchased);
 
     res.status(201).json({ success: true, message: "Purchase entry created successfully", data: purchase });
   } catch (error) {
+    console.error("Create purchase entry error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -143,17 +228,28 @@ const updatePurchaseEntry = async (req, res) => {
       return res.status(404).json({ success: false, message: "Purchase entry not found" });
     }
 
-    const newPurchaseData = normalizePurchaseData(req.body);
-    await reducePurchaseFromInventory(oldPurchase, parseNumber(oldPurchase.quantityPurchased));
+    let uploadedAttachment = null;
+
+    if (req.file) {
+      try {
+        uploadedAttachment = await uploadFileToDriveViaAppsScript(req.file);
+      } catch (error) {
+        console.error("Apps Script upload failed:", error);
+        return res.status(500).json({ success: false, message: error.message || "Unable to upload attachment via Apps Script." });
+      }
+    }
+
+    const newPurchaseData = normalizePurchaseData(req.body, oldPurchase, uploadedAttachment);
+    await updatePurchaseInventory(oldPurchase, newPurchaseData);
 
     const updatedPurchase = await PurchaseEntry.findByIdAndUpdate(req.params.id, newPurchaseData, {
       new: true,
       runValidators: true,
     });
 
-    await addPurchaseToInventory(newPurchaseData, newPurchaseData.quantityPurchased);
     res.json({ success: true, message: "Purchase entry updated successfully", data: updatedPurchase });
   } catch (error) {
+    console.error("Update purchase entry error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -170,6 +266,7 @@ const deletePurchaseEntry = async (req, res) => {
     await PurchaseEntry.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Purchase entry deleted successfully and inventory reduced" });
   } catch (error) {
+    console.error("Delete purchase entry error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

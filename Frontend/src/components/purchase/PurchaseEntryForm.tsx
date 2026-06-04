@@ -294,30 +294,17 @@ function Field({
   );
 }
 
-function readFilePayload(file: File) {
-  return new Promise<Record<string, string>>((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      const [, base64 = ""] = result.split(",");
-
-      resolve({
-        attachFileName: file.name,
-        attachFileType: file.type || "application/octet-stream",
-
-        attachFileBase64: base64,
-      });
-    };
-
-    reader.onerror = () => reject(new Error("Unable to read attached file."));
-    reader.readAsDataURL(file);
-  });
-}
-
 function isPositiveNumber(value: string) {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) && parsedValue > 0;
+}
+
+function isMetricTonUnit(unit: string) {
+  return unit.trim().toLowerCase() === "mt";
+}
+
+function hasDecimalValue(value: string) {
+  return value.includes(".");
 }
 
 export function PurchaseEntryForm() {
@@ -338,6 +325,14 @@ export function PurchaseEntryForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const quantityAllowsDecimal = isMetricTonUnit(formData.unit);
+  const quantityPurchasedValidationMessage = useMemo(() => {
+    if (!formData.quantityPurchased || quantityAllowsDecimal || !hasDecimalValue(formData.quantityPurchased)) {
+      return "";
+    }
+
+    return "Decimal values are allowed only for mt unit.";
+  }, [formData.quantityPurchased, quantityAllowsDecimal]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -671,6 +666,10 @@ export function PurchaseEntryForm() {
     updateField(name, sanitizeNumberOnly(value, options));
   };
 
+  const handleQuantityPurchasedChange = (value: string) => {
+    updateField("quantityPurchased", sanitizeNumberOnly(value, { allowDecimal: true }));
+  };
+
   const getSelectValue = (field: PurchaseOtherField, value: string) =>
     otherSelections[field] ? OTHER_OPTION : value;
 
@@ -765,6 +764,10 @@ export function PurchaseEntryForm() {
       return "Unit is required.";
     }
 
+    if (!quantityAllowsDecimal && hasDecimalValue(formData.quantityPurchased)) {
+      return "Decimal values are allowed only for mt unit.";
+    }
+
     if (!formData.supplierName.trim()) {
       return "Supplier name is required.";
     }
@@ -793,21 +796,16 @@ export function PurchaseEntryForm() {
     setIsSubmitting(true);
 
     try {
-      const filePayload = selectedFile ? await readFilePayload(selectedFile) : {};
-      const submittedEntry: PurchaseEntry = {
+      const submittedEntry = {
         id: crypto.randomUUID(),
         serialNo: "",
         ...formData,
         purchaseStock: formData.quantityPurchased,
         currentStock: "",
         usedInProduction: "",
-        attachFile: selectedFile?.name ?? "",
       };
 
-      await submitEntry("purchase", {
-        ...submittedEntry,
-        ...filePayload,
-      });
+      await submitEntry("purchase", submittedEntry, selectedFile);
       const latestEntries = await fetchPurchaseEntries();
       setRecentPurchases(latestEntries);
       setRecentPurchasesPage(1);
@@ -1104,16 +1102,26 @@ export function PurchaseEntryForm() {
               {renderOtherInput("colorOfSandEpoxy", "Color Of Sand (Epoxy)", "Enter sand color")}
 
               <Field htmlFor="quantity-purchased" label="Quantity Purchased">
-                <Input
-                  id="quantity-purchased"
-                  min="0"
-                  name="quantityPurchased"
-                  placeholder="Enter quantity"
-                  type="number"
-                  readOnly={shouldShowAutoBagQuantityField}
-                  value={formData.quantityPurchased}
-                  onChange={(e) => updateNumberField("quantityPurchased", e.target.value, { allowDecimal: true })}
-                />
+                <div className="space-y-2">
+                  <Input
+                    id="quantity-purchased"
+                    aria-invalid={Boolean(quantityPurchasedValidationMessage)}
+                    inputMode={quantityAllowsDecimal ? "decimal" : "numeric"}
+                    name="quantityPurchased"
+                    pattern={quantityAllowsDecimal ? "^\\d*(\\.\\d*)?$" : "^\\d*$"}
+                    placeholder="Enter quantity"
+                    readOnly={shouldShowAutoBagQuantityField}
+                    step={quantityAllowsDecimal ? "any" : "1"}
+                    type="text"
+                    value={formData.quantityPurchased}
+                    onChange={(e) => handleQuantityPurchasedChange(e.target.value)}
+                  />
+                  {quantityPurchasedValidationMessage ? (
+                    <p className="text-sm font-medium text-destructive">
+                      {quantityPurchasedValidationMessage}
+                    </p>
+                  ) : null}
+                </div>
               </Field>
 
               <Field htmlFor="unit" label="Unit">
@@ -1229,15 +1237,11 @@ export function PurchaseEntryForm() {
               <Field htmlFor="attach-file" label="Attach File (Optional)">
                 <Input
                   ref={fileInputRef}
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
                   name="attachFile"
                   type="file"
                   onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    setSelectedFile(file);
-                    setFormData((prev) => ({
-                      ...prev,
-                      attachFile: file?.name || "",
-                    }));
+                    setSelectedFile(e.target.files?.[0] ?? null);
                   }}
                 />
               </Field>

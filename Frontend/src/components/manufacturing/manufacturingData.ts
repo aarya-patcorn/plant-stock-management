@@ -239,7 +239,7 @@ export const tileCleanerRecipes: Record<string, RawMaterialRecipeItem[]> = {
   "Shine X 1L": [
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Urea (Technical Grade)", level3: "", colorOfSandEpoxy: "", materialQuantity: "30", materialUnit: "ml" },
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Sulphamic Acid", level3: "", colorOfSandEpoxy: "", materialQuantity: "35", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Hydrochloric Acid (32%)", level3: "", colorOfSandEpoxy: "", materialQuantity: "25", materialUnit: "ml" },
+    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Hydrochloric Acid (32%)", level3: "", colorOfSandEpoxy: "", materialQuantity: "30", materialUnit: "ml" },
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Citric Acid", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "ml" },
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "2-Butoxyethanol", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "ml" },
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Cocamidopropyl Betaine", level3: "", colorOfSandEpoxy: "", materialQuantity: "35", materialUnit: "ml" },
@@ -250,7 +250,7 @@ export const tileCleanerRecipes: Record<string, RawMaterialRecipeItem[]> = {
   "Shine X 5L": [
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Urea (Technical Grade)", level3: "", colorOfSandEpoxy: "", materialQuantity: "150", materialUnit: "ml" },
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Sulphamic Acid", level3: "", colorOfSandEpoxy: "", materialQuantity: "175", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Hydrochloric Acid (32%)", level3: "", colorOfSandEpoxy: "", materialQuantity: "125", materialUnit: "ml" },
+    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Hydrochloric Acid (32%)", level3: "", colorOfSandEpoxy: "", materialQuantity: "150", materialUnit: "ml" },
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Citric Acid", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "ml" },
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "2-Butoxyethanol", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "ml" },
     { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Cocamidopropyl Betaine", level3: "", colorOfSandEpoxy: "", materialQuantity: "175", materialUnit: "ml" },

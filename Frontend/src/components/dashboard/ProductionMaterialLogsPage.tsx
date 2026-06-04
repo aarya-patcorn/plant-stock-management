@@ -5,6 +5,7 @@ import { fetchProductionMaterialLogs, type ProductionMaterialLog } from "@/lib/a
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select } from "@/components/ui/select";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 
 function buildProductLabel(entry: ProductionMaterialLog) {
@@ -26,6 +27,8 @@ export function ProductionMaterialLogsPage() {
   const [entries, setEntries] = useState<ProductionMaterialLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [selectedProductCategory, setSelectedProductCategory] = useState("");
+  const [selectedProductName, setSelectedProductName] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -58,12 +61,50 @@ export function ProductionMaterialLogsPage() {
     };
   }, []);
 
+  const productCategoryOptions = useMemo(
+    () => Array.from(new Set(entries.map((entry) => entry.productCategory).filter(Boolean))),
+    [entries],
+  );
+
+  const productNameOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          entries
+            .filter(
+              (entry) =>
+                !selectedProductCategory || entry.productCategory === selectedProductCategory,
+            )
+            .map((entry) => entry.productName)
+            .filter(Boolean),
+        ),
+      ),
+    [entries, selectedProductCategory],
+  );
+
+  useEffect(() => {
+    if (selectedProductName && !productNameOptions.includes(selectedProductName)) {
+      setSelectedProductName("");
+    }
+  }, [productNameOptions, selectedProductName]);
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter((entry) => {
+      const categoryMatch =
+        !selectedProductCategory || entry.productCategory === selectedProductCategory;
+      const productMatch =
+        !selectedProductName || entry.productName === selectedProductName;
+
+      return categoryMatch && productMatch;
+    });
+  }, [entries, selectedProductCategory, selectedProductName]);
+
   const sortedEntries = useMemo(
     () =>
-      [...entries].sort((left, right) =>
+      [...filteredEntries].sort((left, right) =>
         `${right.token} ${right.bagSize}`.localeCompare(`${left.token} ${left.bagSize}`),
       ),
-    [entries],
+    [filteredEntries],
   );
 
   return (
@@ -95,6 +136,39 @@ export function ProductionMaterialLogsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {!isLoading && !loadError ? (
+            <div className="mb-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="mb-2 text-sm font-medium text-foreground">Product Category</p>
+                <Select
+                  value={selectedProductCategory}
+                  onChange={(event) => setSelectedProductCategory(event.target.value)}
+                >
+                  <option value="">All Categories</option>
+                  {productCategoryOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium text-foreground">Product Name</p>
+                <Select
+                  value={selectedProductName}
+                  onChange={(event) => setSelectedProductName(event.target.value)}
+                >
+                  <option value="">All Products</option>
+                  {productNameOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+          ) : null}
           {loadError ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-destructive">{loadError}</div>
           ) : isLoading ? (

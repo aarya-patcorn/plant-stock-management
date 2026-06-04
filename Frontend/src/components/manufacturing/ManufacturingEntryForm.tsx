@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ClipboardCheck, Eye, Factory, RotateCcw, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { fetchManufacturingEntries, submitEntry, type ManufacturingEntry } from "@/lib/api";
+import { fetchManufacturingEntries, fetchWastageQty, reduceWastageQty, submitEntry, type ManufacturingEntry } from "@/lib/api";
 import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import {
   bondureRecipes,
@@ -183,6 +183,11 @@ export function ManufacturingEntryForm() {
   };
 
   const [productItems, setProductItems] = useState([emptyProductItem]);
+  const [availableWastageQty, setAvailableWastageQty] = useState(0);
+  const [wastageBagSize, setWastageBagSize] = useState("");
+  const [wastageTotalBags, setWastageTotalBags] = useState("");
+  const [isWastageLoading, setIsWastageLoading] = useState(false);
+  const [isReducingWastage, setIsReducingWastage] = useState(false);
 
   const getBatchKg = (tphBatch: string) => {
     if (tphBatch === "1TPH") return 500;
@@ -206,19 +211,50 @@ export function ManufacturingEntryForm() {
   };
 
   const batchKg = getBatchKg(formData.tphBatch);
-  const totalPackedKg = getTotalPackedKg(productItems);
+  const totalPackedKg = useMemo(() => getTotalPackedKg(productItems), [productItems]);
   const remainingKg = Math.max(0, batchKg - totalPackedKg);
 
+  const totalAvailableWastage = Number(availableWastageQty || 0);
+
+  const wastageBagSizeKg = Number(
+    String(wastageBagSize || "").replace(/kg/i, "")
+  );
+
+  const packedWastageQty =
+    wastageBagSizeKg * Number(wastageTotalBags || 0);
+
+  const remainingWastageQty = Math.max(
+    0,
+    totalAvailableWastage - packedWastageQty
+  );
+
+  const isWastageExceeded =
+    packedWastageQty > totalAvailableWastage;
+
+  const isWastageUnavailable =
+    totalAvailableWastage < 0;
+
+  const isWastageInvalid =
+    isWastageUnavailable || isWastageExceeded;
+
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      wastageQty: String(remainingKg),
-    }));
+    const nextWastageQty = availableWastageQty > 0 ? Math.max(0, remainingWastageQty) : remainingKg;
+
+    setFormData((prev) => {
+      const nextValue = String(nextWastageQty);
+      return prev.wastageQty === nextValue ? prev : { ...prev, wastageQty: nextValue };
+    });
 
     if (batchKg > 0 && remainingKg === 0 && totalPackedKg > 0) {
       toast.success("Batch quantity completed. Remaining quantity is 0 KG.");
     }
-  }, [remainingKg, batchKg, totalPackedKg]);
+  }, [availableWastageQty, remainingKg, remainingWastageQty, batchKg, totalPackedKg]);
+
+  useEffect(() => {
+    if (isWastageExceeded) {
+      toast.error("Packed wastage quantity cannot be greater than available wastage quantity.");
+    }
+  }, [isWastageExceeded]);
 
   const updateRawMaterialField = (
     index: number,
@@ -413,6 +449,52 @@ export function ManufacturingEntryForm() {
     (recentBatchesPage - 1) * recentBatchesPageSize,
     recentBatchesPage * recentBatchesPageSize,
   );
+
+  useEffect(() => {
+    const tphBatch = formData.tphBatch.trim();
+    const productCategory = selectedProductCategory.trim();
+    const finishedProductName = formData.finishedProductName.trim();
+
+    if (!tphBatch || !productCategory || !finishedProductName) {
+      setAvailableWastageQty(0);
+      setWastageBagSize("");
+      setWastageTotalBags("");
+      setIsWastageLoading(false);
+      return;
+    }
+
+    let isActive = true;
+    setIsWastageLoading(true);
+
+    fetchWastageQty({
+      tphBatch,
+      productCategory,
+      finishedProductName,
+    })
+      .then((qty) => {
+        if (!isActive) {
+          return;
+        }
+
+        setAvailableWastageQty(Number.isFinite(qty) ? qty : 0);
+      })
+      .catch(() => {
+        if (!isActive) {
+          return;
+        }
+
+        setAvailableWastageQty(0);
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsWastageLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [formData.tphBatch, selectedProductCategory, formData.finishedProductName]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -667,6 +749,14 @@ export function ManufacturingEntryForm() {
       return;
     }
 
+    if (isWastageExceeded) {
+      const message = "Packed wastage quantity cannot be greater than available wastage quantity.";
+      setSubmitStatus("error");
+      setSubmitMessage(message);
+      toast.error(message);
+      return;
+    }
+
     if (rawMaterials.length === 0) {
       const message = "At least one raw material is required.";
       setSubmitStatus("error");
@@ -690,10 +780,24 @@ export function ManufacturingEntryForm() {
       return;
     }
 
+    if (isWastageUnavailable) {
+      toast.error(
+        "No wastage quantity available for the selected product."
+      );
+      return;
+    }
+
+    if (isWastageExceeded) {
+      toast.error(
+        `Packed wastage ${packedWastageQty} KG cannot be greater than available wastage ${totalAvailableWastage} KG.`
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const response = await submitEntry("manufacturing", {
+      const payload = {
         ...formData,
         color: selectedColor,
         productCategory: selectedProductCategory,
@@ -706,7 +810,9 @@ export function ManufacturingEntryForm() {
           bagSize: item.bagSize,
           totalBagsProduced: Number(item.totalBagsProduced) || 0,
         })),
-      });
+      };
+
+      const response = await submitEntry("manufacturing", payload);
 
       const isFailed =
         response &&
@@ -730,10 +836,58 @@ export function ManufacturingEntryForm() {
         return;
       }
 
+      if (packedWastageQty > 0 && availableWastageQty > 0) {
+        setIsReducingWastage(true);
+        console.log("Reducing wastage:", {
+          tphBatch: formData.tphBatch,
+          finishedProductName: formData.finishedProductName,
+          packedWastage: packedWastageQty,
+        });
+
+        const reductionResponse = await reduceWastageQty({
+          tphBatch: formData.tphBatch,
+          finishedProductName: formData.finishedProductName,
+          packedWastage: packedWastageQty,
+        });
+
+        const isReductionFailed =
+          reductionResponse &&
+          typeof reductionResponse === "object" &&
+          "success" in reductionResponse &&
+          reductionResponse.success === false;
+
+        const reductionMessage =
+          reductionResponse && typeof reductionResponse === "object"
+            ? String(
+              reductionResponse.message ||
+              reductionResponse.data ||
+              "Unable to reduce wastage quantity."
+            )
+            : "Unable to reduce wastage quantity.";
+
+        if (isReductionFailed) {
+          setSubmitStatus("error");
+          setSubmitMessage(reductionMessage);
+          toast.error(reductionMessage);
+          return;
+        }
+
+        const latestWastageQty = await fetchWastageQty({
+          tphBatch: formData.tphBatch,
+          productCategory: selectedProductCategory,
+          finishedProductName: formData.finishedProductName,
+        });
+
+        setAvailableWastageQty(latestWastageQty);
+      }
+
       setFormData(initialFormData);
       setOtherSelections(initialManufacturingOtherState);
       setRawMaterials(initialRawMaterials);
       setProductItems([emptyProductItem]);
+      setAvailableWastageQty(0);
+      setWastageBagSize("");
+      setWastageTotalBags("");
       toast.success("Production entry saved successfully.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to save production entry.";
@@ -741,6 +895,7 @@ export function ManufacturingEntryForm() {
       setSubmitMessage(message);
       toast.error(message);
     } finally {
+      setIsReducingWastage(false);
       setIsSubmitting(false);
     }
   };
@@ -767,6 +922,10 @@ export function ManufacturingEntryForm() {
               setFormData(initialFormData);
               setOtherSelections(initialManufacturingOtherState);
               setRawMaterials(initialRawMaterials);
+              setProductItems([emptyProductItem]);
+              setAvailableWastageQty(0);
+              setWastageBagSize("");
+              setWastageTotalBags("");
               setSubmitStatus("idle");
               setSubmitMessage("");
             }}
@@ -984,7 +1143,7 @@ export function ManufacturingEntryForm() {
                       id={`rawMaterialName-${index}`}
                       placeholder="e.g. Cement"
                       readOnly={isRecipeLocked}
-                      value={item.rawMaterialName}
+                      value={item.packagingType}
                       onChange={(e) =>
                         updateRawMaterialTextField(index, "rawMaterialName", e.target.value)
                       }
@@ -994,10 +1153,10 @@ export function ManufacturingEntryForm() {
                   <Field className="min-w-0" htmlFor={`packagingType-${index}`} label="Packaging Type">
                     <Input
                       className="w-full"
-                      id={`packagingType-${index}`}
+                      id={`rawMaterialName-${index}`}
                       placeholder="e.g. White, Premix"
                       readOnly={isRecipeLocked}
-                      value={item.packagingType}
+                      value={item.rawMaterialName}
                       onChange={(e) =>
                         updateRawMaterialTextField(index, "packagingType", e.target.value)
                       }
@@ -1166,21 +1325,63 @@ export function ManufacturingEntryForm() {
               ))}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field
-                label="Wastage Qty"
-                htmlFor="wastageQty"
-              >
-                <Input
-                  id={"wastageQty"}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.wastageQty}
-                  onChange={(e) => updateField("wastageQty", e.target.value)}
-                />
-              </Field>
+            <div className="space-y-4 rounded-xl border p-4">
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold">Wastage Quantity Usage</h2>
+                <p className="text-sm text-muted-foreground">Use available wastage stock separately from finished product packing.</p>
+              </div>
 
+              <div
+                className={`rounded-lg border p-4 text-sm font-medium ${isWastageExceeded
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : "border-amber-200 bg-amber-50 text-amber-800"
+                  }`}
+              >
+                {isWastageLoading ? (
+                  <span>Loading wastage quantity...</span>
+                ) : (
+                  <div className="">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      <div>Total Available Wastage: {availableWastageQty} KG</div>
+                      <div>Packed Wastage: {packedWastageQty} KG</div>
+                      <div>Remaining Wastage: {Math.max(0, remainingWastageQty)} KG</div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-2 mt-4">
+                      <Field className="md:col-span-1" htmlFor="wastageBagSize" label="Wastage Bag Size">
+                        <Select
+                          id="wastageBagSize"
+                          value={wastageBagSize}
+                          onChange={(e) => setWastageBagSize(e.target.value)}
+                        >
+                          <option value="">Select Bag Size</option>
+                          <option value="20kg">20kg</option>
+                          <option value="50kg">50kg</option>
+                        </Select>
+                      </Field>
+                      <Field className="md:col-span-1" htmlFor="wastageTotalBags" label="Wastage Total Bags">
+                        <Input
+                          id="wastageTotalBags"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={wastageTotalBags}
+                          onChange={(e) => setWastageTotalBags(sanitizeNumberOnly(e.target.value))}
+                          placeholder="Enter total bags"
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {isWastageExceeded ? (
+                <p className="text-sm font-medium text-red-600">
+                  Packed wastage quantity cannot be greater than available wastage quantity.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4">
               <Field htmlFor="remarks" label="Remarks">
                 <Textarea
                   id="remarks"
@@ -1215,19 +1416,19 @@ export function ManufacturingEntryForm() {
                   {submitMessage}
                 </p>
               )}
-              <Button disabled={isSubmitting} type="reset" variant="outline">
+              <Button disabled={isSubmitting || isReducingWastage} type="reset" variant="outline">
                 <RotateCcw />
                 Reset
               </Button>
               <Button
-                disabled={isSubmitting}
+                disabled={isSubmitting || isReducingWastage || isWastageInvalid}
                 type="submit"
                 style={{
                   backgroundColor: isSubmitting ? "#e8e8e8" : "",
                   color: isSubmitting ? "#333" : "",
                 }}
               >
-                {isSubmitting ? (
+                {isSubmitting || isReducingWastage ? (
                   <div
                     style={{
                       display: "flex",
@@ -1240,7 +1441,7 @@ export function ManufacturingEntryForm() {
                 ) : (
                   <>
                     <Save />
-                    Save production
+                    {isReducingWastage ? "Reducing wastage..." : "Save production"}
                   </>
                 )}
               </Button>

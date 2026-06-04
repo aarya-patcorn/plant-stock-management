@@ -2,6 +2,7 @@ const ManufacturingEntry = require("../model/ManufacturingEntry");
 const Inventory = require("../model/Inventory");
 const DispatchEntry = require("../model/DispatchEntry");
 const ProductMaterialLog = require("../model/ProductMaterialLog");
+const Wastage = require("../model/Wastage");
 
 const parseNumber = (value) => {
   const num = Number(value);
@@ -122,6 +123,11 @@ const groupRawMaterialsByInventory = (rawMaterials) => {
   return Array.from(groupedItems.values());
 };
 
+const hasValidCoupon = (token) => {
+  const value = String(token || "").trim().toLowerCase();
+  return Boolean(value) && value !== "n/a" && value !== "non-coupon" && value !== "non-coupan";
+};
+
 const buildPackagingItems = (data) => {
   const items = [];
 
@@ -134,11 +140,20 @@ const buildPackagingItems = (data) => {
 
     if (qty <= 0) return;
 
-    if (
-      productItem.token &&
-      productItem.token !== "N/A" &&
-      productItem.token !== "Non-Coupan"
-    ) {
+    if (data.productCategory === "Tile Adhesive" && productItem.bagSize) {
+      items.push({
+        rawMaterialName: "Packaging",
+        packagingType: "FG",
+        level2: data.productCategory || "",
+        level3: productItem.bagSize,
+        level4: data.finishedProductName || "",
+        bagColor: data.color || "",
+        materialQuantity: qty,
+        materialUnit: "bags",
+      });
+    }
+
+    if (hasValidCoupon(productItem.token)) {
       items.push({
         rawMaterialName: "Packaging",
         packagingType: "FG",
@@ -150,19 +165,6 @@ const buildPackagingItems = (data) => {
         materialUnit: "pcs",
       });
     }
-
-    // if (productItem.bagSize) {
-    //   items.push({
-    //     rawMaterialName: "Packaging",
-    //     packagingType: "FG",
-    //     level2: data.productCategory || "",
-    //     level3: productItem.bagSize,
-    //     level4: data.finishedProductName || "",
-    //     bagColor: data.color || "",
-    //     materialQuantity: qty,
-    //     materialUnit: "bags",
-    //   });
-    // }
 
     if (data.productCategory === "Epoxy") {
       items.push({
@@ -304,45 +306,152 @@ const getManufacturingEntries = async (_req, res) => {
   }
 };
 
-const updateProductMaterialLog = async (data) => {
-  const filter = buildProductMaterialFilter(data);
-  const producedQty = parseNumber(data.totalBagsProduced);
+const buildProductMaterialLabel = (data) =>
+  [
+    data.productCategory,
+    data.token,
+    data.color,
+    data.finishedProductName || data.productName,
+    data.bagSize,
+  ]
+    .filter(Boolean)
+    .join(" / ");
 
-  let productStock = await ProductMaterialLog.findOne(filter);
+const groupProductMaterialDeltas = (data, direction = 1) => {
+  const groupedItems = new Map();
+  const productItems = Array.isArray(data?.productItems) ? data.productItems : [];
 
-  if (!productStock) {
-    productStock = await ProductMaterialLog.create({
-      ...filter,
-      currentQuantity: producedQty,
-      shippedQuantity: 0,
+  productItems.forEach((item) => {
+    const quantity = parseNumber(item.totalBagsProduced) * direction;
+
+    if (!quantity) {
+      return;
+    }
+
+    const payload = {
+      productCategory: data.productCategory || "",
+      color: data.color || "",
+      finishedProductName: data.finishedProductName || data.productName || "",
+      token: item.token || "",
+      bagSize: item.bagSize || "",
+    };
+    const filter = buildProductMaterialFilter(payload);
+    const key = JSON.stringify(filter);
+    const current = groupedItems.get(key);
+
+    groupedItems.set(key, {
+      filter,
+      label: current?.label || buildProductMaterialLabel(payload),
+      quantity: (current?.quantity || 0) + quantity,
     });
+  });
 
-    return productStock;
-  }
-
-  productStock.currentQuantity += producedQty;
-
-  await productStock.save();
-
-  return productStock;
+  return groupedItems;
 };
 
-const updateProductMaterialLogsFromItems = async (data) => {
-  if (!Array.isArray(data.productItems) || data.productItems.length === 0) {
-    throw new Error("At least one finished product item is required.");
-  }
+const combineProductMaterialDeltas = (previousData, nextData) => {
+  const combined = new Map();
+  const mergeGroup = (group) => {
+    group.forEach((value, key) => {
+      const current = combined.get(key);
 
-  for (const item of data.productItems) {
-    await updateProductMaterialLog({
-      productCategory: data.productCategory,
-      color: data.color,
-      finishedProductName: data.finishedProductName,
-
-      token: item.token,
-      bagSize: item.bagSize,
-      totalBagsProduced: item.totalBagsProduced,
+      combined.set(key, {
+        filter: value.filter,
+        label: current?.label || value.label,
+        quantity: (current?.quantity || 0) + value.quantity,
+      });
     });
+  };
+
+  if (previousData) {
+    mergeGroup(groupProductMaterialDeltas(previousData, -1));
   }
+
+  if (nextData) {
+    mergeGroup(groupProductMaterialDeltas(nextData, 1));
+  }
+
+  return Array.from(combined.values()).filter((item) => item.quantity !== 0);
+};
+
+const applyProductMaterialLogDeltas = async (previousData, nextData) => {
+  const deltas = combineProductMaterialDeltas(previousData, nextData);
+
+  for (const item of deltas) {
+    const productStock = await ProductMaterialLog.findOne(item.filter);
+
+    if (item.quantity < 0) {
+      if (!productStock) {
+        throw new Error(`${item.label} stock is not available in product material log.`);
+      }
+
+      const currentQuantity = parseNumber(productStock.currentQuantity);
+      const requiredReduction = Math.abs(item.quantity);
+
+      if (currentQuantity < requiredReduction) {
+        throw new Error(
+          `${item.label} has only ${currentQuantity} quantity available in product material log, but ${requiredReduction} needs to be reduced.`
+        );
+      }
+    }
+  }
+
+  for (const item of deltas) {
+    let productStock = await ProductMaterialLog.findOne(item.filter);
+
+    if (!productStock) {
+      productStock = await ProductMaterialLog.create({
+        ...item.filter,
+        currentQuantity: Math.max(0, item.quantity),
+        shippedQuantity: 0,
+      });
+
+      continue;
+    }
+
+    productStock.currentQuantity = parseNumber(productStock.currentQuantity) + item.quantity;
+    await productStock.save();
+  }
+};
+
+const updateWastageStock = async (data) => {
+  const wastageQty = Number(data.wastageQty || 0);
+
+  if (wastageQty <= 0) {
+    return null;
+  }
+
+  const tphBatch = String(data.tphBatch || "").trim();
+  const productCategory = String(data.productCategory || "").trim();
+  const finishedProductName = String(data.finishedProductName || "").trim();
+
+  if (!tphBatch || !finishedProductName) {
+    throw new Error("TPH Batch and Finished Product Name are required for wastage stock.");
+  }
+
+  const filter = {
+    tphBatch,
+    finishedProductName,
+  };
+
+  return await Wastage.findOneAndUpdate(
+    filter,
+    {
+      $setOnInsert: {
+        date: data.productionDate || data.date || "",
+        tphBatch,
+        productCategory,
+        finishedProductName,
+      },
+      $inc: {
+        wastageQty,
+      },
+    },
+    {
+      new: true,
+      upsert: true,
+    }
+  );
 };
 
 const createManufacturingEntry = async (req, res) => {
@@ -358,7 +467,15 @@ const createManufacturingEntry = async (req, res) => {
 
     const entry = await ManufacturingEntry.create(data);
 
-    await updateProductMaterialLogsFromItems(data);
+    await applyProductMaterialLogDeltas(null, data);
+
+    const productionWastageQty = Number(data.wastageQty || 0);
+    const packedWastageQty = Number(data.packedWastage || 0);
+
+    // Add only new production wastage
+    if (productionWastageQty > 0) {
+      await updateWastageStock(data);
+    }
 
     res.status(201).json({
       success: true,
@@ -389,6 +506,8 @@ const updateManufacturingEntry = async (req, res) => {
       await reduceRawMaterialStock(data.rawMaterials);
     }
 
+    await applyProductMaterialLogDeltas(current, data);
+
     const updated = await ManufacturingEntry.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true });
     res.json({ success: true, message: "Production entry updated successfully", data: updated });
   } catch (error) {
@@ -405,6 +524,7 @@ const deleteManufacturingEntry = async (req, res) => {
     }
 
     await addRawMaterialStockBack(current.rawMaterials || []);
+    await applyProductMaterialLogDeltas(current, null);
     await ManufacturingEntry.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Production entry deleted successfully" });
   } catch (error) {

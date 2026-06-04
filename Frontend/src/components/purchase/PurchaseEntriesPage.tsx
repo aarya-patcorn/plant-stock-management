@@ -147,24 +147,23 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
 const hasRawMaterialConfig = (value: RawMaterialOption): value is RawMaterialName =>
   value !== "" && value !== "Other" && value in rawMaterialConfig;
 
-function readFilePayload(file: File) {
-  return new Promise<Record<string, string>>((resolve, reject) => {
-    const reader = new FileReader();
+function buildPurchaseUpdatePayload(entry: PurchaseEntry, file: File | null) {
+  if (!file) {
+    return entry;
+  }
 
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      const [, base64 = ""] = result.split(",");
+  const formData = new FormData();
 
-      resolve({
-        attachFileName: file.name,
-        attachFileType: file.type || "application/octet-stream",
-        attachFileBase64: base64,
-      });
-    };
+  Object.entries(entry).forEach(([key, value]) => {
+    if (value == null) {
+      return;
+    }
 
-    reader.onerror = () => reject(new Error("Unable to read attached file."));
-    reader.readAsDataURL(file);
+    formData.append(key, String(value));
   });
+
+  formData.append("attachFile", file);
+  return formData;
 }
 
 function Field({
@@ -257,27 +256,42 @@ function getAttachmentLink(value: string) {
   }
 }
 
-function renderAttachment(value: string, className = "") {
-  const link = getAttachmentLink(value);
+function renderAttachmentActions(
+  attachFile?: string,
+  attachFileId?: string,
+  attachFileName?: string,
+  className = "",
+) {
+  const url = attachFile?.trim() || "";
+  const fileName = attachFileName?.trim() || "purchase-attachment";
+  const downloadUrl = attachFileId?.trim()
+    ? `https://drive.google.com/uc?export=download&id=${attachFileId.trim()}`
+    : url;
 
-  if (!value.trim()) {
-    return "-";
-  }
-
-  if (!link) {
-    return value;
+  if (!url) {
+    return <span className="text-gray-400">No file</span>;
   }
 
   return (
-    <a
-      className={`text-primary underline-offset-4 hover:underline ${className}`.trim()}
-      href={link}
-      rel="noreferrer"
-      target="_blank"
-      title={value}
-    >
-      View PDF
-    </a>
+    <div className={`flex flex-wrap gap-2 ${className}`.trim()}>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline"
+      >
+        View
+      </a>
+      <a
+        href={downloadUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        download={fileName}
+        className="text-green-600 hover:underline"
+      >
+        Download
+      </a>
+    </div>
   );
 }
 
@@ -366,14 +380,15 @@ export function PurchaseEntriesPage() {
     setIsUpdating(true);
 
     try {
-      const filePayload = selectedEditFile ? await readFilePayload(selectedEditFile) : {};
-      const updatedEntry = {
-        ...editingEntry,
-        attachFile: selectedEditFile?.name ?? editingEntry.attachFile,
-        ...filePayload,
-      };
+      const updatedEntry = selectedEditFile
+        ? {
+            ...editingEntry,
+            attachFileName: selectedEditFile.name,
+          }
+        : editingEntry;
+      const requestPayload = buildPurchaseUpdatePayload(editingEntry, selectedEditFile);
 
-      await updatePurchaseEntry(updatedEntry);
+      await updatePurchaseEntry(requestPayload);
       setEntries((current) =>
         current.map((entry) => (entry.id === editingEntry.id ? updatedEntry : entry)),
       );
@@ -790,18 +805,21 @@ export function PurchaseEntriesPage() {
                   <Input
                     ref={editFileInputRef}
                     id="edit-attachFile"
+                    accept=".jpg,.jpeg,.png,.webp,.pdf"
                     type="file"
                     onChange={(event) => {
                       const file = event.target.files?.[0] ?? null;
                       setSelectedEditFile(file);
-                      updateEditingEntry({ attachFile: file?.name || editingEntry.attachFile });
+                      updateEditingEntry({
+                        attachFileName: file?.name || editingEntry.attachFileName,
+                      });
                     }}
                   />
-                  {editingEntry.attachFile && (
+                  {editingEntry.attachFileName ? (
                     <p className="break-all text-xs text-muted-foreground">
-                      Current file: {editingEntry.attachFile}
+                      Current file: {editingEntry.attachFileName}
                     </p>
-                  )}
+                  ) : null}
                 </div>
               </Field>
               <Field htmlFor="edit-remarks" label="Remarks">
@@ -909,7 +927,7 @@ export function PurchaseEntriesPage() {
                         </div>
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Attachment</p>
-                          <p className="mt-1 break-all">{renderAttachment(entry.attachFile)}</p>
+                          <div className="mt-2">{renderAttachmentActions(entry.attachFile, entry.attachFileId, entry.attachFileName)}</div>
                         </div>
                       </div>
 
@@ -964,8 +982,8 @@ export function PurchaseEntriesPage() {
                         <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.unloadBy || "-"}>
                           {entry.unloadBy || "-"}
                         </TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.attachFile || "-"}>
-                          {renderAttachment(entry.attachFile, "inline-block max-w-full truncate align-middle")}
+                        <TableCell className="min-w-[150px] whitespace-nowrap" title={entry.attachFileName || "No file"}>
+                          {renderAttachmentActions(entry.attachFile, entry.attachFileId, entry.attachFileName)}
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate whitespace-nowrap" title={entry.remarks || "-"}>
                           {entry.remarks || "-"}

@@ -20,6 +20,8 @@ const purchaseEntrySchema = new mongoose.Schema(
     invoiceNo: String,
     unloadBy: String,
     attachFile: String,
+    attachFileName: String,
+    attachFileId: String,
     remarks: String,
   },
   { timestamps: true }
