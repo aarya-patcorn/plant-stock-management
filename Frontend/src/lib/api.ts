@@ -55,6 +55,7 @@ export type ManufacturingEntry = {
   totalBagsProduced: string;
   productItems: ManufacturingProductItem[];
   wastageQty: string;
+  wastageTotalBags: string;
   wastageReason: string;
   rawMaterialNames: string;
   rawMaterialQty: string;
@@ -102,7 +103,7 @@ const endpointByFormType: Record<FormType, string> = {
 };
 
 function apiUrl(endpoint: string) {
-  return API_BASE_URL.replace(/\/$/, "") + endpoint;
+  return (API_BASE_URL || "").replace(/\/$/, "") + endpoint;
 }
 
 function getApiErrorMessage(responseData: ApiResponse, fallback: string) {
@@ -127,7 +128,7 @@ async function requestApi(endpoint: string, options: RequestInit = {}, fallbackM
 
   const responseText = await response.text();
   const responseData = responseText ? safeParseJson(responseText) : null;
-
+  
   if (!response.ok || responseData?.success === false || responseData?.status === "error") {
     throw new Error(getApiErrorMessage(responseData, responseText || fallbackMessage));
   }
@@ -140,6 +141,18 @@ export async function submitEntry(
   payload: FormPayload,
   file?: File | null,
 ) {
+  // Only purchase needs FormData because purchase has attachFile
+  if (formType !== "purchase") {
+    return requestApi(
+      endpointByFormType[formType],
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      "Unable to save entry.",
+    );
+  }
+
   const formData = new FormData();
 
   Object.entries(payload).forEach(([key, value]) => {
@@ -238,9 +251,9 @@ export async function fetchWastageQty(params: {
 export async function reduceWastageQty(payload: {
   tphBatch: string;
   finishedProductName: string;
-  packedWastage: number;
+  remainingWastageQty: number;
 }) {
-  return requestApi("/api/wastage/reduce", {
+  return requestApi("/api/wastage/update-remaining", {
     method: "PATCH",
     body: JSON.stringify(payload),
   }, "Unable to reduce wastage quantity.");
@@ -327,6 +340,7 @@ function normalizeManufacturingEntry(entry: unknown): ManufacturingEntry {
     totalBagsProduced,
     productItems,
     wastageQty: stringifyValue(record.wastageQty),
+    wastageTotalBags: stringifyValue(record.wastageTotalBags),
     wastageReason: stringifyValue(record.wastageReason),
     rawMaterialNames: rawMaterials.map((item) => stringifyValue(item.rawMaterialName)).filter(Boolean).join(", "),
     rawMaterialQty: rawMaterials.map((item) => stringifyValue(item.materialQuantity)).filter(Boolean).join(", "),

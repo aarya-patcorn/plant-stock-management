@@ -456,6 +456,7 @@ const updateWastageStock = async (data) => {
 
 const createManufacturingEntry = async (req, res) => {
   try {
+    console.log("req.body:", req.body);
     const data = normalizeManufacturingData(req.body);
 
     const inventoryItemsToReduce = [
@@ -483,6 +484,7 @@ const createManufacturingEntry = async (req, res) => {
       data: entry,
     });
   } catch (error) {
+    console.error(error.stack); // ← add this
     res.status(400).json({
       success: false,
       message: error.message,

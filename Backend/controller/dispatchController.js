@@ -101,6 +101,7 @@ const createDispatchEntry = async (req, res) => {
 
     res.status(201).json({ success: true, message: "Dispatch entry created successfully", data: entry });
   } catch (error) {
+    console.error("Error creating dispatch entry:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

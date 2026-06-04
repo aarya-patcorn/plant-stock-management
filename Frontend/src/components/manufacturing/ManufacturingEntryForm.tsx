@@ -841,13 +841,13 @@ export function ManufacturingEntryForm() {
         console.log("Reducing wastage:", {
           tphBatch: formData.tphBatch,
           finishedProductName: formData.finishedProductName,
-          packedWastage: packedWastageQty,
+          remainingWastageQty: remainingWastageQty,
         });
 
         const reductionResponse = await reduceWastageQty({
           tphBatch: formData.tphBatch,
           finishedProductName: formData.finishedProductName,
-          packedWastage: packedWastageQty,
+          remainingWastageQty: remainingWastageQty,
         });
 
         const isReductionFailed =
