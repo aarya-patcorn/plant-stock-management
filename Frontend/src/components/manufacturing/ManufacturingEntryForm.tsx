@@ -81,6 +81,22 @@ const getTotalBagsProduced = (tphBatch: string, bagSize: string) => {
   return "";
 };
 
+const getFinalTotalBagsProduced = (
+  tphBatch: string,
+  bagSize: string,
+  wastageTotalBags: string,
+) => {
+  if (!String(tphBatch || "").trim() || !String(bagSize || "").trim()) {
+    return "";
+  }
+
+  const calculatedTotalBagsProduced = Number(getTotalBagsProduced(tphBatch, bagSize) || 0);
+  const wastageBags = Number(wastageTotalBags || 0);
+
+  return String(calculatedTotalBagsProduced + wastageBags);
+};
+
+
 const getBatchDefaults = (tphBatch: string) => {
   switch (tphBatch) {
     case "1TPH":
@@ -315,6 +331,22 @@ export function ManufacturingEntryForm() {
       return updated;
     });
   };
+
+  useEffect(() => {
+    setProductItems((current) =>
+      current.map((item) => {
+        const nextTotalBagsProduced = getFinalTotalBagsProduced(
+          formData.tphBatch,
+          item.bagSize,
+          wastageTotalBags,
+        );
+
+        return item.totalBagsProduced === nextTotalBagsProduced
+          ? item
+          : { ...item, totalBagsProduced: nextTotalBagsProduced };
+      }),
+    );
+  }, [formData.tphBatch, productItems.length, wastageTotalBags]);
   const addProductItem = () => {
     setProductItems((current) => [...current, emptyProductItem]);
   };
@@ -1266,7 +1298,11 @@ export function ManufacturingEntryForm() {
                           updateProductItem(
                             index,
                             "totalBagsProduced",
-                            getTotalBagsProduced(formData.tphBatch, bagSize)
+                            getFinalTotalBagsProduced(
+                              formData.tphBatch,
+                              bagSize,
+                              wastageTotalBags,
+                            )
                           );
                         }}
                       >
