@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Boxes, Package, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
+  fetchDashboardReports,
   fetchDispatchEntries,
   fetchInventory,
   fetchManufacturingEntries,
   fetchProductionMaterialLogs,
   fetchPurchaseEntries,
+  type DashboardReportCategory,
+  type DashboardReportProductStock,
+  type DashboardReports,
   type DispatchEntry,
   type ManufacturingEntry,
   type ProductionMaterialLog,
@@ -15,7 +19,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import LoadingLoader from "@/components/ui/LoadingLoader";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type DashboardData = {
   dispatchEntries: DispatchEntry[];
@@ -25,15 +31,30 @@ type DashboardData = {
   purchaseEntries: PurchaseEntry[];
 };
 
-function toNumber(value: string) {
-  const parsedValue = Number(value);
-  return Number.isFinite(parsedValue) ? parsedValue : 0;
+function parseNumber(value: unknown) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
 }
 
 function formatCount(value: number) {
   return value.toLocaleString("en-IN", {
     maximumFractionDigits: value % 1 === 0 ? 0 : 2,
   });
+}
+
+function formatDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentMonthDateRange() {
+  const today = new Date();
+  return {
+    fromDate: formatDateInput(new Date(today.getFullYear(), today.getMonth(), 1)),
+    toDate: formatDateInput(today),
+  };
 }
 
 function buildInventoryLabel(entry: PurchaseEntry) {
@@ -203,6 +224,8 @@ function RecentList({
 }
 
 export function DashboardPage() {
+  const STOCK_PAGE_SIZE = 5;
+  const initialReportRange = useMemo(() => getCurrentMonthDateRange(), []);
   const [data, setData] = useState<DashboardData>({
     dispatchEntries: [],
     inventoryEntries: [],
@@ -212,6 +235,16 @@ export function DashboardPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [reportFromDate, setReportFromDate] = useState(initialReportRange.fromDate);
+  const [reportToDate, setReportToDate] = useState(initialReportRange.toDate);
+  const [reportsData, setReportsData] = useState<DashboardReports>({
+    productionByCategory: [],
+    productStocksByCategory: {},
+  });
+  const [activeReportCategory, setActiveReportCategory] = useState("");
+  const [stockPage, setStockPage] = useState(1);
+  const [reportsLoading, setReportsLoading] = useState(true);
+  const [reportsError, setReportsError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -255,6 +288,71 @@ export function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!reportFromDate || !reportToDate) {
+      setReportsData({ productionByCategory: [], productStocksByCategory: {} });
+      setActiveReportCategory("");
+      setStockPage(1);
+      setReportsError("");
+      setReportsLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    if (reportFromDate > reportToDate) {
+      setReportsData({ productionByCategory: [], productStocksByCategory: {} });
+      setActiveReportCategory("");
+      setStockPage(1);
+      setReportsError("From Date cannot be greater than To Date.");
+      setReportsLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setReportsLoading(true);
+
+    void fetchDashboardReports(reportFromDate, reportToDate)
+      .then((response) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setReportsData(response);
+        setReportsError("");
+        setStockPage(1);
+        setActiveReportCategory((currentCategory) => {
+          if (response.productionByCategory.some((item) => item.productCategory === currentCategory)) {
+            return currentCategory;
+          }
+
+          return response.productionByCategory[0]?.productCategory || "";
+        });
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setReportsData({ productionByCategory: [], productStocksByCategory: {} });
+        setActiveReportCategory("");
+        setStockPage(1);
+        setReportsError(error instanceof Error ? error.message : "Unable to load reports.");
+      })
+      .finally(() => {
+        if (isMounted) {
+          setReportsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [reportFromDate, reportToDate]);
+
   const dashboardStats = useMemo(() => {
     const todayKey = getTodayKey();
     const todaysPurchaseItems = data.purchaseEntries.filter((entry) => entry.date === todayKey).length;
@@ -263,7 +361,7 @@ export function DashboardPage() {
     ).length;
     const todaysDispatchBags = data.dispatchEntries
       .filter((entry) => entry.date === todayKey)
-      .reduce((sum, entry) => sum + toNumber(entry.totalBags), 0);
+      .reduce((sum, entry) => sum + parseNumber(entry.totalBags), 0);
 
     return {
       todaysDispatchBags,
@@ -279,6 +377,7 @@ export function DashboardPage() {
       ),
     [data.inventoryEntries],
   );
+
   const sortedProductionLogs = useMemo(
     () =>
       [...data.productionMaterialLogs].sort((left, right) =>
@@ -296,7 +395,7 @@ export function DashboardPage() {
           id: entry.id,
           meta: entry.invoiceNo || entry.id,
           primary: buildInventoryLabel(entry) || "Purchase entry",
-          secondary: [entry.quantityPurchased, entry.unit, entry.supplierName].filter(Boolean).join(" • "),
+          secondary: [entry.quantityPurchased, entry.unit, entry.supplierName].filter(Boolean).join(" | "),
         })),
     [data.purchaseEntries],
   );
@@ -314,7 +413,7 @@ export function DashboardPage() {
           primary:
             [entry.productCategory, entry.finishedProductName, entry.color].filter(Boolean).join(" / ") ||
             "Production entry",
-          secondary: [entry.totalBagsProduced, "bags", entry.bagSize].filter(Boolean).join(" • "),
+          secondary: [entry.totalBagsProduced, "bags", entry.bagSize].filter(Boolean).join(" | "),
         })),
     [data.manufacturingEntries],
   );
@@ -330,7 +429,7 @@ export function DashboardPage() {
           primary:
             [entry.productCategory, entry.productName, entry.productColor].filter(Boolean).join(" / ") ||
             "Dispatch entry",
-          secondary: [entry.totalBags, "bags"].filter(Boolean).join(" • "),
+          secondary: [entry.totalBags, "bags"].filter(Boolean).join(" | "),
         })),
     [data.dispatchEntries],
   );
@@ -345,11 +444,11 @@ export function DashboardPage() {
             return false;
           }
 
-          return toNumber(entry.currentStock) < thresholdRule.threshold;
+          return parseNumber(entry.currentStock) < thresholdRule.threshold;
         })
         .map((entry) => {
           const thresholdRule = getInventoryAlertThreshold(entry);
-          const currentStock = toNumber(entry.currentStock);
+          const currentStock = parseNumber(entry.currentStock);
 
           return {
             id: entry.id,
@@ -362,6 +461,34 @@ export function DashboardPage() {
     [sortedInventoryEntries],
   );
 
+  const activeReportSummary = useMemo<DashboardReportCategory | null>(
+    () =>
+      reportsData.productionByCategory.find((item) => item.productCategory === activeReportCategory) || null,
+    [activeReportCategory, reportsData.productionByCategory],
+  );
+
+  const activeCategoryProductStocks = useMemo<DashboardReportProductStock[]>(() => {
+    const categoryStocks = reportsData.productStocksByCategory[activeReportCategory] || [];
+
+    return [...categoryStocks].sort(
+      (left, right) => parseNumber(right.currentQuantity) - parseNumber(left.currentQuantity),
+    );
+  }, [activeReportCategory, reportsData.productStocksByCategory]);
+
+  const totalStockPages = useMemo(
+    () => Math.max(1, Math.ceil(activeCategoryProductStocks.length / STOCK_PAGE_SIZE)),
+    [STOCK_PAGE_SIZE, activeCategoryProductStocks.length],
+  );
+
+  const paginatedStocks = useMemo(
+    () =>
+      activeCategoryProductStocks.slice(
+        (stockPage - 1) * STOCK_PAGE_SIZE,
+        stockPage * STOCK_PAGE_SIZE,
+      ),
+    [STOCK_PAGE_SIZE, activeCategoryProductStocks, stockPage],
+  );
+
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden border-0 bg-[linear-gradient(135deg,rgba(15,118,110,0.96)_0%,rgba(20,184,166,0.9)_52%,rgba(245,158,11,0.82)_100%)] text-white shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
@@ -372,7 +499,8 @@ export function DashboardPage() {
               Inventory, production, and dispatch in one panel.
             </h2>
             <p className="mt-3 max-w-2xl text-sm text-white/85">
-              Track raw-material stock, finished-product availability, dispatched bags, and the latest movement across purchase, production, and dispatch registers.
+              Track raw-material stock, finished-product availability, dispatched bags, and the latest movement across
+              purchase, production, and dispatch registers.
             </p>
           </div>
           <div className="grid gap-3 rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur">
@@ -452,12 +580,8 @@ export function DashboardPage() {
                         <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           Current Stock
                         </p>
-                        <p className="mt-1 text-2xl font-bold text-destructive">
-                          {formatCount(alert.value)}
-                        </p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Alert threshold: {alert.thresholdLabel}
-                        </p>
+                        <p className="mt-1 text-2xl font-bold text-destructive">{formatCount(alert.value)}</p>
+                        <p className="mt-2 text-sm text-muted-foreground">Alert threshold: {alert.thresholdLabel}</p>
                       </div>
                       <Badge variant="destructive">{alert.unitLabel}</Badge>
                     </div>
@@ -465,6 +589,203 @@ export function DashboardPage() {
                 </Card>
               ))}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/70 bg-white/85 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+        <CardHeader className="gap-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <CardTitle>Reports</CardTitle>
+              <CardDescription>Category-wise production and product stock reports.</CardDescription>
+            </div>
+            <Badge variant="outline">
+              {reportsLoading ? "Loading..." : `${reportsData.productionByCategory.length} categories`}
+            </Badge>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:max-w-xl">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="report-from-date">
+                From Date
+              </label>
+              <Input
+                id="report-from-date"
+                max={reportToDate || undefined}
+                onChange={(event) => setReportFromDate(event.target.value)}
+                type="date"
+                value={reportFromDate}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="report-to-date">
+                To Date
+              </label>
+              <Input
+                id="report-to-date"
+                min={reportFromDate || undefined}
+                onChange={(event) => setReportToDate(event.target.value)}
+                type="date"
+                value={reportToDate}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {reportsLoading ? (
+            <div className="flex justify-center rounded-md border border-dashed p-6">
+              <LoadingLoader />
+            </div>
+          ) : reportsError ? (
+            <div className="rounded-md border border-dashed border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+              {reportsError}
+            </div>
+          ) : reportsData.productionByCategory.length === 0 ? (
+            <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+              No production report found for selected date range.
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {reportsData.productionByCategory.map((category) => {
+                  const isActive = category.productCategory === activeReportCategory;
+
+                  return (
+                    <button
+                      className={[
+                        "relative overflow-hidden rounded-2xl border bg-white p-5 text-left shadow-[0_16px_34px_rgba(15,23,42,0.08)] transition",
+                        isActive ? "border-teal-500 ring-2 ring-teal-100" : "border-border/70 hover:border-teal-200",
+                      ].join(" ")}
+                      key={category.productCategory}
+                      onClick={() => {
+                        setActiveReportCategory(category.productCategory);
+                        setStockPage(1);
+                      }}
+                      type="button"
+                    >
+                      <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#0f766e_0%,#14b8a6_55%,#f59e0b_100%)]" />
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{category.productCategory}</p>
+                          <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
+                            Production summary
+                          </p>
+                        </div>
+                        {isActive ? <Badge variant="secondary">Selected</Badge> : null}
+                      </div>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-lg bg-muted/50 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Total Production</p>
+                          <p className="mt-1 text-base font-semibold text-foreground">
+                            {formatCount(category.totalProductionKg)} kg
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Bags Produced</p>
+                          <p className="mt-1 text-base font-semibold text-foreground">
+                            {formatCount(category.totalBagsProduced)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Total Entries</p>
+                          <p className="mt-1 text-base font-semibold text-foreground">
+                            {formatCount(category.totalEntries)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 p-3">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Products Count</p>
+                          <p className="mt-1 text-base font-semibold text-foreground">
+                            {formatCount(category.productsCount)}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 p-3 sm:col-span-2">
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Total Stock</p>
+                          <p className="mt-1 text-base font-semibold text-foreground">
+                            {formatCount(category.totalCurrentStock)}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {activeReportCategory ? (
+                <div className="rounded-2xl border bg-background/70 p-4 sm:p-5">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {activeReportCategory} Product Stock Details
+                      </h3>
+                      <p className="text-sm text-muted-foreground">Sorted by highest current stock first.</p>
+                    </div>
+                    {activeReportSummary ? (
+                      <Badge variant="outline">{formatCount(activeReportSummary.productsCount)} products</Badge>
+                    ) : null}
+                  </div>
+
+                  {activeCategoryProductStocks.length === 0 ? (
+                    <div className="mt-4 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                      No product stock found for this category.
+                    </div>
+                  ) : (
+                    <div className="mt-4 overflow-hidden rounded-xl border bg-white">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Product Name</TableHead>
+                            <TableHead>Color</TableHead>
+                            <TableHead>Token</TableHead>
+                            <TableHead>Bag Size</TableHead>
+                            <TableHead className="text-right">Current Stock</TableHead>
+                            <TableHead className="text-right">Available Bags</TableHead>
+                            <TableHead className="text-right">Dispatched Bags</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedStocks.map((stock, index) => (
+                            <TableRow key={`${stock.productName}-${stock.color}-${stock.token}-${stock.bagSize}-${index}`}>
+                              <TableCell className="font-medium text-foreground">{stock.productName || "-"}</TableCell>
+                              <TableCell>{stock.color || "-"}</TableCell>
+                              <TableCell>{stock.token || "-"}</TableCell>
+                              <TableCell>{stock.bagSize || "-"}</TableCell>
+                              <TableCell className="text-right">{formatCount(parseNumber(stock.currentQuantity))}</TableCell>
+                              <TableCell className="text-right">{formatCount(parseNumber(stock.availableBags))}</TableCell>
+                              <TableCell className="text-right">{formatCount(parseNumber(stock.dispatchedBags))}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {activeCategoryProductStocks.length > 0 ? (
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <Button
+                        disabled={stockPage === 1}
+                        onClick={() => setStockPage((page) => Math.max(1, page - 1))}
+                        type="button"
+                        variant="outline"
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {stockPage} of {totalStockPages}
+                      </span>
+                      <Button
+                        disabled={stockPage === totalStockPages}
+                        onClick={() => setStockPage((page) => Math.min(totalStockPages, page + 1))}
+                        type="button"
+                        variant="outline"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
           )}
         </CardContent>
       </Card>
@@ -613,34 +934,32 @@ export function DashboardPage() {
                         <p className="text-xs font-medium uppercase text-muted-foreground">Current Stock</p>
                         <p
                           className="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold text-foreground"
-                          title={formatCount(toNumber(entry.currentQuantity))}
+                          title={formatCount(parseNumber(entry.currentQuantity))}
                         >
-                          {formatCount(toNumber(entry.currentQuantity))}
+                          {formatCount(parseNumber(entry.currentQuantity))}
                         </p>
                       </div>
                       <div className="min-w-0 rounded-lg bg-muted/50 p-3">
                         <p className="text-xs font-medium uppercase text-muted-foreground">Available Bags</p>
                         <p
                           className="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold text-foreground"
-                          title={formatCount(toNumber(entry.currentQuantity))}
+                          title={formatCount(parseNumber(entry.currentQuantity))}
                         >
-                          {formatCount(toNumber(entry.currentQuantity))}
+                          {formatCount(parseNumber(entry.currentQuantity))}
                         </p>
                       </div>
                       <div className="min-w-0 rounded-lg bg-muted/50 p-3">
                         <p className="text-xs font-medium uppercase text-muted-foreground">Dispatched Bags</p>
                         <p
                           className="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold text-foreground"
-                          title={formatCount(toNumber(entry.shippedQuantity))}
+                          title={formatCount(parseNumber(entry.shippedQuantity))}
                         >
-                          {formatCount(toNumber(entry.shippedQuantity))}
+                          {formatCount(parseNumber(entry.shippedQuantity))}
                         </p>
                       </div>
                     </div>
 
-                    {entry.remarks ? (
-                      <p className="mt-3 text-sm text-muted-foreground">{entry.remarks}</p>
-                    ) : null}
+                    {entry.remarks ? <p className="mt-3 text-sm text-muted-foreground">{entry.remarks}</p> : null}
                   </div>
                 ))}
               </div>

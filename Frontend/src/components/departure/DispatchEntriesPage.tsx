@@ -788,6 +788,7 @@ export function DispatchEntriesPage() {
                   Previous
                 </Button>
                 <Button
+                
                   type="button"
                   variant="outline"
                   onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}

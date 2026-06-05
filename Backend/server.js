@@ -8,6 +8,7 @@ const manufacturingRoutes = require("./routes/manufacturingRoutes");
 const dispatchRoutes = require("./routes/dispatchRoutes");
 const authRoutes = require("./routes/authRoutes");
 const wastageRoutes = require("./routes/wastageRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 mongoose.set("strictQuery", true);
 dotenv.config();
@@ -28,6 +29,7 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/manufacturing", manufacturingRoutes);
 app.use("/api/dispatch", dispatchRoutes);
 app.use("/api/wastage", wastageRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/plant-stock-management";

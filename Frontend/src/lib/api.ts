@@ -65,6 +65,33 @@ export type ManufacturingEntry = {
   remarks: string;
 };
 
+export type DashboardReportCategory = {
+  productCategory: string;
+  totalProductionKg: number;
+  totalBagsProduced: number;
+  totalEntries: number;
+  productsCount: number;
+  totalCurrentStock: number;
+};
+
+export type DashboardReportProductStock = {
+  productCategory: string;
+  productName: string;
+  color: string;
+  token: string;
+  bagSize: string;
+  currentQuantity: number;
+  currentStock: number;
+  availableBags: number;
+  dispatchedBags: number;
+  shippedQuantity: number;
+};
+
+export type DashboardReports = {
+  productionByCategory: DashboardReportCategory[];
+  productStocksByCategory: Record<string, DashboardReportProductStock[]>;
+};
+
 export type ProductionMaterialLog = {
   id: string;
   productCategory: string;
@@ -232,6 +259,36 @@ export async function fetchManufacturingEntries() {
   return entries.map(normalizeManufacturingEntry);
 }
 
+export async function fetchDashboardReports(fromDate: string, toDate: string) {
+  const query = new URLSearchParams({ fromDate, toDate });
+  const responseData = await requestApi(
+    `/api/dashboard/reports?${query.toString()}`,
+    { method: "GET" },
+    "Unable to fetch reports.",
+  );
+  const data = typeof responseData?.data === "object" && responseData?.data !== null
+    ? responseData.data as Record<string, unknown>
+    : {};
+
+  const productionByCategory = Array.isArray(data.productionByCategory)
+    ? data.productionByCategory.map(normalizeDashboardReportCategory)
+    : [];
+  const productStocksByCategorySource = typeof data.productStocksByCategory === "object" && data.productStocksByCategory !== null
+    ? data.productStocksByCategory as Record<string, unknown>
+    : {};
+  const productStocksByCategory = Object.fromEntries(
+    Object.entries(productStocksByCategorySource).map(([category, items]) => [
+      category,
+      Array.isArray(items) ? items.map(normalizeDashboardReportProductStock) : [],
+    ]),
+  );
+
+  return {
+    productionByCategory,
+    productStocksByCategory,
+  };
+}
+
 export async function fetchProductionMaterialLogs() {
   const responseData = await requestApi("/api/manufacturing/logs/production-materials", {}, "Unable to fetch production material logs.");
   const entries = Array.isArray(responseData?.data) ? responseData.data : [];
@@ -360,6 +417,34 @@ function normalizeManufacturingEntry(entry: unknown): ManufacturingEntry {
   };
 }
 
+function normalizeDashboardReportCategory(entry: unknown): DashboardReportCategory {
+  const record = typeof entry === "object" && entry !== null ? (entry as Record<string, unknown>) : {};
+  return {
+    productCategory: stringifyValue(record.productCategory),
+    totalProductionKg: Number(record.totalProductionKg ?? 0) || 0,
+    totalBagsProduced: Number(record.totalBagsProduced ?? 0) || 0,
+    totalEntries: Number(record.totalEntries ?? 0) || 0,
+    productsCount: Number(record.productsCount ?? 0) || 0,
+    totalCurrentStock: Number(record.totalCurrentStock ?? 0) || 0,
+  };
+}
+
+function normalizeDashboardReportProductStock(entry: unknown): DashboardReportProductStock {
+  const record = typeof entry === "object" && entry !== null ? (entry as Record<string, unknown>) : {};
+  return {
+    productCategory: stringifyValue(record.productCategory),
+    productName: stringifyValue(record.productName ?? record.finishedProductName),
+    color: stringifyValue(record.color ?? record.productColor),
+    token: stringifyValue(record.token),
+    bagSize: stringifyValue(record.bagSize),
+    currentQuantity: Number(record.currentQuantity ?? record.currentStock ?? 0) || 0,
+    currentStock: Number(record.currentStock ?? record.currentQuantity ?? 0) || 0,
+    availableBags: Number(record.availableBags ?? record.currentQuantity ?? 0) || 0,
+    dispatchedBags: Number(record.dispatchedBags ?? record.shippedQuantity ?? 0) || 0,
+    shippedQuantity: Number(record.shippedQuantity ?? record.dispatchedBags ?? 0) || 0,
+  };
+}
+
 function normalizeProductionMaterialLog(entry: unknown): ProductionMaterialLog {
   const record = typeof entry === "object" && entry !== null ? (entry as Record<string, unknown>) : {};
   return {
@@ -432,3 +517,5 @@ function safeParseJson(text: string): ApiResponse {
     return null;
   }
 }
+
+
