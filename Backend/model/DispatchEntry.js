@@ -4,6 +4,7 @@ const dispatchEntrySchema = new mongoose.Schema(
   {
     date: String,
     time: String,
+    user: String,
     challanNo: String,
     challanName: String,
     vehicleNo: String,

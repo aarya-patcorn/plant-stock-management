@@ -254,17 +254,31 @@ export function ManufacturingEntryForm() {
     isWastageUnavailable || isWastageExceeded;
 
   useEffect(() => {
-    const nextWastageQty = availableWastageQty > 0 ? Math.max(0, remainingWastageQty) : remainingKg;
+    const hasUsedWastage =
+      availableWastageQty > 0 &&
+      remainingWastageQty !== availableWastageQty;
+
+    const nextWastageQty = hasUsedWastage
+      ? Math.max(0, remainingWastageQty)
+      : Math.max(0, remainingKg);
 
     setFormData((prev) => {
       const nextValue = String(nextWastageQty);
-      return prev.wastageQty === nextValue ? prev : { ...prev, wastageQty: nextValue };
+      return prev.wastageQty === nextValue
+        ? prev
+        : { ...prev, wastageQty: nextValue };
     });
 
     if (batchKg > 0 && remainingKg === 0 && totalPackedKg > 0) {
       toast.success("Batch quantity completed. Remaining quantity is 0 KG.");
     }
-  }, [availableWastageQty, remainingKg, remainingWastageQty, batchKg, totalPackedKg]);
+  }, [
+    availableWastageQty,
+    remainingWastageQty,
+    remainingKg,
+    batchKg,
+    totalPackedKg,
+  ]);
 
   useEffect(() => {
     if (isWastageExceeded) {
@@ -921,8 +935,12 @@ export function ManufacturingEntryForm() {
       setWastageBagSize("");
       setWastageTotalBags("");
       toast.success("Production entry saved successfully.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to save production entry.";
+    } catch (error: any) {
+      const message =
+        error?.message ||
+        error?.data?.message ||
+        "Unable to save production entry.";
+
       setSubmitStatus("error");
       setSubmitMessage(message);
       toast.error(message);
@@ -1025,8 +1043,8 @@ export function ManufacturingEntryForm() {
                     Select TPH/Batch
                   </option>
 
-                  {getOptionsWithOther(["1TPH", "2TPH", "Manual Blender", "Sigma Mixer", "Manual Hand Mixer"]).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                  {(["1TPH", "2TPH", "Manual Blender", "Sigma Mixer", "Manual Hand Mixer"]).map((option) => (
+                    <option key={option} value={option}>
                       {option}
                     </option>
                   ))}
@@ -1080,8 +1098,8 @@ export function ManufacturingEntryForm() {
                     Select category
                   </option>
 
-                  {getOptionsWithOther(productCategoryOptions).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                  {(productCategoryOptions).map((option) => (
+                    <option key={option} value={option}>
                       {option}
                     </option>
                   ))}
@@ -1103,8 +1121,8 @@ export function ManufacturingEntryForm() {
                     }}
                   >
                     <option value="" disabled>Select Finished Product</option>
-                    {getOptionsWithOther(finishedProductOptions).map((option) => (
-                      <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                    {(finishedProductOptions ?? []).map((option) => (
+                      <option key={option} value={option}>
                         {option}
                       </option>
                     ))}
@@ -1138,8 +1156,8 @@ export function ManufacturingEntryForm() {
                     {isColorDisabled && selectedColor ? (
                       <option value={selectedColor}>{selectedColor}</option>
                     ) : null}
-                    {getOptionsWithOther(colorOptions).map((option) => (
-                      <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                    {(colorOptions).map((option) => (
+                      <option key={option} value={option}>
                         {option}
                       </option>
                     ))}

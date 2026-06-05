@@ -29,31 +29,35 @@ router.post("/login", async (req, res) => {
 
     const isValid = await bcrypt.compare(password, user.password);
 
-    return res.status(isValid ? 200 : 401).json({
-      success: isValid,
-      message: isValid ? "Login successful" : "Invalid user ID or password.",
-      data: isValid,
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: {
+        userId: user.userId,
+        userName: user.userName,
+      },
     });
-  } catch (error) {
-    console.error("Login Error:", error);
+    } catch (error) {
+      console.error("Login Error:", error);
 
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error.",
-      data: false,
-    });
-  }
-});
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error.",
+        data: false,
+      });
+    }
+  });
 
 router.post("/signup", async (req, res) => {
   try {
     const userId = String(req.body.userId || "").trim();
     const password = String(req.body.password || "").trim();
+    const userName = String(req.body.userName || "").trim();
 
-    if (!userId || !password) {
+    if (!userId || !password || !userName) {
       return res.status(400).json({
         success: false,
-        message: "User ID and password are required.",
+        message: "User ID, password, and user name are required.",
       });
     }
 
@@ -74,6 +78,7 @@ router.post("/signup", async (req, res) => {
     const user = await User.create({
       userId,
       password: hashedPassword,
+      userName,
     });
 
     return res.status(201).json({
@@ -82,6 +87,7 @@ router.post("/signup", async (req, res) => {
       data: {
         id: user._id,
         userId: user.userId,
+        userName: user.userName,
       },
     });
   } catch (error) {

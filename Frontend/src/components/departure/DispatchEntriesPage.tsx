@@ -711,6 +711,10 @@ export function DispatchEntriesPage() {
                           <p className="text-xs font-medium uppercase text-muted-foreground">Site</p>
                           <p className="mt-1">{entry.dispatchSite || "-"}</p>
                         </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Entry By</p>
+                          <p className="mt-1">{entry.user || "-"}</p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -731,6 +735,7 @@ export function DispatchEntriesPage() {
                       <TableHead className="whitespace-nowrap text-center" title="Vehicle">Vehicle</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Driver">Driver</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Dispatch Site">Dispatch Site</TableHead>
+                      <TableHead className="whitespace-nowrap text-center" title="Entry By">Entry By</TableHead>
                       <TableHead className="w-[120px] whitespace-nowrap text-center" title="Actions">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -746,6 +751,7 @@ export function DispatchEntriesPage() {
                         <TableCell className="whitespace-nowrap" title={entry.totalBags || "-"}>{entry.totalBags || "-"}</TableCell>
                         <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.vehicleNo || "-"}>{entry.vehicleNo || "-"}</TableCell>
                         <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.driverName || "-"}>{entry.driverName || "-"}</TableCell>
+                        <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.user || "-"}>{entry.user || "-"}</TableCell>
                         <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.dispatchSite || "-"}>{entry.dispatchSite || "-"}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center gap-2">

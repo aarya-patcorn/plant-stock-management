@@ -32,7 +32,13 @@ const manufacturingEntrySchema = new mongoose.Schema(
   {
     productionDate: String,
     tphBatch: String,
-    batchNo: String,
+    user: String,
+    batchNo: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
 
     productCategory: String,
     materialQuantity: String,

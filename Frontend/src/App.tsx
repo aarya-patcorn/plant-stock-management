@@ -164,6 +164,7 @@ function AppShellLayout() {
               : "Dashboard";
   const handleLogout = () => {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    window.localStorage.removeItem("userName");
     setMobileSidebarOpen(false);
     toast.success("Logout Successful");
     navigate("/login", { replace: true });

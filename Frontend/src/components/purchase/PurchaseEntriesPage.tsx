@@ -382,9 +382,9 @@ export function PurchaseEntriesPage() {
     try {
       const updatedEntry = selectedEditFile
         ? {
-            ...editingEntry,
-            attachFileName: selectedEditFile.name,
-          }
+          ...editingEntry,
+          attachFileName: selectedEditFile.name,
+        }
         : editingEntry;
       const requestPayload = buildPurchaseUpdatePayload(editingEntry, selectedEditFile);
 
@@ -404,7 +404,7 @@ export function PurchaseEntriesPage() {
           setEntries(purchaseEntries);
           setLoadError("");
         })
-        .catch(() => {});
+        .catch(() => { });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update purchase entry.");
     } finally {
@@ -493,42 +493,42 @@ export function PurchaseEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Basic identifiers, date, time, and unit information.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <Field htmlFor="edit-date" label="Date">
-                <Input
-                  id="edit-date"
-                  type="date"
-                  value={editingEntry.date}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, date: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-time" label="Time">
-                <Input
-                  id="edit-time"
-                  type="time"
-                  value={editingEntry.time}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, time: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-unit" label="Unit">
-                <Select
-                  id="edit-unit"
-                  value={editingEntry.unit}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, unit: event.target.value } : current)
-                  }
-                >
-                  <option value="">Select unit</option>
-                  {unitOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+                <Field htmlFor="edit-date" label="Date">
+                  <Input
+                    id="edit-date"
+                    type="date"
+                    value={editingEntry.date}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, date: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-time" label="Time">
+                  <Input
+                    id="edit-time"
+                    type="time"
+                    value={editingEntry.time}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, time: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-unit" label="Unit">
+                  <Select
+                    id="edit-unit"
+                    value={editingEntry.unit}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, unit: event.target.value } : current)
+                    }
+                  >
+                    <option value="">Select unit</option>
+                    {unitOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
               </div>
             </div>
 
@@ -737,60 +737,60 @@ export function PurchaseEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Quantity, supplier, invoice, and unloading information.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field htmlFor="edit-quantityPurchased" label="Quantity Purchased">
-                <Input
-                  id="edit-quantityPurchased"
-                  type="number"
-                  value={editingEntry.quantityPurchased}
-                  onChange={(event) =>
-                    setEditingEntry((current) =>
-                      current ? { ...current, quantityPurchased: event.target.value } : current,
-                    )
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-supplierName" label="Supplier Name">
-                <Input
-                  id="edit-supplierName"
-                  value={editingEntry.supplierName}
-                  onChange={(event) =>
-                    setEditingEntry((current) =>
-                      current ? { ...current, supplierName: event.target.value } : current,
-                    )
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-invoiceNo" label="Invoice No">
-                <Input
-                  id="edit-invoiceNo"
-                  value={editingEntry.invoiceNo}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, invoiceNo: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-unloadBy" label="Unload By">
-                {editingEntry.rawMaterialName === "Cement" || editingEntry.rawMaterialName === "Sand" ? (
-                  <Select
-                    id="edit-unloadBy"
-                    value={editingEntry.unloadBy}
-                    onChange={(event) => updateEditingEntry({ unloadBy: event.target.value })}
-                  >
-                    <option value="">Select person</option>
-                    {unloadByOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                ) : (
+                <Field htmlFor="edit-quantityPurchased" label="Quantity Purchased">
                   <Input
-                    id="edit-unloadBy"
-                    value={editingEntry.unloadBy}
-                    onChange={(event) => updateEditingEntry({ unloadBy: event.target.value })}
+                    id="edit-quantityPurchased"
+                    type="number"
+                    value={editingEntry.quantityPurchased}
+                    onChange={(event) =>
+                      setEditingEntry((current) =>
+                        current ? { ...current, quantityPurchased: event.target.value } : current,
+                      )
+                    }
                   />
-                )}
-              </Field>
+                </Field>
+                <Field htmlFor="edit-supplierName" label="Supplier Name">
+                  <Input
+                    id="edit-supplierName"
+                    value={editingEntry.supplierName}
+                    onChange={(event) =>
+                      setEditingEntry((current) =>
+                        current ? { ...current, supplierName: event.target.value } : current,
+                      )
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-invoiceNo" label="Invoice No">
+                  <Input
+                    id="edit-invoiceNo"
+                    value={editingEntry.invoiceNo}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, invoiceNo: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-unloadBy" label="Unload By">
+                  {editingEntry.rawMaterialName === "Cement" || editingEntry.rawMaterialName === "Sand" ? (
+                    <Select
+                      id="edit-unloadBy"
+                      value={editingEntry.unloadBy}
+                      onChange={(event) => updateEditingEntry({ unloadBy: event.target.value })}
+                    >
+                      <option value="">Select person</option>
+                      {unloadByOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <Input
+                      id="edit-unloadBy"
+                      value={editingEntry.unloadBy}
+                      onChange={(event) => updateEditingEntry({ unloadBy: event.target.value })}
+                    />
+                  )}
+                </Field>
               </div>
             </div>
 
@@ -800,37 +800,37 @@ export function PurchaseEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Attachment and remarks for this purchase record.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-              <Field htmlFor="edit-attachFile" label="Attach File">
-                <div className="space-y-2">
-                  <Input
-                    ref={editFileInputRef}
-                    id="edit-attachFile"
-                    accept=".jpg,.jpeg,.png,.webp,.pdf"
-                    type="file"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0] ?? null;
-                      setSelectedEditFile(file);
-                      updateEditingEntry({
-                        attachFileName: file?.name || editingEntry.attachFileName,
-                      });
-                    }}
+                <Field htmlFor="edit-attachFile" label="Attach File">
+                  <div className="space-y-2">
+                    <Input
+                      ref={editFileInputRef}
+                      id="edit-attachFile"
+                      accept=".jpg,.jpeg,.png,.webp,.pdf"
+                      type="file"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        setSelectedEditFile(file);
+                        updateEditingEntry({
+                          attachFileName: file?.name || editingEntry.attachFileName,
+                        });
+                      }}
+                    />
+                    {editingEntry.attachFileName ? (
+                      <p className="break-all text-xs text-muted-foreground">
+                        Current file: {editingEntry.attachFileName}
+                      </p>
+                    ) : null}
+                  </div>
+                </Field>
+                <Field htmlFor="edit-remarks" label="Remarks">
+                  <Textarea
+                    id="edit-remarks"
+                    value={editingEntry.remarks}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, remarks: event.target.value } : current)
+                    }
                   />
-                  {editingEntry.attachFileName ? (
-                    <p className="break-all text-xs text-muted-foreground">
-                      Current file: {editingEntry.attachFileName}
-                    </p>
-                  ) : null}
-                </div>
-              </Field>
-              <Field htmlFor="edit-remarks" label="Remarks">
-                <Textarea
-                  id="edit-remarks"
-                  value={editingEntry.remarks}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, remarks: event.target.value } : current)
-                  }
-                />
-              </Field>
+                </Field>
               </div>
             </div>
 
@@ -855,12 +855,12 @@ export function PurchaseEntriesPage() {
             </p>
             <CardTitle className="mt-2">Saved entries</CardTitle>
             <CardDescription>
-            {isLoading
-              ? "Loading purchase entries from sheet..."
-              : sortedEntries.length === 0
-              ? "No purchase entries have been saved yet."
-              : `${sortedEntries.length} purchase entries available.`}
-          </CardDescription>
+              {isLoading
+                ? "Loading purchase entries from sheet..."
+                : sortedEntries.length === 0
+                  ? "No purchase entries have been saved yet."
+                  : `${sortedEntries.length} purchase entries available.`}
+            </CardDescription>
           </div>
           <div className="rounded-xl border border-slate-200 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
             {isLoading ? "Loading..." : `${sortedEntries.length} total`}
@@ -868,14 +868,14 @@ export function PurchaseEntriesPage() {
         </CardHeader>
         <CardContent className="p-5">
           {loadError ? (
-                <div className="rounded-md border border-dashed p-4 text-sm text-destructive">
-                  {loadError}
-                </div>
-              ) : isLoading ? (
-                <div className="flex justify-center rounded-md border border-dashed p-6">
-                  <LoadingLoader />
-                </div>
-              ) : sortedEntries.length === 0 ? (
+            <div className="rounded-md border border-dashed p-4 text-sm text-destructive">
+              {loadError}
+            </div>
+          ) : isLoading ? (
+            <div className="flex justify-center rounded-md border border-dashed p-6">
+              <LoadingLoader />
+            </div>
+          ) : sortedEntries.length === 0 ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
               Add a purchase entry first, then manage it here.
             </div>
@@ -910,6 +910,10 @@ export function PurchaseEntriesPage() {
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Time</p>
                           <p className="mt-1">{entry.time || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Entry By</p>
+                          <p className="mt-1">{entry.user || "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Quantity</p>
@@ -954,6 +958,7 @@ export function PurchaseEntriesPage() {
                       <TableHead className="whitespace-nowrap text-center" title="Invoice">Invoice</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Unload By">Unload By</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Attachment">Attachment</TableHead>
+                      <TableHead className="whitespace-nowrap text-center" title="Entry By">Entry By</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Remarks">Remarks</TableHead>
                       <TableHead className="w-[120px] whitespace-nowrap text-center" title="Actions">Actions</TableHead>
                     </TableRow>
@@ -984,6 +989,9 @@ export function PurchaseEntriesPage() {
                         </TableCell>
                         <TableCell className="min-w-[150px] whitespace-nowrap" title={entry.attachFileName || "No file"}>
                           {renderAttachmentActions(entry.attachFile, entry.attachFileId, entry.attachFileName)}
+                        </TableCell>
+                        <TableCell className="max-w-[180px] truncate whitespace-nowrap" title={entry.user || "-"}>
+                          {entry.user || "-"}
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate whitespace-nowrap" title={entry.remarks || "-"}>
                           {entry.remarks || "-"}

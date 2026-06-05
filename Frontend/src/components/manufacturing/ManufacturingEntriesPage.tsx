@@ -750,6 +750,10 @@ export function ManufacturingEntriesPage() {
                           <p className="mt-1">{entry.productionDate || "-"}</p>
                         </div>
                         <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Entry By</p>
+                          <p className="mt-1">{entry.user || "-"}</p>
+                        </div>
+                        <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Batch Type</p>
                           <p className="mt-1">{entry.tphBatch || "-"}</p>
                         </div>
@@ -797,6 +801,7 @@ export function ManufacturingEntriesPage() {
                       <TableHead className="whitespace-nowrap text-center" title="Total Quantity">Total Quantity</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Wastage">Wastage</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Raw Materials">Raw Materials</TableHead>
+                      <TableHead className="whitespace-nowrap text-center" title="Entry By">Entry By</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Remarks">Remarks</TableHead>
                       <TableHead className="w-[120px] whitespace-nowrap text-center" title="Actions">Actions</TableHead>
                     </TableRow>
@@ -816,6 +821,7 @@ export function ManufacturingEntriesPage() {
                         <TableCell className="max-w-[220px] truncate whitespace-nowrap" title={[entry.rawMaterialNames, entry.rawMaterialQty, entry.rawMaterialUnits].filter(Boolean).join(" / ") || "-"}>
                           {[entry.rawMaterialNames, entry.rawMaterialQty, entry.rawMaterialUnits].filter(Boolean).join(" / ") || "-"}
                         </TableCell>
+                        <TableCell className="max-w-[220px] truncate whitespace-nowrap" title={entry.user || "-"}>{entry.user || "-"}</TableCell>
                         <TableCell className="max-w-[220px] truncate whitespace-nowrap" title={entry.remarks || "-"}>{entry.remarks || "-"}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center gap-2">

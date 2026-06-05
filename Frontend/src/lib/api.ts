@@ -12,6 +12,7 @@ type LoginPayload = {
 export type PurchaseEntry = {
   id: string;
   serialNo: string;
+  user: string;
   date: string;
   time: string;
   rawMaterialName: string;
@@ -45,6 +46,7 @@ export type ManufacturingProductItem = {
 export type ManufacturingEntry = {
   id: string;
   productionDate: string;
+  user: string;
   tphBatch: string;
   batchNo: string;
   productCategory: string;
@@ -79,6 +81,7 @@ export type DispatchEntry = {
   id: string;
   date: string;
   time: string;
+  user: string;
   challanNo: string;
   challanName: string;
   vehicleNo: string;
@@ -128,7 +131,7 @@ async function requestApi(endpoint: string, options: RequestInit = {}, fallbackM
 
   const responseText = await response.text();
   const responseData = responseText ? safeParseJson(responseText) : null;
-  
+
   if (!response.ok || responseData?.success === false || responseData?.status === "error") {
     throw new Error(getApiErrorMessage(responseData, responseText || fallbackMessage));
   }
@@ -141,13 +144,19 @@ export async function submitEntry(
   payload: FormPayload,
   file?: File | null,
 ) {
-  // Only purchase needs FormData because purchase has attachFile
+  const user = window.localStorage.getItem("userName") || "User";
+
+  const payloadWithUser = {
+    ...payload,
+    user,
+  };
+
   if (formType !== "purchase") {
     return requestApi(
       endpointByFormType[formType],
       {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadWithUser),
       },
       "Unable to save entry.",
     );
@@ -155,7 +164,7 @@ export async function submitEntry(
 
   const formData = new FormData();
 
-  Object.entries(payload).forEach(([key, value]) => {
+  Object.entries(payloadWithUser).forEach(([key, value]) => {
     formData.append(key, String(value ?? ""));
   });
 
@@ -238,7 +247,7 @@ export async function fetchWastageQty(params: {
     tphBatch: params.tphBatch.trim(),
     productCategory: params.productCategory.trim(),
     finishedProductName: params.finishedProductName.trim(),
-  }); 
+  });
 
   const responseData = await requestApi(`/api/wastage?${query.toString()}`, {}, "Unable to fetch wastage quantity.");
   const data = typeof responseData?.data === "object" && responseData?.data !== null
@@ -280,6 +289,7 @@ function normalizePurchaseEntry(entry: unknown): PurchaseEntry {
 
   return {
     id: stringifyValue(record.id ?? record._id),
+    user: stringifyValue(record.user ?? record.userName),
     serialNo: stringifyValue(record.serialNo ?? record.serial_no),
     date: normalizeDate(record.date),
     time: normalizeTime(record.time),
@@ -314,21 +324,22 @@ function normalizeManufacturingEntry(entry: unknown): ManufacturingEntry {
     : [];
   const productItems = productItemsSource.length > 0
     ? productItemsSource.map((item) => ({
-        token: stringifyValue(item.token),
-        bagSize: stringifyValue(item.bagSize),
-        totalBagsProduced: stringifyValue(item.totalBagsProduced),
-      }))
+      token: stringifyValue(item.token),
+      bagSize: stringifyValue(item.bagSize),
+      totalBagsProduced: stringifyValue(item.totalBagsProduced),
+    }))
     : [{
-        token: stringifyValue(record.token),
-        bagSize: stringifyValue(record.bagSize),
-        totalBagsProduced: stringifyValue(record.totalBagsProduced),
-      }].filter((item) => item.token || item.bagSize || item.totalBagsProduced);
+      token: stringifyValue(record.token),
+      bagSize: stringifyValue(record.bagSize),
+      totalBagsProduced: stringifyValue(record.totalBagsProduced),
+    }].filter((item) => item.token || item.bagSize || item.totalBagsProduced);
   const totalBagsProduced = productItems.length > 0
     ? String(productItems.reduce((sum, item) => sum + (Number(item.totalBagsProduced) || 0), 0))
     : stringifyValue(record.totalBagsProduced);
 
   return {
     id: stringifyValue(record.id ?? record._id),
+    user: stringifyValue(record.user ?? record.userName),
     productionDate: normalizeDate(record.productionDate ?? record.date),
     tphBatch: stringifyValue(record.tphBatch),
     batchNo: stringifyValue(record.batchNo),
@@ -368,6 +379,7 @@ function normalizeDispatchEntry(entry: unknown): DispatchEntry {
   const record = typeof entry === "object" && entry !== null ? (entry as Record<string, unknown>) : {};
   return {
     id: stringifyValue(record.id ?? record._id),
+    user: stringifyValue(record.user ?? record.userName),
     date: normalizeDate(record.date),
     time: normalizeTime(record.time),
     challanNo: stringifyValue(record.challanNo),

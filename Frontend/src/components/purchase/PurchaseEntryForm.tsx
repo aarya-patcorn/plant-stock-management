@@ -13,7 +13,7 @@ import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import SubmitLoader from "../ui/SubmitLoader";
 
 const unitOptions = ["kg", "ltr", "mt", "pcs", "bags", "ml", "nos", "others"];
-const materialOptions = ["Cement", "Sand", "Chemical", "Packaging", "Spares", "Other"];
+const materialOptions = ["Cement", "Sand", "Chemical", "Packaging", "Spares"];
 const epoxySandColorOptions = [
   "White",
   "Black",
@@ -128,18 +128,6 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
           "Pigments",
           "Byk",
           "Benton",
-          "White Colour Sand",
-          "Black Colour Sand",
-          "Ivory Colour Sand",
-          "Blue Colour Sand",
-          "Slate Grey Colour Sand",
-          "Light Grey Colour Sand",
-          "Dark Grey Colour Sand",
-          "Coffee Brown Colour Sand",
-          "Jaisalmer Colour Sand",
-          "Sabal Colour Sand",
-          "Savetrane Colour Sand",
-          "Terracotta Colour Sand",
         ],
       },
       "Tile Cleaner": {
@@ -174,7 +162,7 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
 
   Packaging: {
     label: "Packaging Type",
-    options: ["Bulk", "FG"],
+    options: ["FG"],
 
     children: {
       FG: {
@@ -197,10 +185,6 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
                 options: ["20kg", "50kg", "Coupon"],
               },
               K60: {
-                label: "Packaging Size",
-                options: ["20kg", "50kg", "Coupon"],
-              },
-              K70: {
                 label: "Packaging Size",
                 options: ["20kg", "50kg", "Coupon"],
               },
@@ -249,7 +233,7 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
 
           "Tile Cleaner": {
             label: "Packaging Material",
-            options: ["Bucket", "Sticker", "Seal"],
+            options: ["Can", "Sticker", "Seal"],
           },
         },
       },
@@ -429,9 +413,9 @@ export function PurchaseEntryForm() {
     formData.rawMaterialName === "Packaging" &&
     formData.packagingType === "FG" &&
     formData.level2 === "Tile Cleaner" &&
-    formData.level3 === "Bucket";
+    formData.level3 === "Can";
   const packagingBagOptions =
-    formData.level2 === "Bondure" ? ["Bondure"] : ["K50", "K60", "K70", "K80", "K90", "Kamdhenu X"];
+    formData.level2 === "Bondure" ? ["Bondure"] : ["K50", "K60", "K80", "K90", "Kamdhenu X"];
   const bucketSizeOptions = ["1L", "5L"];
   const shouldShowAutoBagQuantityField =
     (formData.rawMaterialName === "Sand" &&
@@ -447,7 +431,7 @@ export function PurchaseEntryForm() {
           ? 50
           : 0
       : formData.rawMaterialName === "Cement" && formData.packagingType === "White Cement"
-        ? 40
+        ? 50
         : 0;
   const isPackagingTileAdhesiveFlow =
     formData.rawMaterialName === "Packaging" &&
@@ -745,7 +729,7 @@ export function PurchaseEntryForm() {
     }
 
     if (shouldShowTileCleanerBucketSizeField && !formData.bucketSize) {
-      return "Bucket size is required.";
+      return "Can size is required.";
     }
 
     if (shouldShowEpoxySandColorField && !formData.colorOfSandEpoxy) {
@@ -901,7 +885,7 @@ export function PurchaseEntryForm() {
                     Select Raw Material
                   </option>
 
-                  {getOptionsWithOther(materialOptions).map((option) => (
+                  {(materialOptions).map((option) => (
                     <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
                       {option}
                     </option>
@@ -929,7 +913,7 @@ export function PurchaseEntryForm() {
                       Select {config.label}
                     </option>
 
-                    {getOptionsWithOther(config.options).map((option) => (
+                    {(config.options).map((option) => (
                       <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
                         {option}
                       </option>
@@ -966,7 +950,7 @@ export function PurchaseEntryForm() {
                       Select {level2Config.label}
                     </option>
 
-                    {getOptionsWithOther(level2Config.options).map((option) => (
+                    {(level2Config.options).map((option) => (
                       <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
                         {option}
                       </option>
@@ -1006,7 +990,7 @@ export function PurchaseEntryForm() {
                       Select Packaging Bag
                     </option>
 
-                    {getOptionsWithOther(packagingBagOptions).map((option) => (
+                    {(packagingBagOptions).map((option) => (
                       <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
                         {option}
                       </option>
@@ -1060,7 +1044,7 @@ export function PurchaseEntryForm() {
               {renderOtherInput("level3", level3Config?.label ?? "Level 3", "Enter value")}
 
               {shouldShowTileCleanerBucketSizeField && (
-                <Field htmlFor="bucketSize" label="Bucket Size">
+                <Field htmlFor="bucketSize" label="Can Size">
                   <Select
                     id="bucketSize"
                     name="bucketSize"
@@ -1068,9 +1052,9 @@ export function PurchaseEntryForm() {
                     onChange={(e) => handleSelectChange("bucketSize", e.target.value)}
                   >
                     <option value="" disabled>
-                      Select Bucket Size
+                      Select Can Size
                     </option>
-                    {getOptionsWithOther(bucketSizeOptions).map((option) => (
+                    {(bucketSizeOptions).map((option) => (
                       <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
                         {option}
                       </option>
@@ -1078,7 +1062,7 @@ export function PurchaseEntryForm() {
                   </Select>
                 </Field>
               )}
-              {renderOtherInput("bucketSize", "Bucket Size", "Enter bucket size")}
+              {renderOtherInput("bucketSize", "Can Size", "Enter can size")}
 
               {shouldShowEpoxySandColorField && (
                 <Field htmlFor="color-of-sand-epoxy" label="Color Of Sand (Epoxy)">
@@ -1198,6 +1182,23 @@ export function PurchaseEntryForm() {
                     <option value="Anand">Sujeet</option>
                     <option value="Chandrashekhar">Thailesh</option>
                     <option value="Sushil">Vashu</option>
+                    <option value={OTHER_OPTION}>Other</option>
+                  </select>
+
+                ) : formData.rawMaterialName === "Chemical" ? (
+
+                  /* Chemical */
+
+                  <select
+                    id="unload-by"
+                    name="unloadBy"
+                    className="w-full h-10 border rounded-md px-3"
+                    value={getSelectValue("unloadBy", formData.unloadBy)}
+                    onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
+                  >
+                    <option value="">Select Person</option>
+                    <option value="Anand">Thalesh</option>
+                    <option value="Chandrashekhar">Sujeet</option>
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
 

@@ -60,6 +60,7 @@ const normalizePurchaseData = (data, existingPurchase = null, uploadedAttachment
   return {
     date: data.date || "",
     time: data.time || "",
+    user: data.user || "",
     rawMaterialName: data.rawMaterialName || "",
     packagingType: data.packagingType || "",
     level2: data.level2 || "",

@@ -4,6 +4,7 @@ const purchaseEntrySchema = new mongoose.Schema(
   {
     date: String,
     time: String,
+    user: String,
     rawMaterialName: String,
     packagingType: String,
     level2: String,

@@ -67,6 +67,7 @@ const normalizeRawMaterials = (rawMaterials) =>
 
 const normalizeManufacturingData = (data, fallbackRawMaterials) => ({
   productionDate: data.productionDate || "",
+  user: data.user || "",
   tphBatch: data.tphBatch || "",
   batchNo: data.batchNo || "",
 
@@ -453,11 +454,33 @@ const updateWastageStock = async (data) => {
     }
   );
 };
-
 const createManufacturingEntry = async (req, res) => {
   try {
     console.log("req.body:", req.body);
+
     const data = normalizeManufacturingData(req.body);
+
+    const trimmedBatchNo = String(data.batchNo || "").trim();
+
+    if (!trimmedBatchNo) {
+      return res.status(400).json({
+        success: false,
+        message: "Batch No. is required.",
+      });
+    }
+
+    const existingBatch = await ManufacturingEntry.findOne({
+      batchNo: { $regex: `^${trimmedBatchNo}$`, $options: "i" },
+    });
+
+    if (existingBatch) {
+      return res.status(400).json({
+        success: false,
+        message: `Batch No. ${trimmedBatchNo} already exists. Please enter a unique Batch No.`,
+      });
+    }
+
+    data.batchNo = trimmedBatchNo;
 
     const inventoryItemsToReduce = [
       ...data.rawMaterials,
@@ -471,9 +494,7 @@ const createManufacturingEntry = async (req, res) => {
     await applyProductMaterialLogDeltas(null, data);
 
     const productionWastageQty = Number(data.wastageQty || 0);
-    const packedWastageQty = Number(data.packedWastage || 0);
 
-    // Add only new production wastage
     if (productionWastageQty > 0) {
       await updateWastageStock(data);
     }
@@ -484,7 +505,15 @@ const createManufacturingEntry = async (req, res) => {
       data: entry,
     });
   } catch (error) {
-    console.error(error.stack); // ← add this
+    console.error(error.stack);
+
+    if (error.code === 11000 && error.keyPattern?.batchNo) {
+      return res.status(400).json({
+        success: false,
+        message: "Batch No. already exists. Please enter a unique Batch No.",
+      });
+    }
+
     res.status(400).json({
       success: false,
       message: error.message,

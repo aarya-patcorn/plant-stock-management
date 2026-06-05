@@ -67,6 +67,7 @@ const reduceProductMaterialStock = async (dispatchItems) => {
 const normalizeDispatchData = (data) => ({
   date: data.date || "",
   time: data.time || "",
+  user: data.user || "",
   challanNo: data.challanNo || "",
   challanName: data.challanName || "",
   vehicleNo: data.vehicleNo || "",

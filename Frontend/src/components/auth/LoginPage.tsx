@@ -55,6 +55,8 @@ export function LoginPage() {
       }
 
       window.localStorage.setItem(AUTH_STORAGE_KEY, formData.userId);
+      window.localStorage.setItem("userName", response.data.userName);
+
       toast.success("Login successful.");
       navigate("/", { replace: true });
     } catch (error) {
