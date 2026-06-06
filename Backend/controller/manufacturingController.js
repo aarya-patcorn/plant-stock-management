@@ -134,6 +134,64 @@ const getProductionMonthRange = (productionDateValue) => {
   };
 };
 
+const escapeRegex = (value) =>
+  String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const getUniqueProductBagSizes = (productItems = []) =>
+  Array.from(
+    new Set(
+      (Array.isArray(productItems) ? productItems : [])
+        .map((item) => String(item?.bagSize || "").trim())
+        .filter(Boolean),
+    ),
+  );
+
+const findExistingBatchForMonth = async (data, trimmedBatchNo, excludedId) => {
+  const productionMonthRange = getProductionMonthRange(data.productionDate);
+
+  if (!productionMonthRange) {
+    return {
+      error: "Production date is invalid.",
+    };
+  }
+
+  const bagSizes = getUniqueProductBagSizes(data.productItems);
+  const finishedProductName = String(
+    data.finishedProductName || data.productName || "",
+  ).trim();
+  const color = String(data.color || "").trim();
+
+  for (const bagSize of bagSizes) {
+    const existingBatch = await ManufacturingEntry.findOne({
+      ...(excludedId ? { _id: { $ne: excludedId } } : {}),
+      batchNo: { $regex: `^${escapeRegex(trimmedBatchNo)}$`, $options: "i" },
+      productCategory: data.productCategory || "",
+      color,
+      productionDate: {
+        $gte: productionMonthRange.monthStart,
+        $lt: productionMonthRange.monthEnd,
+      },
+      $or: [
+        { finishedProductName },
+        { productName: finishedProductName },
+      ],
+      productItems: {
+        $elemMatch: {
+          bagSize,
+        },
+      },
+    });
+
+    if (existingBatch) {
+      return {
+        error: `Batch No. ${trimmedBatchNo} already exists for ${data.productCategory} / ${finishedProductName} / ${color} / ${bagSize} in this month.`,
+      };
+    }
+  }
+
+  return null;
+};
+
 const buildRawMaterialLabel = (item) =>
   [
     item.rawMaterialName,
@@ -216,14 +274,16 @@ const buildPackagingItems = (data) => {
 
     if (qty <= 0) return;
 
-    const itemToken = String(productItem.token || "").trim();
+    const tokenValue = String(productItem.token || "").trim().toLowerCase();
     const isCoupon =
-      itemToken.toLowerCase() === "coupon" ||
-      itemToken.toLowerCase() === "coupan";
-
-    const actualToken = isCoupon
-      ? data.finishedProductName || ""
-      : itemToken;
+      tokenValue === "coupon" ||
+      tokenValue === "coupan";
+    const isNonCoupon =
+      tokenValue === "non-coupon" ||
+      tokenValue === "non-coupan";
+    const actualToken = String(
+      data.finishedProductName || data.productName || "",
+    ).trim();
 
     if (actualToken && productItem.bagSize) {
       items.push({
@@ -237,7 +297,7 @@ const buildPackagingItems = (data) => {
         errorInsufficient: "Insufficient packaging bag stock",
       });
 
-      if (isCoupon) {
+      if (isCoupon && !isNonCoupon) {
         items.push({
           level2: data.productCategory || "",
           level3: productItem.bagSize,
@@ -717,27 +777,15 @@ const createManufacturingEntry = async (req, res) => {
       });
     }
 
-    const productionMonthRange = getProductionMonthRange(data.productionDate);
+    const duplicateBatchCheck = await findExistingBatchForMonth(
+      data,
+      trimmedBatchNo,
+    );
 
-    if (!productionMonthRange) {
+    if (duplicateBatchCheck?.error) {
       return res.status(400).json({
         success: false,
-        message: "Production date is invalid.",
-      });
-    }
-
-    const existingBatch = await ManufacturingEntry.findOne({
-      batchNo: { $regex: `^${trimmedBatchNo}$`, $options: "i" },
-      productionDate: {
-        $gte: productionMonthRange.monthStart,
-        $lt: productionMonthRange.monthEnd,
-      },
-    });
-
-    if (existingBatch) {
-      return res.status(400).json({
-        success: false,
-        message: `Batch No. ${trimmedBatchNo} already exists for this month.`,
+        message: duplicateBatchCheck.error,
       });
     }
 
@@ -799,26 +847,14 @@ const updateManufacturingEntry = async (req, res) => {
       return res.status(400).json({ success: false, message: "Batch No. is required." });
     }
 
-    const productionMonthRange = getProductionMonthRange(data.productionDate);
+    const duplicateBatchCheck = await findExistingBatchForMonth(
+      data,
+      trimmedBatchNo,
+      req.params.id,
+    );
 
-    if (!productionMonthRange) {
-      return res.status(400).json({ success: false, message: "Production date is invalid." });
-    }
-
-    const existingBatch = await ManufacturingEntry.findOne({
-      _id: { $ne: req.params.id },
-      batchNo: { $regex: `^${trimmedBatchNo}$`, $options: "i" },
-      productionDate: {
-        $gte: productionMonthRange.monthStart,
-        $lt: productionMonthRange.monthEnd,
-      },
-    });
-
-    if (existingBatch) {
-      return res.status(400).json({
-        success: false,
-        message: `Batch No. ${trimmedBatchNo} already exists for this month.`,
-      });
+    if (duplicateBatchCheck?.error) {
+      return res.status(400).json({ success: false, message: duplicateBatchCheck.error });
     }
 
     data.batchNo = trimmedBatchNo;

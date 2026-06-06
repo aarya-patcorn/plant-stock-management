@@ -212,8 +212,9 @@ export async function submitEntry(
       "Unable to save entry.",
     );
   }
-
-  window.location.reload();
+  setTimeout(() => {
+    window.location.reload();
+  }, 3000);
 
   return response;
 }

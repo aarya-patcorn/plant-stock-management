@@ -229,6 +229,7 @@ function RecentList({
 
 export function DashboardPage() {
   const STOCK_PAGE_SIZE = 5;
+  const ITEMS_PER_PAGE = 6;
   const initialReportRange = useMemo(() => getCurrentMonthDateRange(), []);
   const [data, setData] = useState<DashboardData>({
     dispatchEntries: [],
@@ -247,6 +248,7 @@ export function DashboardPage() {
   });
   const [activeReportCategory, setActiveReportCategory] = useState("");
   const [stockPage, setStockPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [reportsLoading, setReportsLoading] = useState(true);
   const [reportsError, setReportsError] = useState("");
 
@@ -465,6 +467,16 @@ export function DashboardPage() {
     [sortedInventoryEntries],
   );
 
+  const totalPages = Math.ceil(lowStockAlerts.length / ITEMS_PER_PAGE);
+  const paginatedAlerts = lowStockAlerts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [lowStockAlerts]);
+
   const activeReportSummary = useMemo<DashboardReportCategory | null>(
     () =>
       reportsData.productionByCategory.find((item) => item.productCategory === activeReportCategory) || null,
@@ -571,28 +583,54 @@ export function DashboardPage() {
               No low-stock inventory alerts right now.
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {lowStockAlerts.map((alert) => (
-                <Card className="overflow-hidden border-0 bg-white/90 shadow-[0_16px_34px_rgba(15,23,42,0.08)]" key={alert.id}>
-                  <CardContent className="relative p-5">
-                    <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#b91c1c_0%,#ef4444_60%,#fca5a5_100%)]" />
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground" title={alert.label}>
-                          {alert.label}
-                        </p>
-                        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          Current Stock
-                        </p>
-                        <p className="mt-1 text-2xl font-bold text-destructive">{formatCount(alert.value)}</p>
-                        <p className="mt-2 text-sm text-muted-foreground">Alert threshold: {alert.thresholdLabel}</p>
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {paginatedAlerts.map((alert) => (
+                  <Card className="overflow-hidden border-0 bg-white/90 shadow-[0_16px_34px_rgba(15,23,42,0.08)]" key={alert.id}>
+                    <CardContent className="relative p-5">
+                      <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#b91c1c_0%,#ef4444_60%,#fca5a5_100%)]" />
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground" title={alert.label}>
+                            {alert.label}
+                          </p>
+                          <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            Current Stock
+                          </p>
+                          <p className="mt-1 text-2xl font-bold text-destructive">{formatCount(alert.value)}</p>
+                          <p className="mt-2 text-sm text-muted-foreground">Alert threshold: {alert.thresholdLabel}</p>
+                        </div>
+                        <Badge variant="destructive">{alert.unitLabel}</Badge>
                       </div>
-                      <Badge variant="destructive">{alert.unitLabel}</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {totalPages > 1 ? (
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  <Button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((page) => page - 1)}
+                  >
+                    Previous
+                  </Button>
+
+                  <span>
+                    Page {currentPage} of {totalPages || 1}
+                  </span>
+
+                  <Button
+                    type="button"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((page) => page + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              ) : null}
+            </>
           )}
         </CardContent>
       </Card>

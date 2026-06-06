@@ -32,17 +32,25 @@ app.use("/api/wastage", wastageRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/plant-stock-management";
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error("MONGODB_URI is missing in environment variables.");
+  process.exit(1);
+}
 
 mongoose
-  .connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000 })
+  .connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 10000,
+  })
   .then(() => {
     console.log("MongoDB connected");
-    app.listen(PORT, "0.0.0.0", () => {
+
+    app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
   .catch((error) => {
-    console.error("MongoDB error:", error);
+    console.error("MongoDB error:", error.message);
     process.exit(1);
   });
