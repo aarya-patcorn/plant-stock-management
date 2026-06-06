@@ -453,10 +453,6 @@ export function ProductDepartureForm() {
       return `${prefix}Product name is required.`;
     }
 
-    if (!product.token) {
-      return `${prefix}Token is required.`;
-    }
-
     if (!isTileCleanerProduct && !product.productColor) {
       return `${prefix}Product color is required.`;
     }
@@ -741,7 +737,7 @@ export function ProductDepartureForm() {
                   onChange={(e) => updateTextField("dispatchSite", e.target.value)}
                 />
               </Field>
-              <Field htmlFor="today-vehicle-no" label="Today Vehicle No.">
+              <Field htmlFor="today-vehicle-no" label="Today Vehicle Count">
                 <Input
                   id="today-vehicle-no"
                   min="1"
@@ -774,12 +770,11 @@ export function ProductDepartureForm() {
                   <option value="" disabled>
                     {isLoadingProducts ? "Loading categories..." : "Select category"}
                   </option>
-                  {getOptionsWithOther(productCategories).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>{option}</option>
+                  {(productCategories).map((option) => (
+                    <option key={option} value={option}>{option}</option>
                   ))}
                 </Select>
               </Field>
-              {renderOtherInput("productCategory", "Product Category", "Enter product category")}
 
               <Field htmlFor="product-name" label="Product Name">
                 <Select
@@ -799,32 +794,32 @@ export function ProductDepartureForm() {
                   <option value="" disabled>
                     Select product
                   </option>
-                  {getOptionsWithOther(productNames).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>{option}</option>
+                  {(productNames).map((option) => (
+                    <option key={option} value={option}>{option}</option>
                   ))}
                 </Select>
               </Field>
-              {renderOtherInput("productName", "Product Name", "Enter product name")}
 
-              <Field htmlFor="token" label="Token">
-                <Select
-                  id="token"
-                  name="token"
-                  value={getSelectValue("token", formData.token)}
-                  onChange={(e) => handleSelectChange("token", e.target.value)}
-                  disabled={!formData.productName}
-                >
-                  <option value="" disabled>
-                    {!formData.productName ? "Select product first" : "Select token type"}
-                  </option>
-                  {getOptionsWithOther(tokenOptions).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
-                      {option}
+              {formData.productCategory === "Tile Adhesive" && (
+                <Field htmlFor="token" label="Token">
+                  <Select
+                    id="token"
+                    name="token"
+                    value={getSelectValue("token", formData.token)}
+                    onChange={(e) => handleSelectChange("token", e.target.value)}
+                    disabled={!formData.productName}
+                  >
+                    <option value="" disabled>
+                      {!formData.productName ? "Select product first" : "Select token type"}
                     </option>
-                  ))}
-                </Select>
-              </Field>
-              {renderOtherInput("token", "Token", "Enter token")}
+                    {tokenOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
 
 
               <Field htmlFor="product-color" label="Product Color">
@@ -840,13 +835,11 @@ export function ProductDepartureForm() {
                   <option value="" disabled>
                     {isTileCleanerSelected ? "Not applicable for Tile Cleaner" : "Select color"}
                   </option>
-                  {getOptionsWithOther(productColors).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>{option}</option>
+                  {(productColors).map((option) => (
+                    <option key={option} value={option}>{option}</option>
                   ))}
                 </Select>
               </Field>
-              {!isTileCleanerSelected &&
-                renderOtherInput("productColor", "Product Color", "Enter product color")}
 
               <Field htmlFor="bag-size" label="Bag Size">
                 <Select
@@ -859,12 +852,11 @@ export function ProductDepartureForm() {
                   <option value="" disabled>
                     Select bag size
                   </option>
-                  {getOptionsWithOther(bagSizes).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>{option}</option>
+                  {(bagSizes).map((option) => (
+                    <option key={option} value={option}>{option}</option>
                   ))}
                 </Select>
               </Field>
-              {renderOtherInput("bagSize", "Bag Size", "Enter bag size")}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">

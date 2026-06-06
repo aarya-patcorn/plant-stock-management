@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  BarChart3,
   Factory,
   LayoutDashboard,
   LogOut,
@@ -22,6 +23,7 @@ import { ManufacturingEntryForm } from "@/components/manufacturing/Manufacturing
 import { ManufacturingEntriesPage } from "@/components/manufacturing/ManufacturingEntriesPage";
 import { PurchaseEntryForm } from "@/components/purchase/PurchaseEntryForm";
 import { PurchaseEntriesPage } from "@/components/purchase/PurchaseEntriesPage";
+import { ReportsPage } from "@/components/reports/ReportsPage";
 import { Button } from "@/components/ui/button";
 import newLogo from "@/assets/new_logo.png";
 import { AUTH_STORAGE_KEY } from "@/lib/auth";
@@ -31,6 +33,7 @@ const navItems: Array<{ icon: LucideIcon; label: string; path: string }> = [
   { icon: PackagePlus, label: "Purchase Entry", path: "/purchase-entry" },
   { icon: Factory, label: "Production", path: "/manufacturing-entry" },
   { icon: SendToBack, label: "Dispatch", path: "/product-departure" },
+  { icon: BarChart3, label: "Reports", path: "/reports" },
 ];
 
 function PlaceholderPage({ title }: { title: string }) {
@@ -138,6 +141,7 @@ function AppShellLayout() {
     }),
   );
   const isPurchasePage = location.pathname === "/purchase-entry";
+  const isReportsPage = location.pathname === "/reports";
   const isPurchaseEntriesPage = location.pathname === "/purchase-entries";
   const isInventoryEntriesPage = location.pathname === "/inventory-entries";
   const isProductionMaterialLogsPage = location.pathname === "/production-material-logs";
@@ -147,6 +151,8 @@ function AppShellLayout() {
   const isDispatchEntriesPage = location.pathname === "/dispatch-entries";
   const pageTitle = isPurchasePage
     ? "Purchase Entry"
+    : isReportsPage
+      ? "Reports"
     : isPurchaseEntriesPage
       ? "Purchase Entries"
       : isInventoryEntriesPage
@@ -268,6 +274,7 @@ function App() {
         <Route element={<PrivateRoute />}>
           <Route element={<AppShellLayout />}>
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
             <Route path="/inventory-entries" element={<InventoryEntriesPage />} />
             <Route path="/production-material-logs" element={<ProductionMaterialLogsPage />} />
             <Route path="/purchase-entry" element={<PurchaseEntryForm />} />

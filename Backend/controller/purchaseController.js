@@ -14,6 +14,11 @@ const compactFilter = (fields) =>
 
 const normalizeText = (value) => String(value || "").trim();
 
+const shouldUseCouponField = (data) =>
+  normalizeText(data?.rawMaterialName) === "Packaging" &&
+  normalizeText(data?.packagingType) === "FG" &&
+  normalizeText(data?.level2) === "Tile Adhesive";
+
 const convertToKg = (quantity, unit) => {
   const qty = parseNumber(quantity);
   const normalizedUnit = normalizeText(unit).toLowerCase();
@@ -67,6 +72,7 @@ const normalizePurchaseData = (data, existingPurchase = null, uploadedAttachment
     level3: data.level3 || "",
     level4: data.level4 || data.packagingBag || data.bucketSize || "",
     packagingBagColor: data.packagingBagColor || data.bagColor || "",
+    coupon: shouldUseCouponField(data) ? normalizeText(data.coupon) : "",
     bucketSize: data.bucketSize || "",
     bagColor: data.bagColor || data.packagingBagColor || "",
     sandEpoxyColor: data.sandEpoxyColor || data.colorOfSandEpoxy || "",
@@ -89,6 +95,7 @@ const buildInventoryFilter = (data) =>
     level3: data.level3 || "",
     level4: data.level4 || "",
     packagingBagColor: data.packagingBagColor || data.bagColor || "",
+    coupon: shouldUseCouponField(data) ? normalizeText(data.coupon) : "",
     bucketSize: data.bucketSize || "",
     bagColor: data.bagColor || data.packagingBagColor || "",
     sandEpoxyColor: data.sandEpoxyColor || "",

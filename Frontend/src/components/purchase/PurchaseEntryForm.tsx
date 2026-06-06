@@ -14,6 +14,7 @@ import SubmitLoader from "../ui/SubmitLoader";
 
 const unitOptions = ["kg", "ltr", "mt", "pcs", "bags", "ml", "nos", "others"];
 const materialOptions = ["Cement", "Sand", "Chemical", "Packaging", "Spares"];
+const packagingItemTypeOptions = ["Bag", "Coupon"];
 const epoxySandColorOptions = [
   "White",
   "Black",
@@ -28,7 +29,7 @@ const epoxySandColorOptions = [
   "Savetrane",
   "Terracotta",
 ];
-const packagingBagColorOptions = ["White", "Grey"];
+
 const MOBILE_RECENT_PURCHASES_PAGE_SIZE = 3;
 const DESKTOP_RECENT_PURCHASES_PAGE_SIZE = 4;
 const OTHER_OPTION = "__other__";
@@ -56,6 +57,7 @@ const initialFormData = {
   level4: "",
   packagingBag: "",
   packagingBagColor: "",
+  coupon: "",
   bucketSize: "",
   colorOfSandEpoxy: "",
   quantityPurchased: "",
@@ -178,27 +180,27 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
         children: {
           "Tile Adhesive": {
             label: "Packaging Size",
-            options: ["20kg", "50kg", "Coupon"],
+            options: ["20kg", "50kg",],
             children: {
               K50: {
                 label: "Packaging Size",
-                options: ["20kg", "50kg", "Coupon"],
+                options: ["20kg", "50kg"],
               },
               K60: {
                 label: "Packaging Size",
-                options: ["20kg", "50kg", "Coupon"],
+                options: ["20kg", "50kg"],
               },
               K80: {
                 label: "Packaging Size",
-                options: ["20kg", "50kg", "Coupon"],
+                options: ["20kg", "50kg"],
               },
               K90: {
                 label: "Packaging Size",
-                options: ["20kg", "50kg", "Coupon"],
+                options: ["20kg", "50kg"],
               },
               "Kamdhenu X": {
                 label: "Packaging Size",
-                options: ["20kg", "50kg", "Coupon"],
+                options: ["20kg", "50kg"],
               },
             },
           },
@@ -215,7 +217,7 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
 
           "Tile Grout": {
             label: "Packaging",
-            options: ["Pouch 1KG"],
+            options: ["Pouch 1KG", "Carton"],
           },
 
           Epoxy: {
@@ -223,6 +225,8 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
             options: [
               "Bucket 1KG",
               "Bucket 5KG",
+              "Hardner 112gm",
+              "Hardner 385gm",
               "Sticker",
               "Sponge",
               "Coloured Sand",
@@ -296,6 +300,7 @@ export function PurchaseEntryForm() {
   const [formData, setFormData] = useState(initialFormData)
   const [otherSelections, setOtherSelections] = useState(initialPurchaseOtherState);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [packagingItemType, setPackagingItemType] = useState("");
   const [sandBagQuantity, setSandBagQuantity] = useState("");
   const [recentPurchases, setRecentPurchases] = useState<PurchaseEntry[]>([]);
   const [recentPurchasesPage, setRecentPurchasesPage] = useState(1);
@@ -317,6 +322,18 @@ export function PurchaseEntryForm() {
 
     return "Decimal values are allowed only for mt unit.";
   }, [formData.quantityPurchased, quantityAllowsDecimal]);
+
+  const packagingBagColorOptions =
+    formData.packagingBag === "K50"
+      ? ["Grey"]
+      : ["White", "Grey"];
+
+  useEffect(() => {
+    if (formData.packagingBag === "K50") {
+      updateField("packagingBagColor", "Grey");
+    }
+  }, [formData.packagingBag]);
+
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -374,6 +391,12 @@ export function PurchaseEntryForm() {
       ? config.children?.[formData.packagingType as keyof typeof config.children]
       : undefined;
   }, [config, formData.packagingType])
+  const cementLevel2Options =
+    formData.rawMaterialName === "Cement" && formData.packagingType === "PPC"
+      ? ["Silo", "Bag"]
+      : formData.rawMaterialName === "Cement" && formData.packagingType === "White Cement"
+        ? ["Bag"]
+        : ["Silo"];
 
   const shouldShowPackagingBagField =
     formData.rawMaterialName === "Packaging" &&
@@ -383,6 +406,13 @@ export function PurchaseEntryForm() {
     formData.rawMaterialName === "Packaging" &&
     formData.packagingType === "FG" &&
     formData.level2 === "Tile Adhesive";
+  const showPackagingItemTypeField =
+    formData.rawMaterialName === "Packaging" &&
+    formData.packagingType === "FG" &&
+    formData.level2 === "Tile Adhesive";
+  const showCouponField =
+    showPackagingItemTypeField &&
+    packagingItemType === "Coupon";
 
   const selectedLevel2Config = useMemo(() => {
     return level2Config && "children" in level2Config
@@ -446,9 +476,9 @@ export function PurchaseEntryForm() {
       ? "mt"
       : formData.rawMaterialName === "Chemical"
         ? "kg"
-        : isPackagingTileAdhesiveFlow && (formData.level3 === "20kg" || formData.level3 === "50kg")
+        : isPackagingTileAdhesiveFlow && packagingItemType === "Bag" && (formData.level3 === "20kg" || formData.level3 === "50kg")
           ? "bags"
-          : isPackagingTileAdhesiveFlow && formData.level3 === "Coupon"
+          : isPackagingTileAdhesiveFlow && packagingItemType === "Coupon" && (formData.level3 === "20kg" || formData.level3 === "50kg")
             ? "pcs"
             : isPackagingFgFlow && formData.level2 === "Tile Cleaner"
               ? "pcs"
@@ -462,14 +492,14 @@ export function PurchaseEntryForm() {
                     (formData.level2 === "Tile Grout" || formData.level2 === "Epoxy")
                     ? "nos"
                     : "";
-                    
+
   useEffect(() => {
     if (formData.rawMaterialName !== "Cement") {
       return;
     }
 
     if (
-      (formData.packagingType === "PPC" || formData.packagingType === "OPC") &&
+      formData.packagingType === "OPC" &&
       formData.level2 !== "Silo"
     ) {
       setFormData((current) => ({
@@ -545,6 +575,44 @@ export function PurchaseEntryForm() {
       level4: "",
     }));
   }, [formData.level4, shouldShowPackagingBagColorField]);
+
+  useEffect(() => {
+    if (!showPackagingItemTypeField) {
+      if (!packagingItemType && !formData.coupon) {
+        return;
+      }
+
+      setPackagingItemType("");
+      setFormData((current) => ({
+        ...current,
+        coupon: "",
+      }));
+      return;
+    }
+
+    if (packagingItemType !== "Coupon") {
+      if (!formData.coupon) {
+        return;
+      }
+
+      setFormData((current) => ({
+        ...current,
+        coupon: "",
+      }));
+      return;
+    }
+
+    const nextCoupon = formData.level3 ? `${formData.level3} Coupon` : "";
+
+    if (formData.coupon === nextCoupon) {
+      return;
+    }
+
+    setFormData((current) => ({
+      ...current,
+      coupon: nextCoupon,
+    }));
+  }, [formData.coupon, formData.level3, packagingItemType, showPackagingItemTypeField]);
 
   useEffect(() => {
     if (!autoSelectedUnit) {
@@ -724,7 +792,11 @@ export function PurchaseEntryForm() {
       return "Packaging bag color is required.";
     }
 
-    if (level3Config && (!shouldShowPackagingBagField || formData.packagingBag) && !formData.level3) {
+    if (showPackagingItemTypeField && !packagingItemType) {
+      return "Packaging item type is required.";
+    }
+
+    if (level3Config && (!shouldShowPackagingBagField || formData.packagingBag) && (!showPackagingItemTypeField || Boolean(packagingItemType)) && !formData.level3) {
       return `${level3Config.label} is required.`;
     }
 
@@ -794,6 +866,7 @@ export function PurchaseEntryForm() {
       setRecentPurchases(latestEntries);
       setRecentPurchasesPage(1);
       setFormData(initialFormData);
+      setPackagingItemType("");
       setSandBagQuantity("");
       setOtherSelections(initialPurchaseOtherState);
       if (fileInputRef.current) {
@@ -829,6 +902,7 @@ export function PurchaseEntryForm() {
             className="grid gap-5"
             onReset={() => {
               setFormData(initialFormData);
+              setPackagingItemType("");
               setSandBagQuantity("");
               setOtherSelections(initialPurchaseOtherState);
               setSelectedFile(null);
@@ -933,7 +1007,6 @@ export function PurchaseEntryForm() {
                     disabled={
                       formData.rawMaterialName === "Cement" &&
                       (
-                        formData.packagingType === "PPC" ||
                         formData.packagingType === "OPC" ||
                         formData.packagingType === "White Cement"
                       )
@@ -950,8 +1023,10 @@ export function PurchaseEntryForm() {
                       Select {level2Config.label}
                     </option>
 
-                    {(level2Config.options).map((option) => (
-                      <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                    {(formData.rawMaterialName === "Cement"
+                      ? cementLevel2Options
+                      : level2Config.options).map((option) => (
+                      <option key={option} value={option}>
                         {option}
                       </option>
                     ))}
@@ -1020,7 +1095,27 @@ export function PurchaseEntryForm() {
                 </Field>
               )}
 
-              {level3Config && (!shouldShowPackagingBagField || formData.packagingBag) && (
+              {showPackagingItemTypeField && (
+                <Field htmlFor="packagingItemType" label="Packaging Item Type">
+                  <Select
+                    id="packagingItemType"
+                    name="packagingItemType"
+                    value={packagingItemType}
+                    onChange={(e) => setPackagingItemType(e.target.value)}
+                  >
+                    <option value="" disabled>
+                      Select packaging item type
+                    </option>
+                    {packagingItemTypeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+
+              {level3Config && (!shouldShowPackagingBagField || formData.packagingBag) && (!showPackagingItemTypeField || Boolean(packagingItemType)) && (
                 <Field htmlFor="level3" label={level3Config.label}>
                   <Select
                     id="level3"
@@ -1033,8 +1128,8 @@ export function PurchaseEntryForm() {
                       Select {level3Config.label}
                     </option>
 
-                    {getOptionsWithOther(level3Config.options).map((option) => (
-                      <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                    {(level3Config.options).map((option) => (
+                      <option key={option} value={option}>
                         {option}
                       </option>
                     ))}
@@ -1042,6 +1137,18 @@ export function PurchaseEntryForm() {
                 </Field>
               )}
               {renderOtherInput("level3", level3Config?.label ?? "Level 3", "Enter value")}
+
+              {showCouponField && (
+                <Field htmlFor="coupon" label="Coupon">
+                  <Input
+                    id="coupon"
+                    name="coupon"
+                    value={formData.coupon}
+                    placeholder="Select packaging size to set coupon"
+                    readOnly
+                  />
+                </Field>
+              )}
 
               {shouldShowTileCleanerBucketSizeField && (
                 <Field htmlFor="bucketSize" label="Can Size">
@@ -1119,8 +1226,8 @@ export function PurchaseEntryForm() {
                   <option value="" disabled>
                     Unit
                   </option>
-                  {getOptionsWithOther(unitOptions).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>{option}</option>
+                  {(unitOptions).map((option) => (
+                    <option key={option} value={option}>{option}</option>
                   ))}
                 </Select>
               </Field>
@@ -1162,7 +1269,6 @@ export function PurchaseEntryForm() {
                     <option value="">Select Person</option>
                     <option value="Vasu">Chandrashekhar</option>
                     <option value="Sujit">Anand</option>
-                    <option value="Thalesh">Sushil</option>
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
 
@@ -1199,6 +1305,24 @@ export function PurchaseEntryForm() {
                     <option value="">Select Person</option>
                     <option value="Anand">Thalesh</option>
                     <option value="Chandrashekhar">Sujeet</option>
+                    <option value={OTHER_OPTION}>Other</option>
+                  </select>
+
+                ) : formData.rawMaterialName === "Packaging" ? (
+
+                  /* Packaging */
+
+                  <select
+                    id="unload-by"
+                    name="unloadBy"
+                    className="w-full h-10 border rounded-md px-3"
+                    value={getSelectValue("unloadBy", formData.unloadBy)}
+                    onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
+                  >
+                    <option value="">Select Person</option>
+                    <option value="Anand">Thalesh</option>
+                    <option value="Chandrashekhar">Sujeet</option>
+                    <option value="Chandrashekhar">Vasu</option>
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
 
@@ -1254,7 +1378,7 @@ export function PurchaseEntryForm() {
                 name="remarks"
                 placeholder="Add notes about quality, shortage, damage, or payment status"
                 value={formData.remarks}
-                onChange={(e) => updateTextField("remarks", e.target.value)}
+                onChange={(e) => updateField("remarks", e.target.value)}
               />
             </Field>
 

@@ -440,6 +440,11 @@ export function PurchaseEntriesPage() {
     editingEntry.packagingType === "FG" &&
     editingEntry.level2 === "Tile Adhesive";
 
+  const shouldShowEditCouponField =
+    editingEntry?.rawMaterialName === "Packaging" &&
+    editingEntry.packagingType === "FG" &&
+    editingEntry.level2 === "Tile Adhesive";
+
   const editLevel3Config = useMemo(() => {
     if (!editSelectedLevel2Config || !editingEntry) {
       return undefined;
@@ -457,6 +462,14 @@ export function PurchaseEntriesPage() {
     editingEntry.packagingType === "FG" &&
     editingEntry.level2 === "Tile Cleaner" &&
     editingEntry.level3 === "Bucket";
+
+  useEffect(() => {
+    if (!editingEntry || shouldShowEditCouponField || !editingEntry.coupon) {
+      return;
+    }
+
+    setEditingEntry((current) => (current ? { ...current, coupon: "" } : current));
+  }, [editingEntry, shouldShowEditCouponField]);
 
   return (
     <div className="space-y-6">
@@ -551,6 +564,7 @@ export function PurchaseEntriesPage() {
                         level4: "",
                         packagingBag: "",
                         packagingBagColor: "",
+                        coupon: "",
                         bucketSize: "",
                       })
                     }
@@ -577,6 +591,7 @@ export function PurchaseEntriesPage() {
                           level4: "",
                           packagingBag: "",
                           packagingBagColor: "",
+                          coupon: "",
                           bucketSize: "",
                         })
                       }
@@ -609,6 +624,7 @@ export function PurchaseEntriesPage() {
                           level4: "",
                           packagingBag: event.target.value === "Bondure" ? "Bondure" : "",
                           packagingBagColor: "",
+                          coupon: "",
                           bucketSize: "",
                         })
                       }
@@ -649,6 +665,16 @@ export function PurchaseEntriesPage() {
                         </option>
                       ))}
                     </Select>
+                  </Field>
+                )}
+
+                {shouldShowEditCouponField && (
+                  <Field htmlFor="edit-coupon" label="Coupon">
+                    <Input
+                      id="edit-coupon"
+                      value={editingEntry.coupon ?? ""}
+                      onChange={(event) => updateEditingEntry({ coupon: event.target.value })}
+                    />
                   </Field>
                 )}
 
@@ -905,7 +931,9 @@ export function PurchaseEntriesPage() {
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Date</p>
-                          <p className="mt-1">{entry.date || "-"}</p>
+                          <p className="mt-1">{entry.date
+                            ? new Date(entry.date).toLocaleDateString("en-GB").replace(/\//g, "-")
+                            : "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Time</p>
@@ -967,7 +995,9 @@ export function PurchaseEntriesPage() {
                     {paginatedEntries.map((entry) => (
                       <TableRow key={entry.id}>
                         <TableCell className="whitespace-nowrap" title={entry.date || "-"}>
-                          {entry.date || "-"}
+                          {entry.date
+                            ? new Date(entry.date).toLocaleDateString("en-GB").replace(/\//g, "-")
+                            : "-"}
                         </TableCell>
                         <TableCell className="whitespace-nowrap" title={entry.time || "-"}>
                           {entry.time || "-"}

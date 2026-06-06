@@ -36,7 +36,6 @@ const manufacturingEntrySchema = new mongoose.Schema(
     batchNo: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
 

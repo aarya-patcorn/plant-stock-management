@@ -96,6 +96,25 @@ const getFinalTotalBagsProduced = (
   return String(calculatedTotalBagsProduced + wastageBags);
 };
 
+const getAutoProducedQuantity = (
+  productCategory: string,
+  totalProducedKg: number,
+  bagSize: string,
+) => {
+  if (!["Epoxy", "Grout"].includes(productCategory)) {
+    return "";
+  }
+
+  const match = String(bagSize || "").match(/(\d+(?:\.\d+)?)/i);
+  const unitKg = match ? Number(match[1]) : 0;
+
+  if (!unitKg || totalProducedKg <= 0) {
+    return "";
+  }
+
+  return String(Math.floor(totalProducedKg / unitKg));
+};
+
 
 const getBatchDefaults = (tphBatch: string) => {
   switch (tphBatch) {
@@ -229,6 +248,33 @@ export function ManufacturingEntryForm() {
   const batchKg = getBatchKg(formData.tphBatch);
   const totalPackedKg = useMemo(() => getTotalPackedKg(productItems), [productItems]);
   const remainingKg = Math.max(0, batchKg - totalPackedKg);
+  const totalProducedUnits = useMemo(
+    () => String(productItems.reduce((sum, item) => sum + (Number(item.totalBagsProduced) || 0), 0)),
+    [productItems],
+  );
+  const selectedProductCategory = formData.productCategory;
+  const isTileAdhesiveProduct = selectedProductCategory === "Tile Adhesive";
+  const isAutoCalculatedPackagingProduct = ["Epoxy", "Grout"].includes(selectedProductCategory);
+  const wastageSizeLabel =
+    formData.productCategory === "Tile Cleaner"
+      ? "Bottle Size"
+      : formData.productCategory === "Grout" || formData.productCategory === "Tile Grout"
+      ? "Pouch Size"
+      : formData.productCategory === "Epoxy"
+        ? "Bucket Size"
+        : "Wastage Bag Size";
+  const wastageSizeOptions =
+    formData.productCategory === "Bondure"
+      ? ["40Kg"]
+      : formData.productCategory === "Tile Adhesive"
+        ? ["20KG", "50KG"]
+        : formData.productCategory === "Tile Cleaner"
+          ? ["1L", "5L"]
+      : formData.productCategory === "Grout" || formData.productCategory === "Tile Grout"
+        ? ["1Kg"]
+        : formData.productCategory === "Epoxy"
+          ? ["1KG", "5KG"]
+          : [];
 
   const totalAvailableWastage = Number(availableWastageQty || 0);
 
@@ -285,6 +331,10 @@ export function ManufacturingEntryForm() {
       toast.error("Packed wastage quantity cannot be greater than available wastage quantity.");
     }
   }, [isWastageExceeded]);
+
+  useEffect(() => {
+    setWastageBagSize("");
+  }, [formData.productCategory]);
 
   const updateRawMaterialField = (
     index: number,
@@ -349,18 +399,28 @@ export function ManufacturingEntryForm() {
   useEffect(() => {
     setProductItems((current) =>
       current.map((item) => {
-        const nextTotalBagsProduced = getFinalTotalBagsProduced(
-          formData.tphBatch,
-          item.bagSize,
-          wastageTotalBags,
-        );
+        const nextTotalBagsProduced = isAutoCalculatedPackagingProduct
+          ? getAutoProducedQuantity(selectedProductCategory, batchKg, item.bagSize)
+          : getFinalTotalBagsProduced(
+            formData.tphBatch,
+            item.bagSize,
+            wastageTotalBags,
+          );
 
         return item.totalBagsProduced === nextTotalBagsProduced
           ? item
           : { ...item, totalBagsProduced: nextTotalBagsProduced };
       }),
     );
-  }, [formData.tphBatch, productItems.length, wastageTotalBags]);
+  }, [batchKg, formData.tphBatch, isAutoCalculatedPackagingProduct, productItems.length, selectedProductCategory, wastageTotalBags]);
+
+  useEffect(() => {
+    if (!isAutoCalculatedPackagingProduct || productItems.length <= 1) {
+      return;
+    }
+
+    setProductItems((current) => current.slice(0, 1));
+  }, [isAutoCalculatedPackagingProduct, productItems.length]);
   const addProductItem = () => {
     setProductItems((current) => [...current, emptyProductItem]);
   };
@@ -449,8 +509,6 @@ export function ManufacturingEntryForm() {
           ? "Total Can"
           : "Total Bags";
 
-  const selectedProductCategory = formData.productCategory;
-  const isTileAdhesiveProduct = selectedProductCategory === "Tile Adhesive";
   const productCategoryOptions =
     formData.tphBatch === "2TPH" ? ["Tile Adhesive", "Bondure"] : productCategories;
   const isProductCategoryLocked = ["1TPH", "Manual Blender", "Sigma Mixer", "Manual Hand Mixer"].includes(
@@ -729,7 +787,7 @@ export function ManufacturingEntryForm() {
       return;
     }
 
-    const hiddenPackagingValue = formData.totalBagsProduced.trim();
+    const hiddenPackagingValue = totalProducedUnits.trim();
 
     setFormData((current) =>
       current.sticker === hiddenPackagingValue && current.sponge === hiddenPackagingValue
@@ -740,7 +798,7 @@ export function ManufacturingEntryForm() {
           sponge: hiddenPackagingValue,
         },
     );
-  }, [selectedProductCategory, formData.totalBagsProduced]);
+  }, [selectedProductCategory, totalProducedUnits]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1251,6 +1309,7 @@ export function ManufacturingEntryForm() {
                   type="button"
                   onClick={addProductItem}
                   className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+                  disabled={isAutoCalculatedPackagingProduct}
                 >
                   + Add Item
                 </button>
@@ -1316,11 +1375,13 @@ export function ManufacturingEntryForm() {
                           updateProductItem(
                             index,
                             "totalBagsProduced",
-                            getFinalTotalBagsProduced(
-                              formData.tphBatch,
-                              bagSize,
-                              wastageTotalBags,
-                            )
+                            isAutoCalculatedPackagingProduct
+                              ? getAutoProducedQuantity(selectedProductCategory, batchKg, bagSize)
+                              : getFinalTotalBagsProduced(
+                                formData.tphBatch,
+                                bagSize,
+                                wastageTotalBags,
+                              )
                           );
                         }}
                       >
@@ -1401,15 +1462,16 @@ export function ManufacturingEntryForm() {
                       <div>Remaining Wastage: {Math.max(0, remainingWastageQty)} KG</div>
                     </div>
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-2 mt-4">
-                      <Field className="md:col-span-1" htmlFor="wastageBagSize" label="Wastage Bag Size">
+                      <Field className="md:col-span-1" htmlFor="wastageBagSize" label={wastageSizeLabel}>
                         <Select
                           id="wastageBagSize"
                           value={wastageBagSize}
                           onChange={(e) => setWastageBagSize(e.target.value)}
                         >
-                          <option value="">Select Bag Size</option>
-                          <option value="20kg">20kg</option>
-                          <option value="50kg">50kg</option>
+                          <option value="" disabled>Select {wastageSizeLabel}</option>
+                          {wastageSizeOptions.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
                         </Select>
                       </Field>
                       <Field className="md:col-span-1" htmlFor="wastageTotalBags" label="Wastage Total Bags">

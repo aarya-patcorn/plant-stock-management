@@ -251,7 +251,7 @@ export function ManufacturingEntriesPage() {
           setEntries(manufacturingEntries);
           setLoadError("");
         })
-        .catch(() => {});
+        .catch(() => { });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update production entry.");
     } finally {
@@ -348,53 +348,53 @@ export function ManufacturingEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Batch identity, production date, and core run information.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <Field htmlFor="edit-productionDate" label="Production Date">
-                <Input
-                  id="edit-productionDate"
-                  type="date"
-                  value={editingEntry.productionDate}
-                  onChange={(event) =>
-                    updateEditingEntry({ productionDate: event.target.value })
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-tphBatch" label="TPH / Batch">
-                <Select
-                  id="edit-tphBatch"
-                  disabled
-                  value={editingEntry.tphBatch}
-                  onChange={(event) => {
-                    const tphBatch = event.target.value;
-                    const defaults = getBatchDefaults(tphBatch);
-                    updateEditingEntry({
-                      tphBatch,
-                      productCategory: defaults.productCategory,
-                      color: defaults.color,
-                      finishedProductName: "",
-                      bagSize: "",
-                      token: defaults.productCategory === "Tile Adhesive" ? "" : "N/A",
-                      totalBagsProduced: "",
-                      productItems: [emptyProductItem],
-                    });
-                  }}
-                >
-                  <option value="">Select TPH/Batch</option>
-                  {batchOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field htmlFor="edit-batchNo" label="Batch No">
-                <Input
-                  id="edit-batchNo"
-                  value={editingEntry.batchNo}
-                  onChange={(event) =>
-                    updateEditingEntry({ batchNo: event.target.value })
-                  }
-                />
-              </Field>
+                <Field htmlFor="edit-productionDate" label="Production Date">
+                  <Input
+                    id="edit-productionDate"
+                    type="date"
+                    value={editingEntry.productionDate}
+                    onChange={(event) =>
+                      updateEditingEntry({ productionDate: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-tphBatch" label="TPH / Batch">
+                  <Select
+                    id="edit-tphBatch"
+                    disabled
+                    value={editingEntry.tphBatch}
+                    onChange={(event) => {
+                      const tphBatch = event.target.value;
+                      const defaults = getBatchDefaults(tphBatch);
+                      updateEditingEntry({
+                        tphBatch,
+                        productCategory: defaults.productCategory,
+                        color: defaults.color,
+                        finishedProductName: "",
+                        bagSize: "",
+                        token: defaults.productCategory === "Tile Adhesive" ? "" : "N/A",
+                        totalBagsProduced: "",
+                        productItems: [emptyProductItem],
+                      });
+                    }}
+                  >
+                    <option value="">Select TPH/Batch</option>
+                    {batchOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field htmlFor="edit-batchNo" label="Batch No">
+                  <Input
+                    id="edit-batchNo"
+                    value={editingEntry.batchNo}
+                    onChange={(event) =>
+                      updateEditingEntry({ batchNo: event.target.value })
+                    }
+                  />
+                </Field>
               </div>
             </div>
 
@@ -404,106 +404,106 @@ export function ManufacturingEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Category, finished product, color, token, and packaging size.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field htmlFor="edit-productCategory" label="Product Category">
-                <Select
-                  id="edit-productCategory"
-                  value={editingEntry.productCategory}
-                  disabled={isProductCategoryLocked}
-                  onChange={(event) => {
-                    const productCategory = event.target.value;
-                    updateEditingEntry({
-                      productCategory,
-                      color: editingEntry.tphBatch === "2TPH" ? "Grey" : "",
-                      finishedProductName: "",
-                      bagSize: "",
-                      token: productCategory === "Tile Adhesive" ? "" : "N/A",
-                      totalBagsProduced: "",
-                      productItems: [emptyProductItem],
-                    });
-                  }}
-                >
-                  <option value="">Select category</option>
-                  {productCategoryOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field htmlFor="edit-finishedProductName" label="Finished Product Name">
-                {finishedProductOptions.length > 0 ? (
+                <Field htmlFor="edit-productCategory" label="Product Category">
                   <Select
-                    id="edit-finishedProductName"
+                    id="edit-productCategory"
+                    value={editingEntry.productCategory}
                     disabled
-                    value={editingEntry.finishedProductName}
                     onChange={(event) => {
-                      const finishedProductName = event.target.value;
-                      const nextColor =
-                        selectedProductCategory === "Grout"
-                          ? groutProductColorMap[finishedProductName] || editingEntry.color
-                          : selectedProductCategory === "Epoxy"
-                            ? epoxyProductColorMap[finishedProductName] || editingEntry.color
-                            : editingEntry.color;
-                      const nextBagSize =
-                        finishedProductName === "Crystal X 1L" || finishedProductName === "Shine X 1L"
-                          ? "1L"
-                          : finishedProductName === "Crystal X 5L" || finishedProductName === "Shine X 5L"
-                            ? "5L"
-                            : editingEntry.bagSize;
-
+                      const productCategory = event.target.value;
                       updateEditingEntry({
-                        finishedProductName,
-                        color: nextColor,
-                        bagSize: nextBagSize,
-                        productItems: nextBagSize
-                          ? [{ ...getProductItems(editingEntry)[0], bagSize: nextBagSize }]
-                          : editingEntry.productItems,
+                        productCategory,
+                        color: editingEntry.tphBatch === "2TPH" ? "Grey" : "",
+                        finishedProductName: "",
+                        bagSize: "",
+                        token: productCategory === "Tile Adhesive" ? "" : "N/A",
+                        totalBagsProduced: "",
+                        productItems: [emptyProductItem],
                       });
                     }}
                   >
-                    <option value="">Select finished product</option>
-                    {finishedProductOptions.map((option) => (
+                    <option value="">Select category</option>
+                    {productCategoryOptions.map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
                     ))}
-                    <option value="Other">Other</option>
                   </Select>
-                ) : (
-                  <Input
-                    id="edit-finishedProductName"
-                    value={editingEntry.finishedProductName}
-                    onChange={(event) => updateEditingEntry({ finishedProductName: event.target.value })}
-                  />
-                )}
-              </Field>
-              <Field htmlFor="edit-color" label="Color">
-                {colorOptions.length > 0 || isColorDisabled ? (
-                  <Select
-                    id="edit-color"
-                    value={selectedColor}
-                    disabled={isColorDisabled}
-                    onChange={(event) => updateEditingEntry({ color: event.target.value })}
-                  >
-                    <option value="">Select color</option>
-                    {isColorDisabled && selectedColor ? (
-                      <option value={selectedColor}>{selectedColor}</option>
-                    ) : null}
-                    {colorOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                    {!isColorDisabled && <option value="Other">Other</option>}
-                  </Select>
-                ) : (
-                  <Input
-                    id="edit-color"
-                    value={selectedColor}
-                    onChange={(event) => updateEditingEntry({ color: event.target.value })}
-                  />
-                )}
-              </Field>
+                </Field>
+                <Field htmlFor="edit-finishedProductName" label="Finished Product Name">
+                  {finishedProductOptions.length > 0 ? (
+                    <Select
+                      id="edit-finishedProductName"
+                      disabled
+                      value={editingEntry.finishedProductName}
+                      onChange={(event) => {
+                        const finishedProductName = event.target.value;
+                        const nextColor =
+                          selectedProductCategory === "Grout"
+                            ? groutProductColorMap[finishedProductName] || editingEntry.color
+                            : selectedProductCategory === "Epoxy"
+                              ? epoxyProductColorMap[finishedProductName] || editingEntry.color
+                              : editingEntry.color;
+                        const nextBagSize =
+                          finishedProductName === "Crystal X 1L" || finishedProductName === "Shine X 1L"
+                            ? "1L"
+                            : finishedProductName === "Crystal X 5L" || finishedProductName === "Shine X 5L"
+                              ? "5L"
+                              : editingEntry.bagSize;
+
+                        updateEditingEntry({
+                          finishedProductName,
+                          color: nextColor,
+                          bagSize: nextBagSize,
+                          productItems: nextBagSize
+                            ? [{ ...getProductItems(editingEntry)[0], bagSize: nextBagSize }]
+                            : editingEntry.productItems,
+                        });
+                      }}
+                    >
+                      <option value="">Select finished product</option>
+                      {finishedProductOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                      <option value="Other">Other</option>
+                    </Select>
+                  ) : (
+                    <Input
+                      id="edit-finishedProductName"
+                      value={editingEntry.finishedProductName}
+                      onChange={(event) => updateEditingEntry({ finishedProductName: event.target.value })}
+                    />
+                  )}
+                </Field>
+                <Field htmlFor="edit-color" label="Color">
+                  {colorOptions.length > 0 || isColorDisabled ? (
+                    <Select
+                      id="edit-color"
+                      value={selectedColor}
+                      disabled={isColorDisabled}
+                      onChange={(event) => updateEditingEntry({ color: event.target.value })}
+                    >
+                      <option value="">Select color</option>
+                      {isColorDisabled && selectedColor ? (
+                        <option value={selectedColor}>{selectedColor}</option>
+                      ) : null}
+                      {colorOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                      {!isColorDisabled && <option value="Other">Other</option>}
+                    </Select>
+                  ) : (
+                    <Input
+                      id="edit-color"
+                      value={selectedColor}
+                      onChange={(event) => updateEditingEntry({ color: event.target.value })}
+                    />
+                  )}
+                </Field>
               </div>
             </div>
 
@@ -537,7 +537,7 @@ export function ManufacturingEntriesPage() {
                         <Select
                           id={`edit-token-${index}`}
                           value={item.token}
-                          disabled={!isTileAdhesiveProduct}
+                          disabled
                           onChange={(event) => updateEditingProductItem(index, "token", event.target.value)}
                         >
                           {isTileAdhesiveProduct ? (
@@ -627,36 +627,36 @@ export function ManufacturingEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Materials, quantities, and units used in this production entry.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
-              <Field htmlFor="edit-rawMaterialNames" label="Raw Material Names">
-                <Textarea
-                  id="edit-rawMaterialNames"
-                  disabled
-                  value={editingEntry.rawMaterialNames}
-                  onChange={(event) =>
-                    updateEditingEntry({ rawMaterialNames: event.target.value })
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-rawMaterialQty" label="Raw Material Qty">
-                <Textarea
-                  id="edit-rawMaterialQty"
-                  disabled
-                  value={editingEntry.rawMaterialQty}
-                  onChange={(event) =>
-                    updateEditingEntry({ rawMaterialQty: event.target.value })
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-rawMaterialUnits" label="Raw Material Units">
-                <Textarea
-                  id="edit-rawMaterialUnits"
-                  disabled
-                  value={editingEntry.rawMaterialUnits}
-                  onChange={(event) =>
-                    updateEditingEntry({ rawMaterialUnits: event.target.value })
-                  }
-                />
-              </Field>
+                <Field htmlFor="edit-rawMaterialNames" label="Raw Material Names">
+                  <Textarea
+                    id="edit-rawMaterialNames"
+                    disabled
+                    value={editingEntry.rawMaterialNames}
+                    onChange={(event) =>
+                      updateEditingEntry({ rawMaterialNames: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-rawMaterialQty" label="Raw Material Qty">
+                  <Textarea
+                    id="edit-rawMaterialQty"
+                    disabled
+                    value={editingEntry.rawMaterialQty}
+                    onChange={(event) =>
+                      updateEditingEntry({ rawMaterialQty: event.target.value })
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-rawMaterialUnits" label="Raw Material Units">
+                  <Textarea
+                    id="edit-rawMaterialUnits"
+                    disabled
+                    value={editingEntry.rawMaterialUnits}
+                    onChange={(event) =>
+                      updateEditingEntry({ rawMaterialUnits: event.target.value })
+                    }
+                  />
+                </Field>
               </div>
             </div>
 
@@ -697,12 +697,12 @@ export function ManufacturingEntriesPage() {
             </p>
             <CardTitle className="mt-2">Saved entries</CardTitle>
             <CardDescription>
-            {isLoading
-              ? "Loading production entries from sheet..."
-              : sortedEntries.length === 0
-                ? "No production entries have been saved yet."
-                : `${sortedEntries.length} production entries available.`}
-          </CardDescription>
+              {isLoading
+                ? "Loading production entries from sheet..."
+                : sortedEntries.length === 0
+                  ? "No production entries have been saved yet."
+                  : `${sortedEntries.length} production entries available.`}
+            </CardDescription>
           </div>
           <div className="rounded-xl border border-slate-200 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
             {isLoading ? "Loading..." : `${sortedEntries.length} total`}
@@ -710,14 +710,14 @@ export function ManufacturingEntriesPage() {
         </CardHeader>
         <CardContent className="p-5">
           {loadError ? (
-                <div className="rounded-md border border-dashed p-4 text-sm text-destructive">
-                  {loadError}
-                </div>
-              ) : isLoading ? (
-                <div className="flex justify-center rounded-md border border-dashed p-6">
-                  <LoadingLoader />
-                </div>
-              ) : sortedEntries.length === 0 ? (
+            <div className="rounded-md border border-dashed p-4 text-sm text-destructive">
+              {loadError}
+            </div>
+          ) : isLoading ? (
+            <div className="flex justify-center rounded-md border border-dashed p-6">
+              <LoadingLoader />
+            </div>
+          ) : sortedEntries.length === 0 ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
               Add a production entry first, then review it here.
             </div>
@@ -747,7 +747,9 @@ export function ManufacturingEntriesPage() {
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Date</p>
-                          <p className="mt-1">{entry.productionDate || "-"}</p>
+                          <p className="mt-1">{entry.productionDate
+                            ? new Date(entry.productionDate).toLocaleDateString("en-GB").replace(/\//g, "-")
+                            : "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Entry By</p>
@@ -809,7 +811,9 @@ export function ManufacturingEntriesPage() {
                   <TableBody>
                     {paginatedEntries.map((entry) => (
                       <TableRow key={entry.id}>
-                        <TableCell className="whitespace-nowrap" title={entry.productionDate || "-"}>{entry.productionDate || "-"}</TableCell>
+                        <TableCell className="whitespace-nowrap" title={entry.productionDate || "-"}>{entry.productionDate
+                          ? new Date(entry.productionDate).toLocaleDateString("en-GB").replace(/\//g, "-")
+                          : "-"}</TableCell>
                         <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.batchNo || "-"}>{entry.batchNo || "-"}</TableCell>
                         <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.tphBatch || "-"}>{entry.tphBatch || "-"}</TableCell>
                         <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.productCategory || "-"}>{entry.productCategory || "-"}</TableCell>

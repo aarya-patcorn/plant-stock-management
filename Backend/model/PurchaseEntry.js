@@ -11,6 +11,11 @@ const purchaseEntrySchema = new mongoose.Schema(
     level3: String,
     level4: String,
     packagingBagColor: String,
+    coupon: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     bucketSize: String,
     bagColor: String,
     sandEpoxyColor: String,

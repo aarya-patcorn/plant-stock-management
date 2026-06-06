@@ -185,7 +185,7 @@ export function DispatchEntriesPage() {
           setEntries(dispatchEntries);
           setLoadError("");
         })
-        .catch(() => {});
+        .catch(() => { });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update dispatch entry.");
     } finally {
@@ -336,47 +336,47 @@ export function DispatchEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Core dispatch identity, date, time, and token information.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <Field htmlFor="edit-date" label="Date">
-                <Input
-                  id="edit-date"
-                  type="date"
-                  value={editingEntry.date}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, date: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-time" label="Time">
-                <Input
-                  id="edit-time"
-                  type="time"
-                  value={editingEntry.time}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, time: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-token" label="Token">
-                <Select
-                  id="edit-token"
-                  disabled
-                  value={editingEntry.token}
-                  onChange={(event) =>
-                    updateEditingEntry({
-                      token: event.target.value,
-                      bagSize: "",
-                      quantity: "",
-                    })
-                  }
-                >
-                  <option value="">Select token type</option>
-                  {tokenOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+                <Field htmlFor="edit-date" label="Date">
+                  <Input
+                    id="edit-date"
+                    type="date"
+                    value={editingEntry.date}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, date: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-time" label="Time">
+                  <Input
+                    id="edit-time"
+                    type="time"
+                    value={editingEntry.time}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, time: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-token" label="Token">
+                  <Select
+                    id="edit-token"
+                    disabled
+                    value={editingEntry.token}
+                    onChange={(event) =>
+                      updateEditingEntry({
+                        token: event.target.value,
+                        bagSize: "",
+                        quantity: "",
+                      })
+                    }
+                  >
+                    <option value="">Select token type</option>
+                    {tokenOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
               </div>
             </div>
 
@@ -386,85 +386,85 @@ export function DispatchEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Challan and product information for the dispatch record.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field htmlFor="edit-challanNo" label="Challan No">
-                <Input
-                  id="edit-challanNo"
-                  value={editingEntry.challanNo}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, challanNo: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-productCategory" label="Product Category">
-                <Select
-                  id="edit-productCategory"
-                  disabled
-                  value={editingEntry.productCategory}
-                  onChange={(event) =>
-                    updateEditingEntry({
-                      productCategory: event.target.value,
-                      productName: "",
-                      token: "",
-                      productColor: "",
-                      bagSize: "",
-                      quantity: "",
-                    })
-                  }
-                >
-                  <option value="">Select category</option>
-                  {productCategories.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+                <Field htmlFor="edit-challanNo" label="Challan No">
+                  <Input
+                    id="edit-challanNo"
+                    value={editingEntry.challanNo}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, challanNo: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-productCategory" label="Product Category">
+                  <Select
+                    id="edit-productCategory"
+                    disabled
+                    value={editingEntry.productCategory}
+                    onChange={(event) =>
+                      updateEditingEntry({
+                        productCategory: event.target.value,
+                        productName: "",
+                        token: "",
+                        productColor: "",
+                        bagSize: "",
+                        quantity: "",
+                      })
+                    }
+                  >
+                    <option value="">Select category</option>
+                    {productCategories.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field htmlFor="edit-productName" label="Product Name">
+                  <Select
+                    id="edit-productName"
+                    disabled
+                    value={editingEntry.productName}
+                    onChange={(event) =>
+                      updateEditingEntry({
+                        productName: event.target.value,
+                        token: "",
+                        productColor: "",
+                        bagSize: "",
+                        quantity: "",
+                      })
+                    }
+                  >
+                    <option value="">Select product</option>
+                    {productNames.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field htmlFor="edit-productColor" label="Product Color">
+                  <Select
+                    id="edit-productColor"
+                    disabled
+                    value={isTileCleanerSelected ? "" : editingEntry.productColor}
+                    onChange={(event) =>
+                      updateEditingEntry({
+                        productColor: event.target.value,
+                        bagSize: "",
+                        quantity: "",
+                      })
+                    }
+                  >
+                    <option value="">
+                      {isTileCleanerSelected ? "Not applicable for Tile Cleaner" : "Select color"}
                     </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field htmlFor="edit-productName" label="Product Name">
-                <Select
-                  id="edit-productName"
-                  disabled
-                  value={editingEntry.productName}
-                  onChange={(event) =>
-                    updateEditingEntry({
-                      productName: event.target.value,
-                      token: "",
-                      productColor: "",
-                      bagSize: "",
-                      quantity: "",
-                    })
-                  }
-                >
-                  <option value="">Select product</option>
-                  {productNames.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field htmlFor="edit-productColor" label="Product Color">
-                <Select
-                  id="edit-productColor"
-                  disabled
-                  value={isTileCleanerSelected ? "" : editingEntry.productColor}
-                  onChange={(event) =>
-                    updateEditingEntry({
-                      productColor: event.target.value,
-                      bagSize: "",
-                      quantity: "",
-                    })
-                  }
-                >
-                  <option value="">
-                    {isTileCleanerSelected ? "Not applicable for Tile Cleaner" : "Select color"}
-                  </option>
-                  {productColors.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+                    {productColors.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
               </div>
             </div>
 
@@ -474,54 +474,54 @@ export function DispatchEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Bag size, stock values, and dispatch destination details.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field htmlFor="edit-bagSize" label="Bag Size">
-                <Select
-                  id="edit-bagSize"
-                  disabled
-                  value={editingEntry.bagSize}
-                  onChange={(event) =>
-                    updateEditingEntry({
-                      bagSize: event.target.value,
-                    })
-                  }
-                >
-                  <option value="">Select bag size</option>
-                  {bagSizes.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field htmlFor="edit-quantity" label="Stock">
-                <Input
-                  id="edit-quantity"
-                  disabled
-                  value={editingEntry.quantity}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, quantity: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-totalBags" label="Departed Bags">
-                <Input
-                  id="edit-totalBags"
-                  disabled
-                  value={editingEntry.totalBags}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, totalBags: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-dispatchSite" label="Dispatch Site">
-                <Input
-                  id="edit-dispatchSite"
-                  value={editingEntry.dispatchSite}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, dispatchSite: event.target.value } : current)
-                  }
-                />
-              </Field>
+                <Field htmlFor="edit-bagSize" label="Bag Size">
+                  <Select
+                    id="edit-bagSize"
+                    disabled
+                    value={editingEntry.bagSize}
+                    onChange={(event) =>
+                      updateEditingEntry({
+                        bagSize: event.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Select bag size</option>
+                    {bagSizes.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field htmlFor="edit-quantity" label="Stock">
+                  <Input
+                    id="edit-quantity"
+                    disabled
+                    value={editingEntry.quantity}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, quantity: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-totalBags" label="Departed Bags">
+                  <Input
+                    id="edit-totalBags"
+                    disabled
+                    value={editingEntry.totalBags}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, totalBags: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-dispatchSite" label="Dispatch Site">
+                  <Input
+                    id="edit-dispatchSite"
+                    value={editingEntry.dispatchSite}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, dispatchSite: event.target.value } : current)
+                    }
+                  />
+                </Field>
               </div>
             </div>
 
@@ -531,42 +531,42 @@ export function DispatchEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Vehicle, driver, challan, and dispatch execution details.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field htmlFor="edit-vehicleNo" label="Vehicle No">
-                <Input
-                  id="edit-vehicleNo"
-                  value={editingEntry.vehicleNo}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, vehicleNo: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-driverName" label="Driver Name">
-                <Input
-                  id="edit-driverName"
-                  value={editingEntry.driverName}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, driverName: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-driverContact" label="Driver Contact">
-                <Input
-                  id="edit-driverContact"
-                  value={editingEntry.driverContact}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, driverContact: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-challanName" label="Challan Name">
-                <Input
-                  id="edit-challanName"
-                  value={editingEntry.challanName}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, challanName: event.target.value } : current)
-                  }
-                />
-              </Field>
+                <Field htmlFor="edit-vehicleNo" label="Vehicle No">
+                  <Input
+                    id="edit-vehicleNo"
+                    value={editingEntry.vehicleNo}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, vehicleNo: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-driverName" label="Driver Name">
+                  <Input
+                    id="edit-driverName"
+                    value={editingEntry.driverName}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, driverName: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-driverContact" label="Driver Contact">
+                  <Input
+                    id="edit-driverContact"
+                    value={editingEntry.driverContact}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, driverContact: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-challanName" label="Challan Name">
+                  <Input
+                    id="edit-challanName"
+                    value={editingEntry.challanName}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, challanName: event.target.value } : current)
+                    }
+                  />
+                </Field>
               </div>
             </div>
 
@@ -576,25 +576,25 @@ export function DispatchEntriesPage() {
                 <p className="mt-1 text-xs text-muted-foreground">Dispatch timing and local notes for update support.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-              <Field htmlFor="edit-dispatchTime" label="Dispatch Time">
-                <Input
-                  id="edit-dispatchTime"
-                  type="time"
-                  value={editingEntry.dispatchTime}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, dispatchTime: event.target.value } : current)
-                  }
-                />
-              </Field>
-              <Field htmlFor="edit-todayVehicleNo" label="Today Vehicle No">
-                <Input
-                  id="edit-todayVehicleNo"
-                  value={editingEntry.todayVehicleNo}
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, todayVehicleNo: event.target.value } : current)
-                  }
-                />
-              </Field>
+                <Field htmlFor="edit-dispatchTime" label="Dispatch Time">
+                  <Input
+                    id="edit-dispatchTime"
+                    type="time"
+                    value={editingEntry.dispatchTime}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, dispatchTime: event.target.value } : current)
+                    }
+                  />
+                </Field>
+                <Field htmlFor="edit-todayVehicleNo" label="Today Vehicle No">
+                  <Input
+                    id="edit-todayVehicleNo"
+                    value={editingEntry.todayVehicleNo}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, todayVehicleNo: event.target.value } : current)
+                    }
+                  />
+                </Field>
               </div>
 
               <Field htmlFor="edit-notes" label="Notes">
@@ -628,12 +628,12 @@ export function DispatchEntriesPage() {
             </p>
             <CardTitle className="mt-2">Saved entries</CardTitle>
             <CardDescription>
-            {isLoading
-              ? "Loading dispatch entries from sheet..."
-              : sortedEntries.length === 0
-                ? "No dispatch entries have been saved yet."
-                : `${sortedEntries.length} dispatch entries available.`}
-          </CardDescription>
+              {isLoading
+                ? "Loading dispatch entries from sheet..."
+                : sortedEntries.length === 0
+                  ? "No dispatch entries have been saved yet."
+                  : `${sortedEntries.length} dispatch entries available.`}
+            </CardDescription>
           </div>
           <div className="rounded-xl border border-slate-200 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
             {isLoading ? "Loading..." : `${sortedEntries.length} total`}
@@ -641,14 +641,14 @@ export function DispatchEntriesPage() {
         </CardHeader>
         <CardContent className="p-5">
           {loadError ? (
-                <div className="rounded-md border border-dashed p-4 text-sm text-destructive">
-                  {loadError}
-                </div>
-              ) : isLoading ? (
-                <div className="flex justify-center rounded-md border border-dashed p-6">
-                  <LoadingLoader />
-                </div>
-              ) : sortedEntries.length === 0 ? (
+            <div className="rounded-md border border-dashed p-4 text-sm text-destructive">
+              {loadError}
+            </div>
+          ) : isLoading ? (
+            <div className="flex justify-center rounded-md border border-dashed p-6">
+              <LoadingLoader />
+            </div>
+          ) : sortedEntries.length === 0 ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
               Add a dispatch entry first, then review it here.
             </div>
@@ -678,7 +678,9 @@ export function DispatchEntriesPage() {
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Date</p>
-                          <p className="mt-1">{entry.date || "-"}</p>
+                          <p className="mt-1">{entry.date
+                            ? new Date(entry.date).toLocaleDateString("en-GB").replace(/\//g, "-")
+                            : "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Time</p>
@@ -742,7 +744,9 @@ export function DispatchEntriesPage() {
                   <TableBody>
                     {paginatedEntries.map((entry) => (
                       <TableRow key={entry.id}>
-                        <TableCell className="whitespace-nowrap" title={entry.date || "-"}>{entry.date || "-"}</TableCell>
+                        <TableCell className="whitespace-nowrap" title={entry.date || "-"}>{entry.date
+                          ? new Date(entry.date).toLocaleDateString("en-GB").replace(/\//g, "-")
+                          : "-"}</TableCell>
                         <TableCell className="whitespace-nowrap" title={entry.time || "-"}>{entry.time || "-"}</TableCell>
                         <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.challanNo || entry.challanName || "-"}>{entry.challanNo || entry.challanName || "-"}</TableCell>
                         <TableCell className="min-w-[220px] max-w-[220px] truncate whitespace-nowrap" title={buildDispatchLabel(entry) || "-"}>{buildDispatchLabel(entry) || "-"}</TableCell>
@@ -788,7 +792,7 @@ export function DispatchEntriesPage() {
                   Previous
                 </Button>
                 <Button
-                
+
                   type="button"
                   variant="outline"
                   onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}

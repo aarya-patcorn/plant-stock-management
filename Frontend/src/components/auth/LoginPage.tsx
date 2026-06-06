@@ -43,6 +43,16 @@ export function LoginPage() {
     return record.success === true;
   };
 
+  const getAuthenticatedUserName = (response: unknown) => {
+    const record = typeof response === "object" && response !== null ? (response as Record<string, unknown>) : {};
+    const data = typeof record.data === "object" && record.data !== null
+      ? record.data as Record<string, unknown>
+      : {};
+    const userName = data.userName;
+
+    return typeof userName === "string" && userName.trim() ? userName : formData.userId;
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -55,7 +65,7 @@ export function LoginPage() {
       }
 
       window.localStorage.setItem(AUTH_STORAGE_KEY, formData.userId);
-      window.localStorage.setItem("userName", response.data.userName);
+      window.localStorage.setItem("userName", getAuthenticatedUserName(response));
 
       toast.success("Login successful.");
       navigate("/", { replace: true });

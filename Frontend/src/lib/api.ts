@@ -22,6 +22,7 @@ export type PurchaseEntry = {
   level4: string;
   packagingBag: string;
   packagingBagColor: string;
+  coupon?: string;
   bucketSize: string;
   quantityPurchased: string;
   purchaseStock: string;
@@ -101,6 +102,8 @@ export type ProductionMaterialLog = {
   bagSize: string;
   currentQuantity: string;
   shippedQuantity: string;
+  createdAt: string;
+  updatedAt: string;
   remarks: string;
 };
 
@@ -178,8 +181,10 @@ export async function submitEntry(
     user,
   };
 
+  let response;
+
   if (formType !== "purchase") {
-    return requestApi(
+    response = await requestApi(
       endpointByFormType[formType],
       {
         method: "POST",
@@ -187,26 +192,30 @@ export async function submitEntry(
       },
       "Unable to save entry.",
     );
+  } else {
+    const formData = new FormData();
+
+    Object.entries(payloadWithUser).forEach(([key, value]) => {
+      formData.append(key, String(value ?? ""));
+    });
+
+    if (file) {
+      formData.append("attachFile", file);
+    }
+
+    response = await requestApi(
+      endpointByFormType[formType],
+      {
+        method: "POST",
+        body: formData,
+      },
+      "Unable to save entry.",
+    );
   }
 
-  const formData = new FormData();
+  window.location.reload();
 
-  Object.entries(payloadWithUser).forEach(([key, value]) => {
-    formData.append(key, String(value ?? ""));
-  });
-
-  if (file) {
-    formData.append("attachFile", file);
-  }
-
-  return requestApi(
-    endpointByFormType[formType],
-    {
-      method: "POST",
-      body: formData,
-    },
-    "Unable to save entry.",
-  );
+  return response;
 }
 
 export async function updatePurchaseEntry(payload: PurchaseEntry | FormData) {
@@ -357,6 +366,7 @@ function normalizePurchaseEntry(entry: unknown): PurchaseEntry {
     level4: stringifyValue(record.level4),
     packagingBag: stringifyValue(record.packagingBag ?? record.level4),
     packagingBagColor: stringifyValue(record.packagingBagColor ?? record.bagColor),
+    coupon: stringifyValue(record.coupon),
     bucketSize: stringifyValue(record.bucketSize ?? record.level4),
     quantityPurchased: stringifyValue(record.quantityPurchased ?? record.purchaseStock),
     purchaseStock: stringifyValue(record.purchaseStock ?? record.quantityPurchased),
@@ -456,6 +466,8 @@ function normalizeProductionMaterialLog(entry: unknown): ProductionMaterialLog {
     bagSize: stringifyValue(record.bagSize),
     currentQuantity: stringifyValue(record.currentQuantity ?? 0),
     shippedQuantity: stringifyValue(record.shippedQuantity ?? 0),
+    createdAt: stringifyValue(record.createdAt),
+    updatedAt: stringifyValue(record.updatedAt),
     remarks: stringifyValue(record.remarks),
   };
 }

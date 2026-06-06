@@ -9,6 +9,23 @@ const parseNumber = (value) => {
   return Number.isFinite(num) ? num : 0;
 };
 
+const convertQuantityToInventoryUnit = (quantity, fromUnit, toUnit) => {
+  const qty = Number(quantity) || 0;
+  const from = String(fromUnit || "").toLowerCase();
+  const to = String(toUnit || "").toLowerCase();
+
+  if (from === to) return qty;
+
+  if (from === "gm" && to === "kg") return qty / 1000;
+  if (from === "g" && to === "kg") return qty / 1000;
+  if (from === "kg" && (to === "gm" || to === "g")) return qty * 1000;
+
+  if (from === "mt" && to === "kg") return qty * 1000;
+  if (from === "kg" && to === "mt") return qty / 1000;
+
+  return qty;
+};
+
 const compactFilter = (fields) =>
   Object.fromEntries(
     Object.entries(fields).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
@@ -92,6 +109,31 @@ const normalizeManufacturingData = (data, fallbackRawMaterials) => ({
     : fallbackRawMaterials ?? [],
 });
 
+const getProductionMonthRange = (productionDateValue) => {
+  const productionDate = new Date(productionDateValue);
+
+  if (Number.isNaN(productionDate.getTime())) {
+    return null;
+  }
+
+  const monthStart = new Date(
+    productionDate.getFullYear(),
+    productionDate.getMonth(),
+    1,
+  );
+
+  const monthEnd = new Date(
+    productionDate.getFullYear(),
+    productionDate.getMonth() + 1,
+    1,
+  );
+
+  return {
+    monthStart: monthStart.toISOString().slice(0, 10),
+    monthEnd: monthEnd.toISOString().slice(0, 10),
+  };
+};
+
 const buildRawMaterialLabel = (item) =>
   [
     item.rawMaterialName,
@@ -110,7 +152,7 @@ const groupRawMaterialsByInventory = (rawMaterials) => {
 
   rawMaterials.forEach((item) => {
     const filter = buildRawMaterialFilter(item);
-    const key = JSON.stringify(filter);
+    const key = JSON.stringify(filter); 
     const current = groupedItems.get(key);
 
     groupedItems.set(key, {
@@ -129,6 +171,39 @@ const hasValidCoupon = (token) => {
   return Boolean(value) && value !== "n/a" && value !== "non-coupon" && value !== "non-coupan";
 };
 
+const isGroutProductCategory = (productCategory) => {
+  const value = String(productCategory || "").trim().toLowerCase();
+  return value === "grout" || value === "tile grout";
+};
+
+const buildPackagingInventoryFilter = (fields) => {
+  const isCoupon = fields.unit === "pcs" && fields.coupon;
+
+  return compactFilter({
+    rawMaterialName: "Packaging",
+    packagingType: "FG",
+    level2: fields.level2 || "",
+    level3: fields.level3 || "",
+    level4: fields.level4 || "",
+    packagingBagColor: isCoupon ? "" : fields.packagingBagColor || "",
+    coupon: fields.coupon || "",
+    unit: fields.unit || "",
+  });
+};
+
+const buildPackagingInventoryLabel = (fields) =>
+  [
+    fields.rawMaterialName || "Packaging",
+    fields.packagingType || "FG",
+    fields.level2,
+    fields.level3,
+    fields.level4,
+    fields.packagingBagColor,
+    fields.unit,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+
 const buildPackagingItems = (data) => {
   const items = [];
 
@@ -141,110 +216,217 @@ const buildPackagingItems = (data) => {
 
     if (qty <= 0) return;
 
-    if (data.productCategory === "Tile Adhesive" && productItem.bagSize) {
+    const itemToken = String(productItem.token || "").trim();
+    const isCoupon =
+      itemToken.toLowerCase() === "coupon" ||
+      itemToken.toLowerCase() === "coupan";
+
+    const actualToken = isCoupon
+      ? data.finishedProductName || ""
+      : itemToken;
+
+    if (actualToken && productItem.bagSize) {
       items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
         level2: data.productCategory || "",
         level3: productItem.bagSize,
-        level4: data.finishedProductName || "",
-        bagColor: data.color || "",
-        materialQuantity: qty,
-        materialUnit: "bags",
+        level4: actualToken,
+        packagingBagColor: data.color || "Grey",
+        quantity: qty,
+        unit: "bags",
+        errorNotFound: "Packaging bag inventory not found",
+        errorInsufficient: "Insufficient packaging bag stock",
       });
+
+      if (isCoupon) {
+        items.push({
+          level2: data.productCategory || "",
+          level3: productItem.bagSize,
+          level4: actualToken,
+          coupon: "Coupon",
+          quantity: qty,
+          unit: "pcs",
+          errorNotFound: `Coupon inventory not found for ${data.productCategory} / ${productItem.bagSize} / ${actualToken}`,
+          errorInsufficient: "Insufficient coupon stock",
+        });
+      }
     }
 
-    if (hasValidCoupon(productItem.token)) {
-      items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
-        level2: data.productCategory || "",
-        level3: productItem.token,
-        level4: data.finishedProductName || "",
-        bagColor: data.color || "",
-        materialQuantity: qty,
-        materialUnit: "pcs",
-      });
+    if (isGroutProductCategory(data.productCategory)) {
+      const cartonQty = Math.ceil(qty / 25);
+
+      if (cartonQty > 0) {
+        items.push({
+          level2: "Tile Grout",
+          level3: "Carton",
+          quantity: cartonQty,
+          unit: "nos",
+          errorNotFound: "Carton inventory not found",
+          errorInsufficient: "Insufficient carton stock",
+        });
+      }
     }
 
-    if (data.productCategory === "Epoxy") {
-      items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
-        level2: "Epoxy",
-        level3: "Sponge",
-        materialQuantity: qty,
-        materialUnit: "pcs",
-      });
+    if (String(data.productCategory || "").trim() === "Epoxy") {
+      const bucketSize = String(productItem.bagSize || "").trim().toLowerCase();
+      const hardnerName =
+        bucketSize === "1kg"
+          ? "Hardner 112gm"
+          : bucketSize === "5kg"
+            ? "Hardner 385gm"
+            : "";
 
-      items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
-        level2: "Epoxy",
-        level3: "Sticker",
-        materialQuantity: qty,
-        materialUnit: "pcs",
-      });
-    }
-
-    if (data.productCategory === "Tile Cleaner") {
-      items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
-        level2: "Tile Cleaner",
-        level3: "Bucket",
-        level4: productItem.bagSize,
-        materialQuantity: qty,
-        materialUnit: "pcs",
-      });
-
-      items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
-        level2: "Tile Cleaner",
-        level3: "Seal",
-        level4: productItem.bagSize,
-        materialQuantity: qty,
-        materialUnit: "pcs",
-      });
-
-      items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
-        level2: "Tile Cleaner",
-        level3: "Sticker",
-        level4: productItem.bagSize,
-        materialQuantity: qty,
-        materialUnit: "pcs",
-      });
-    }
-
-    if (data.productCategory === "Bondure") {
-      items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
-        level2: "Bondure",
-        level3: productItem.bagSize,
-        level4: "Bondure",
-        materialQuantity: qty,
-        materialUnit: "bags",
-      });
-    }
-
-    if (data.productCategory === "Grout") {
-      items.push({
-        rawMaterialName: "Packaging",
-        packagingType: "FG",
-        level2: "Tile Grout",
-        level3: "Pouch 1KG",
-        level4: "",
-        materialQuantity: qty,
-        materialUnit: "nos",
-      });
+      if (hardnerName) {
+        items.push({
+          rawMaterialName: "Packaging",
+          packagingType: "FG",
+          level2: "Epoxy",
+          level3: hardnerName,
+          quantity: qty,
+          unit: "nos",
+          errorNotFound: "Hardner inventory not found",
+          errorInsufficient: "Insufficient hardner stock",
+        });
+      }
     }
   });
 
   return items;
+};
+
+const groupPackagingItemsByInventory = (packagingItems) => {
+  const groupedItems = new Map();
+
+  packagingItems.forEach((item) => {
+    const filter = buildPackagingInventoryFilter(item);
+    const key = JSON.stringify(filter);
+    const current = groupedItems.get(key);
+
+    groupedItems.set(key, {
+      filter,
+      label: current?.label || buildPackagingInventoryLabel({
+        rawMaterialName: "Packaging",
+        packagingType: "FG",
+        ...item,
+      }),
+      unit: current?.unit || item.unit,
+      quantity: (current?.quantity || 0) + parseNumber(item.quantity),
+      errorNotFound: item.errorNotFound,
+      errorInsufficient: item.errorInsufficient,
+    });
+  });
+
+  return Array.from(groupedItems.values());
+};
+
+const buildPackagingDeltaMap = (data, direction = 1) => {
+  const deltas = new Map();
+  const groupedItems = groupPackagingItemsByInventory(buildPackagingItems(data));
+
+  groupedItems.forEach((item) => {
+    const key = JSON.stringify(item.filter);
+    deltas.set(key, {
+      ...item,
+      quantity: item.quantity * direction,
+    });
+  });
+
+  return deltas;
+};
+
+const combinePackagingDeltas = (previousData, nextData) => {
+  const combined = new Map();
+  const mergeDeltas = (deltas) => {
+    deltas.forEach((value, key) => {
+      const current = combined.get(key);
+
+      combined.set(key, {
+        ...value,
+        label: current?.label || value.label,
+        quantity: (current?.quantity || 0) + value.quantity,
+      });
+    });
+  };
+
+  if (previousData) {
+    mergeDeltas(buildPackagingDeltaMap(previousData, -1));
+  }
+
+  if (nextData) {
+    mergeDeltas(buildPackagingDeltaMap(nextData, 1));
+  }
+
+  return Array.from(combined.values()).filter((item) => item.quantity !== 0);
+};
+
+const validatePackagingStockChange = async (previousData, nextData) => {
+  const deltas = combinePackagingDeltas(previousData, nextData);
+
+  for (const item of deltas) {
+    if (item.quantity <= 0) {
+      continue;
+    }
+
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
+    }
+
+    const currentStock = parseNumber(inventory.currentStock);
+
+    if (currentStock < item.quantity) {
+      throw new Error(item.errorInsufficient || `${item.label} does not have enough stock.`);
+    }
+  }
+};
+
+const reducePackagingStock = async (data) => {
+  const groupedItems = groupPackagingItemsByInventory(buildPackagingItems(data));
+
+  for (const item of groupedItems) {
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
+    }
+
+    const currentStock = parseNumber(inventory.currentStock);
+
+    if (currentStock < item.quantity) {
+      throw new Error(item.errorInsufficient || `${item.label} does not have enough stock.`);
+    }
+  }
+
+  for (const item of groupedItems) {
+    await Inventory.updateOne(item.filter, {
+      $inc: {
+        usedInProduction: item.quantity,
+        currentStock: -item.quantity,
+      },
+    });
+  }
+};
+
+const addPackagingStockBack = async (data) => {
+  const groupedItems = groupPackagingItemsByInventory(buildPackagingItems(data));
+
+  for (const item of groupedItems) {
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      continue;
+    }
+
+    const usedInProduction = parseNumber(inventory.usedInProduction);
+    const quantityToRestore = Math.min(usedInProduction, item.quantity);
+
+    await Inventory.updateOne(item.filter, {
+      $inc: {
+        usedInProduction: -quantityToRestore,
+        currentStock: quantityToRestore,
+      },
+    });
+  }
 };
 
 const reduceRawMaterialStock = async (rawMaterials) => {
@@ -258,19 +440,70 @@ const reduceRawMaterialStock = async (rawMaterials) => {
     }
 
     const currentStock = parseNumber(inventory.currentStock);
+    const requiredQty = convertQuantityToInventoryUnit(
+      item.quantity,
+      item.materialUnit,
+      inventory.unit,
+    );
 
-    if (currentStock < item.quantity) {
+    if (currentStock < requiredQty) {
       throw new Error(
-        `${item.label} has only ${currentStock} ${inventory.unit || item.materialUnit || "stock"} available, but ${item.quantity} ${item.materialUnit || inventory.unit || "stock"} is required.`
+        `${item.label} has only ${currentStock} ${inventory.unit || item.materialUnit || "stock"} available, but ${requiredQty} ${inventory.unit || item.materialUnit || "stock"} is required.`
       );
     }
   }
 
   for (const item of groupedItems) {
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      throw new Error(`${item.label} stock is not available in inventory.`);
+    }
+
+    const requiredQty = convertQuantityToInventoryUnit(
+      item.quantity,
+      item.materialUnit,
+      inventory.unit,
+    );
+
     await Inventory.updateOne(item.filter, {
       $inc: {
-        usedInProduction: item.quantity,
-        currentStock: -item.quantity,
+        usedInProduction: requiredQty,
+        currentStock: -requiredQty,
+      },
+    });
+  }
+};
+
+const updatePackagingStock = async (previousData, nextData) => {
+  const deltas = combinePackagingDeltas(previousData, nextData);
+  await validatePackagingStockChange(previousData, nextData);
+
+  for (const item of deltas) {
+    if (item.quantity > 0) {
+      await Inventory.updateOne(item.filter, {
+        $inc: {
+          usedInProduction: item.quantity,
+          currentStock: -item.quantity,
+        },
+      });
+      continue;
+    }
+
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      continue;
+    }
+
+    const restoreQuantity = Math.abs(item.quantity);
+    const usedInProduction = parseNumber(inventory.usedInProduction);
+    const quantityToRestore = Math.min(usedInProduction, restoreQuantity);
+
+    await Inventory.updateOne(item.filter, {
+      $inc: {
+        usedInProduction: -quantityToRestore,
+        currentStock: quantityToRestore,
       },
     });
   }
@@ -286,13 +519,18 @@ const addRawMaterialStockBack = async (rawMaterials) => {
       continue;
     }
 
+    const restoreQty = convertQuantityToInventoryUnit(
+      item.quantity,
+      item.materialUnit,
+      inventory.unit,
+    );
     const usedInProduction = parseNumber(inventory.usedInProduction);
-    const quantityToRestore = Math.min(usedInProduction, item.quantity);
+    const quantityToRestore = Math.min(usedInProduction, restoreQty);
 
     await Inventory.updateOne(item.filter, {
       $inc: {
         usedInProduction: -quantityToRestore,
-        currentStock: item.quantity,
+        currentStock: quantityToRestore,
       },
     });
   }
@@ -454,11 +692,14 @@ const updateWastageStock = async (data) => {
     }
   );
 };
+
 const createManufacturingEntry = async (req, res) => {
   try {
     console.log("req.body:", req.body);
 
     const data = normalizeManufacturingData(req.body);
+
+    console.log("Normalized data:", data);
 
     const trimmedBatchNo = String(data.batchNo || "").trim();
 
@@ -469,25 +710,42 @@ const createManufacturingEntry = async (req, res) => {
       });
     }
 
+    if (!String(data.productionDate || "").trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Production date is required.",
+      });
+    }
+
+    const productionMonthRange = getProductionMonthRange(data.productionDate);
+
+    if (!productionMonthRange) {
+      return res.status(400).json({
+        success: false,
+        message: "Production date is invalid.",
+      });
+    }
+
     const existingBatch = await ManufacturingEntry.findOne({
       batchNo: { $regex: `^${trimmedBatchNo}$`, $options: "i" },
+      productionDate: {
+        $gte: productionMonthRange.monthStart,
+        $lt: productionMonthRange.monthEnd,
+      },
     });
 
     if (existingBatch) {
       return res.status(400).json({
         success: false,
-        message: `Batch No. ${trimmedBatchNo} already exists. Please enter a unique Batch No.`,
+        message: `Batch No. ${trimmedBatchNo} already exists for this month.`,
       });
     }
 
     data.batchNo = trimmedBatchNo;
 
-    const inventoryItemsToReduce = [
-      ...data.rawMaterials,
-      ...buildPackagingItems(data),
-    ];
-
-    await reduceRawMaterialStock(inventoryItemsToReduce);
+    await validatePackagingStockChange(null, data);
+    await reduceRawMaterialStock(data.rawMaterials);
+    await reducePackagingStock(data);
 
     const entry = await ManufacturingEntry.create(data);
 
@@ -531,11 +789,48 @@ const updateManufacturingEntry = async (req, res) => {
 
     const hasRawMaterialUpdates = Array.isArray(req.body.rawMaterials);
     const data = normalizeManufacturingData(req.body, current.rawMaterials || []);
+    const trimmedBatchNo = String(data.batchNo || "").trim();
+
+    if (!String(data.productionDate || "").trim()) {
+      return res.status(400).json({ success: false, message: "Production date is required." });
+    }
+
+    if (!trimmedBatchNo) {
+      return res.status(400).json({ success: false, message: "Batch No. is required." });
+    }
+
+    const productionMonthRange = getProductionMonthRange(data.productionDate);
+
+    if (!productionMonthRange) {
+      return res.status(400).json({ success: false, message: "Production date is invalid." });
+    }
+
+    const existingBatch = await ManufacturingEntry.findOne({
+      _id: { $ne: req.params.id },
+      batchNo: { $regex: `^${trimmedBatchNo}$`, $options: "i" },
+      productionDate: {
+        $gte: productionMonthRange.monthStart,
+        $lt: productionMonthRange.monthEnd,
+      },
+    });
+
+    if (existingBatch) {
+      return res.status(400).json({
+        success: false,
+        message: `Batch No. ${trimmedBatchNo} already exists for this month.`,
+      });
+    }
+
+    data.batchNo = trimmedBatchNo;
+
+    await validatePackagingStockChange(current, data);
 
     if (hasRawMaterialUpdates) {
       await addRawMaterialStockBack(current.rawMaterials || []);
       await reduceRawMaterialStock(data.rawMaterials);
     }
+
+    await updatePackagingStock(current, data);
 
     await applyProductMaterialLogDeltas(current, data);
 
@@ -555,6 +850,7 @@ const deleteManufacturingEntry = async (req, res) => {
     }
 
     await addRawMaterialStockBack(current.rawMaterials || []);
+    await addPackagingStockBack(current);
     await applyProductMaterialLogDeltas(current, null);
     await ManufacturingEntry.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Production entry deleted successfully" });
@@ -580,6 +876,8 @@ const getProductionMaterialLogs = async (_req, res) => {
         bagSize: log.bagSize || "",
         currentQuantity: log.currentQuantity || 0,
         shippedQuantity: log.shippedQuantity || 0,
+        createdAt: log.createdAt || null,
+        updatedAt: log.updatedAt || null,
       })),
     });
   } catch (error) {

@@ -42,6 +42,10 @@ function formatCount(value: number) {
   });
 }
 
+function formatKgToMt(value: number) {
+  return `${formatCount(value / 1000)} mt`;
+}
+
 function formatDateInput(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -117,7 +121,7 @@ function getInventoryAlertThreshold(entry: PurchaseEntry) {
   }
 
   if (rawMaterialName === "chemical") {
-    return { threshold: 1000, thresholdLabel: "1000 kg" };
+    return { threshold: 100, thresholdLabel: "100 kg" };
   }
 
   if (rawMaterialName === "packaging") {
@@ -678,7 +682,7 @@ export function DashboardPage() {
                         <div className="rounded-lg bg-muted/50 p-3">
                           <p className="text-xs font-medium uppercase text-muted-foreground">Total Production</p>
                           <p className="mt-1 text-base font-semibold text-foreground">
-                            {formatCount(category.totalProductionKg)} kg
+                            {formatKgToMt(category.totalProductionKg)}
                           </p>
                         </div>
                         <div className="rounded-lg bg-muted/50 p-3">
