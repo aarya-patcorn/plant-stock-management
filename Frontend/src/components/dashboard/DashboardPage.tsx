@@ -108,42 +108,42 @@ function getInventoryAlertThreshold(entry: PurchaseEntry) {
 
   if (rawMaterialName === "sand") {
     if (packagingType === "grey" && level2.includes("600 micron")) {
-      return { threshold: 5, thresholdLabel: "5 mt" };
+      return { threshold: 30, thresholdLabel: "30 mt" };
     }
 
     if (packagingType === "grey" && level2.includes("1200 micron")) {
-      return { threshold: 5, thresholdLabel: "5 mt" };
+      return { threshold: 10, thresholdLabel: "10 mt" };
     }
 
     if (packagingType === "white") {
-      return { threshold: 5, thresholdLabel: "5 mt" };
+      return { threshold: 10, thresholdLabel: "10 mt" };
     }
   }
 
   if (rawMaterialName === "chemical") {
-    return { threshold: 100, thresholdLabel: "100 kg" };
+    return { threshold: 30, thresholdLabel: "100 kg" };
   }
 
   if (rawMaterialName === "packaging") {
     if (unit === "bags") {
-      return { threshold: 200, thresholdLabel: "200 bags" };
+      return { threshold: 2000, thresholdLabel: "2000 bags" };
     }
 
     if (level3 === "coupon") {
-      return { threshold: 200, thresholdLabel: "200 pcs" };
+      return { threshold: 2000, thresholdLabel: "2000 pcs" };
     }
 
     if (level2 === "tile grout" && level3.includes("pouch")) {
-      return { threshold: 100, thresholdLabel: "100 nos" };
+      return { threshold: 2000, thresholdLabel: "2000 nos" };
     }
 
     if (level2 === "epoxy" && level3.includes("bucket")) {
-      return { threshold: 100, thresholdLabel: "100 bucket" };
+      return { threshold: 500, thresholdLabel: "500 bucket" };
     }
   }
 
   if (packagingBag && packagingBag.includes("coupon")) {
-    return { threshold: 200, thresholdLabel: "200 pcs" };
+    return { threshold: 2000, thresholdLabel: "200 pcs" };
   }
 
   return null;
