@@ -234,7 +234,101 @@ const isGroutProductCategory = (productCategory) => {
   return value === "grout" || value === "tile grout";
 };
 
+const isEpoxyProductCategory = (productCategory) =>
+  String(productCategory || "").trim().toLowerCase() === "epoxy";
+
+const normalizeBondureBagSize = (value = "") => {
+  const number = String(value).match(/\d+(\.\d+)?/)?.[0] || "";
+  return number ? `${number} KG` : String(value).trim();
+};
+
+const normalizeBucketSize = (value) => {
+  const normalized = String(value || "")
+    .replace(/^bucket\s+/i, "")
+    .trim()
+    .toUpperCase();
+
+  if (normalized === "1KG") return "1KG";
+  if (normalized === "5KG") return "5KG";
+
+  return normalized;
+};
+
+const getPackagingCategoryLevel2 = (productCategory) =>
+  isGroutProductCategory(productCategory)
+    ? "Tile Grout"
+    : String(productCategory || "").trim();
+
+const logPackagingInventoryLookup = (stage, item, filter, inventory) => {
+  console.log(`[Packaging:${stage}] filter:`, filter);
+  console.log(
+    `[Packaging:${stage}] inventory:`,
+    inventory
+      ? {
+        id: inventory._id,
+        rawMaterialName: inventory.rawMaterialName,
+        packagingType: inventory.packagingType,
+        level2: inventory.level2,
+        level3: inventory.level3,
+        level4: inventory.level4,
+        packagingBagColor: inventory.packagingBagColor,
+        coupon: inventory.coupon,
+        unit: inventory.unit,
+        currentStock: inventory.currentStock,
+        usedInProduction: inventory.usedInProduction,
+      }
+      : null,
+  );
+  console.log(
+    `[Packaging:${stage}] currentStock:`,
+    inventory ? parseNumber(inventory.currentStock) : null,
+    "requiredQty:",
+    parseNumber(item?.quantity),
+  );
+};
+
+const findPackagingInventory = async (item, stage) => {
+  const inventory = await Inventory.findOne(item.filter);
+  logPackagingInventoryLookup(stage, item, item.filter, inventory);
+  if (item.packagingItemType === "bondure-bag") {
+    console.log("[Bondure Packaging Filter]", item.filter);
+    console.log("[Bondure Packaging Inventory]", inventory);
+  }
+  return inventory;
+};
+
 const buildPackagingInventoryFilter = (fields) => {
+  if (fields.packagingItemType === "grout-pouch") {
+    return compactFilter({
+      rawMaterialName: "Packaging",
+      packagingType: "FG",
+      level2: "Tile Grout",
+      level3: fields.level3 || "",
+      unit: fields.unit || "nos",
+    });
+  }
+
+  if (fields.packagingItemType === "bondure-bag") {
+    return compactFilter({
+      rawMaterialName: "Packaging",
+      packagingType: "FG",
+      level2: "Bondure",
+      level3: normalizeBondureBagSize(fields.level3 || ""),
+      level4: "Bondure",
+      unit: fields.unit || "bags",
+    });
+  }
+
+  if (fields.packagingItemType === "epoxy-bucket") {
+    return compactFilter({
+      rawMaterialName: "Packaging",
+      packagingType: "FG",
+      level2: "Epoxy",
+      level3: `Bucket ${normalizeBucketSize(fields.bucketSize || fields.level3 || "")}`.trim(),
+      unit: fields.unit || "nos",
+    });
+  }
+
   const isCoupon = fields.unit === "pcs" && fields.coupon;
 
   return compactFilter({
@@ -285,7 +379,37 @@ const buildPackagingItems = (data) => {
       data.finishedProductName || data.productName || "",
     ).trim();
 
-    if (actualToken && productItem.bagSize) {
+    if (isGroutProductCategory(data.productCategory) && productItem.bagSize) {
+      items.push({
+        packagingItemType: "grout-pouch",
+        level2: getPackagingCategoryLevel2(data.productCategory),
+        level3: productItem.bagSize,
+        quantity: qty,
+        unit: "nos",
+        errorNotFound: "Packaging bag inventory not found",
+        errorInsufficient: "Insufficient packaging bag stock",
+      });
+    } else if (String(data.productCategory || "").trim() === "Bondure" && productItem.bagSize) {
+      items.push({
+        packagingItemType: "bondure-bag",
+        level2: "Bondure",
+        level3: productItem.bagSize,
+        quantity: qty,
+        unit: "bags",
+        errorNotFound: "Packaging bag inventory not found",
+        errorInsufficient: "Insufficient packaging bag stock",
+      });
+    } else if (isEpoxyProductCategory(data.productCategory) && productItem.bagSize) {
+      items.push({
+        packagingItemType: "epoxy-bucket",
+        level2: "Epoxy",
+        level3: normalizeBucketSize(productItem.bagSize),
+        quantity: qty,
+        unit: "nos",
+        errorNotFound: "Packaging bucket inventory not found",
+        errorInsufficient: "Insufficient packaging bucket stock",
+      });
+    } else if (actualToken && productItem.bagSize) {
       items.push({
         level2: data.productCategory || "",
         level3: productItem.bagSize,
@@ -326,7 +450,7 @@ const buildPackagingItems = (data) => {
       }
     }
 
-    if (String(data.productCategory || "").trim() === "Epoxy") {
+    if (isEpoxyProductCategory(data.productCategory)) {
       const bucketSize = String(productItem.bagSize || "").trim().toLowerCase();
       const hardnerName =
         bucketSize === "1kg"
@@ -349,6 +473,33 @@ const buildPackagingItems = (data) => {
       }
     }
   });
+
+  if (isEpoxyProductCategory(data.productCategory)) {
+    const stickerQty = parseNumber(data.sticker);
+    const spongeQty = parseNumber(data.sponge);
+
+    if (stickerQty > 0) {
+      items.push({
+        level2: "Epoxy",
+        level3: "Sticker",
+        quantity: stickerQty,
+        unit: "nos",
+        errorNotFound: "Sticker inventory not found",
+        errorInsufficient: "Insufficient sticker stock",
+      });
+    }
+
+    if (spongeQty > 0) {
+      items.push({
+        level2: "Epoxy",
+        level3: "Sponge",
+        quantity: spongeQty,
+        unit: "nos",
+        errorNotFound: "Sponge inventory not found",
+        errorInsufficient: "Insufficient sponge stock",
+      });
+    }
+  }
 
   return items;
 };
@@ -426,7 +577,7 @@ const validatePackagingStockChange = async (previousData, nextData) => {
       continue;
     }
 
-    const inventory = await Inventory.findOne(item.filter);
+    const inventory = await findPackagingInventory(item, "validate");
 
     if (!inventory) {
       throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
@@ -444,7 +595,7 @@ const reducePackagingStock = async (data) => {
   const groupedItems = groupPackagingItemsByInventory(buildPackagingItems(data));
 
   for (const item of groupedItems) {
-    const inventory = await Inventory.findOne(item.filter);
+    const inventory = await findPackagingInventory(item, "reduce:validate");
 
     if (!inventory) {
       throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
@@ -458,6 +609,12 @@ const reducePackagingStock = async (data) => {
   }
 
   for (const item of groupedItems) {
+    const inventory = await findPackagingInventory(item, "reduce:update");
+
+    if (!inventory) {
+      throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
+    }
+
     await Inventory.updateOne(item.filter, {
       $inc: {
         usedInProduction: item.quantity,
@@ -471,7 +628,7 @@ const addPackagingStockBack = async (data) => {
   const groupedItems = groupPackagingItemsByInventory(buildPackagingItems(data));
 
   for (const item of groupedItems) {
-    const inventory = await Inventory.findOne(item.filter);
+    const inventory = await findPackagingInventory(item, "restore");
 
     if (!inventory) {
       continue;
@@ -541,6 +698,12 @@ const updatePackagingStock = async (previousData, nextData) => {
 
   for (const item of deltas) {
     if (item.quantity > 0) {
+      const inventory = await findPackagingInventory(item, "update:deduct");
+
+      if (!inventory) {
+        throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
+      }
+
       await Inventory.updateOne(item.filter, {
         $inc: {
           usedInProduction: item.quantity,
@@ -550,7 +713,7 @@ const updatePackagingStock = async (previousData, nextData) => {
       continue;
     }
 
-    const inventory = await Inventory.findOne(item.filter);
+    const inventory = await findPackagingInventory(item, "update:restore");
 
     if (!inventory) {
       continue;

@@ -115,6 +115,17 @@ const getAutoProducedQuantity = (
   return String(Math.floor(totalProducedKg / unitKg));
 };
 
+const getBondureTotalBagsProduced = (bagSize: string) => {
+  const match = String(bagSize || "").match(/(\d+(?:\.\d+)?)/i);
+  const bagSizeNumber = match ? Number(match[1]) : 0;
+
+  if (!bagSizeNumber) {
+    return "";
+  }
+
+  return String(1000 / bagSizeNumber);
+};
+
 
 const getBatchDefaults = (tphBatch: string) => {
   switch (tphBatch) {
@@ -333,8 +344,54 @@ export function ManufacturingEntryForm() {
   }, [isWastageExceeded]);
 
   useEffect(() => {
+    if (selectedProductCategory !== "Bondure") {
+      return;
+    }
+
+    setFormData((current) =>
+      current.finishedProductName === "Bondure"
+        ? current
+        : {
+          ...current,
+          finishedProductName: "Bondure",
+        },
+    );
+  }, [selectedProductCategory]);
+
+  useEffect(() => {
     setWastageBagSize("");
   }, [formData.productCategory]);
+
+  useEffect(() => {
+    if (selectedProductCategory !== "Bondure") {
+      return;
+    }
+
+    const primaryItem = productItems[0] ?? {
+      bagSize: "",
+      totalBagsProduced: "",
+    };
+
+    setFormData((current) => {
+      const nextBagSize = primaryItem.bagSize || "";
+      const nextTotalBagsProduced = primaryItem.totalBagsProduced || "";
+
+      if (
+        current.finishedProductName === "Bondure" &&
+        current.bagSize === nextBagSize &&
+        current.totalBagsProduced === nextTotalBagsProduced
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        finishedProductName: "Bondure",
+        bagSize: nextBagSize,
+        totalBagsProduced: nextTotalBagsProduced,
+      };
+    });
+  }, [productItems, selectedProductCategory]);
 
   const updateRawMaterialField = (
     index: number,
@@ -399,6 +456,10 @@ export function ManufacturingEntryForm() {
   useEffect(() => {
     setProductItems((current) =>
       current.map((item) => {
+        if (selectedProductCategory === "Bondure") {
+          return item;
+        }
+
         const nextTotalBagsProduced = isAutoCalculatedPackagingProduct
           ? getAutoProducedQuantity(selectedProductCategory, batchKg, item.bagSize)
           : getFinalTotalBagsProduced(
@@ -1370,18 +1431,22 @@ export function ManufacturingEntryForm() {
                         value={item.bagSize}
                         onChange={(e) => {
                           const bagSize = e.target.value;
+                          const nextTotalBagsProduced =
+                            selectedProductCategory === "Bondure"
+                              ? getBondureTotalBagsProduced(bagSize)
+                              : isAutoCalculatedPackagingProduct
+                                ? getAutoProducedQuantity(selectedProductCategory, batchKg, bagSize)
+                                : getFinalTotalBagsProduced(
+                                  formData.tphBatch,
+                                  bagSize,
+                                  wastageTotalBags,
+                                );
 
                           updateProductItem(index, "bagSize", bagSize);
                           updateProductItem(
                             index,
                             "totalBagsProduced",
-                            isAutoCalculatedPackagingProduct
-                              ? getAutoProducedQuantity(selectedProductCategory, batchKg, bagSize)
-                              : getFinalTotalBagsProduced(
-                                formData.tphBatch,
-                                bagSize,
-                                wastageTotalBags,
-                              )
+                            nextTotalBagsProduced
                           );
                         }}
                       >

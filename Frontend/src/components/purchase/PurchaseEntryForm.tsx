@@ -447,11 +447,15 @@ export function PurchaseEntryForm() {
   const packagingBagOptions =
     formData.level2 === "Bondure" ? ["Bondure"] : ["K50", "K60", "K80", "K90", "Kamdhenu X"];
   const bucketSizeOptions = ["1L", "5L"];
+  const isPpcCementBagFlow =
+    formData.rawMaterialName === "Cement" &&
+    formData.packagingType === "PPC" &&
+    formData.level2 === "Bag";
   const shouldShowAutoBagQuantityField =
     (formData.rawMaterialName === "Sand" &&
       (formData.packagingType === "White" || (formData.packagingType === "Grey" && Boolean(formData.level2)))) ||
     (formData.rawMaterialName === "Cement" &&
-      formData.packagingType === "White Cement" &&
+      (formData.packagingType === "White Cement" || isPpcCementBagFlow) &&
       formData.level2 === "Bag");
   const autoBagWeightInKg =
     formData.rawMaterialName === "Sand"
@@ -460,7 +464,8 @@ export function PurchaseEntryForm() {
         : formData.packagingType === "White"
           ? 50
           : 0
-      : formData.rawMaterialName === "Cement" && formData.packagingType === "White Cement"
+      : formData.rawMaterialName === "Cement" &&
+        (formData.packagingType === "White Cement" || isPpcCementBagFlow)
         ? 50
         : 0;
   const isPackagingTileAdhesiveFlow =
@@ -639,7 +644,9 @@ export function PurchaseEntryForm() {
       setFormData((current) => {
         const isAutoBagMaterial =
           current.rawMaterialName === "Sand" ||
-          (current.rawMaterialName === "Cement" && current.packagingType === "White Cement");
+          (current.rawMaterialName === "Cement" &&
+            (current.packagingType === "White Cement" ||
+              (current.packagingType === "PPC" && current.level2 === "Bag")));
 
         if (!isAutoBagMaterial) {
           return current;
@@ -666,14 +673,16 @@ export function PurchaseEntryForm() {
 
     if (!sandBagQuantity) {
       setFormData((current) => {
-        if (!current.quantityPurchased && current.unit === "mt") {
+        const nextUnit = "mt";
+
+        if (!current.quantityPurchased && current.unit === nextUnit) {
           return current;
         }
 
         return {
           ...current,
           quantityPurchased: "",
-          unit: "mt",
+          unit: nextUnit,
         };
       });
       setOtherSelections((current) => ({
@@ -687,21 +696,23 @@ export function PurchaseEntryForm() {
     const quantityPurchased = formatMetricTonnesFromKilograms(totalKilograms);
 
     setFormData((current) => {
-      if (current.quantityPurchased === quantityPurchased && current.unit === "mt") {
+      const nextUnit = "mt";
+
+      if (current.quantityPurchased === quantityPurchased && current.unit === nextUnit) {
         return current;
       }
 
       return {
         ...current,
         quantityPurchased,
-        unit: "mt",
+        unit: nextUnit,
       };
     });
     setOtherSelections((current) => ({
       ...current,
       unit: false,
     }));
-  }, [autoBagWeightInKg, sandBagQuantity, shouldShowAutoBagQuantityField]);
+  }, [autoBagWeightInKg, isPpcCementBagFlow, sandBagQuantity, shouldShowAutoBagQuantityField]);
 
   const updateField = (name: keyof typeof formData, value: string) => {
     setFormData((current) => ({
@@ -1267,8 +1278,8 @@ export function PurchaseEntryForm() {
                     onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
                   >
                     <option value="">Select Person</option>
-                    <option value="Vasu">Chandrashekhar</option>
-                    <option value="Sujit">Anand</option>
+                    <option value="Chandrashekhar">Chandrashekhar</option>
+                    <option value="Anand">Anand</option>
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
 
@@ -1287,7 +1298,7 @@ export function PurchaseEntryForm() {
                     <option value="">Select Person</option>
                     <option value="Anand">Sujeet</option>
                     <option value="Chandrashekhar">Thailesh</option>
-                    <option value="Sushil">Vashu</option>
+                    <option value="Vasu">Vasu</option>
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
 
@@ -1303,8 +1314,9 @@ export function PurchaseEntryForm() {
                     onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
                   >
                     <option value="">Select Person</option>
-                    <option value="Anand">Thalesh</option>
-                    <option value="Chandrashekhar">Sujeet</option>
+                    <option value="Thailesh">Thalesh</option>
+                    <option value="Sujeet">Sujeet</option>
+                    <option value="Vasu">Vasu</option>
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
 
@@ -1320,9 +1332,9 @@ export function PurchaseEntryForm() {
                     onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
                   >
                     <option value="">Select Person</option>
-                    <option value="Anand">Thalesh</option>
-                    <option value="Chandrashekhar">Sujeet</option>
-                    <option value="Chandrashekhar">Vasu</option>
+                    <option value="Thailesh">Thailesh</option>
+                    <option value="Sujeet">Sujeet</option>
+                    <option value="Vasu">Vasu</option>
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
 
@@ -1338,9 +1350,9 @@ export function PurchaseEntryForm() {
                     onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
                   >
                     <option value="">Select Person</option>
-                    <option value="Anand">Sujeet</option>
-                    <option value="Chandrashekhar">Thailesh</option>
-                    <option value="Sushil">Vashu</option>
+                    <option value="Sujeet">Sujeet</option>
+                    <option value="Thailesh">Thailesh</option>
+                    <option value="Vasu">Vasu</option>
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
 
