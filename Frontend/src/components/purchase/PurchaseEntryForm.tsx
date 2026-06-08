@@ -1466,7 +1466,7 @@ export function PurchaseEntryForm() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="truncate text-sm font-medium">{materialPath || "Purchase entry"}</p>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {purchase.invoiceNo || purchase.id}
+                        {purchase.user || purchase.id}
                       </span>
                     </div>
                     <div className="mt-2 space-y-1 text-sm text-muted-foreground">

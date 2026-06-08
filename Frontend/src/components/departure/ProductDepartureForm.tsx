@@ -1001,7 +1001,7 @@ export function ProductDepartureForm() {
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm" key={departure.id}>
                   <div className="flex items-center justify-between gap-3">
                     <p className="truncate text-sm font-medium">{departure.productName || "Dispatch entry"}</p>
-                    <span className="shrink-0 text-xs text-muted-foreground">{departure.challanNo || departure.id}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{departure.user || departure.challanNo}</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {[departure.totalBags, "bags"].filter(Boolean).join(" ")} dispatched by {departure.driverName || "-"}

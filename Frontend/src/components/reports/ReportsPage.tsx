@@ -728,7 +728,7 @@ export function ReportsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          description="Production quantity in KG for the selected filter."
+          description="Production quantity in MT for the selected filter."
           title="Total Production KG"
           value={isLoading ? "..." : formatKgToMt(summary.totalProductionKg)}
         />

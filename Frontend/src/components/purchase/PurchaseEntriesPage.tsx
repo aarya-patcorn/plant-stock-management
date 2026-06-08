@@ -529,6 +529,7 @@ export function PurchaseEntriesPage() {
                 <Field htmlFor="edit-unit" label="Unit">
                   <Select
                     id="edit-unit"
+                    disabled
                     value={editingEntry.unit}
                     onChange={(event) =>
                       setEditingEntry((current) => current ? { ...current, unit: event.target.value } : current)
@@ -554,6 +555,7 @@ export function PurchaseEntriesPage() {
                 <Field htmlFor="edit-rawMaterialName" label="Raw Material Name">
                   <Select
                     id="edit-rawMaterialName"
+                    disabled
                     value={editingEntry.rawMaterialName}
                     onChange={(event) =>
                       updateEditingEntry({
@@ -582,6 +584,7 @@ export function PurchaseEntriesPage() {
                   {editConfig ? (
                     <Select
                       id="edit-packagingType"
+                      disabled
                       value={editingEntry.packagingType}
                       onChange={(event) =>
                         updateEditingEntry({
@@ -616,6 +619,7 @@ export function PurchaseEntriesPage() {
                   {editLevel2Config ? (
                     <Select
                       id="edit-level2"
+                      disabled
                       value={editingEntry.level2}
                       onChange={(event) =>
                         updateEditingEntry({
@@ -649,6 +653,7 @@ export function PurchaseEntriesPage() {
                   <Field htmlFor="edit-packagingBag" label="Packaging Bag">
                     <Select
                       id="edit-packagingBag"
+                      disabled
                       value={editingEntry.packagingBag || editingEntry.level4}
                       onChange={(event) =>
                         updateEditingEntry({
@@ -672,6 +677,7 @@ export function PurchaseEntriesPage() {
                   <Field htmlFor="edit-coupon" label="Coupon">
                     <Input
                       id="edit-coupon"
+                      disabled
                       value={editingEntry.coupon ?? ""}
                       onChange={(event) => updateEditingEntry({ coupon: event.target.value })}
                     />
@@ -682,6 +688,7 @@ export function PurchaseEntriesPage() {
                   <Field htmlFor="edit-packagingBagColor" label="Bag Color">
                     <Select
                       id="edit-packagingBagColor"
+                      disabled
                       value={editingEntry.packagingBagColor}
                       onChange={(event) => updateEditingEntry({ packagingBagColor: event.target.value })}
                     >
@@ -699,6 +706,7 @@ export function PurchaseEntriesPage() {
                   {editLevel3Config ? (
                     <Select
                       id="edit-level3"
+                      disabled
                       value={editingEntry.level3}
                       onChange={(event) =>
                         updateEditingEntry({
@@ -727,6 +735,7 @@ export function PurchaseEntriesPage() {
                   <Field htmlFor="edit-bucketSize" label="Bucket Size">
                     <Select
                       id="edit-bucketSize"
+                      disabled
                       value={editingEntry.bucketSize || editingEntry.level4}
                       onChange={(event) =>
                         updateEditingEntry({
@@ -749,6 +758,7 @@ export function PurchaseEntriesPage() {
                   <Field htmlFor="edit-level4" label="Level 4">
                     <Input
                       id="edit-level4"
+                      disabled
                       value={editingEntry.level4}
                       onChange={(event) => updateEditingEntry({ level4: event.target.value })}
                     />
@@ -766,6 +776,7 @@ export function PurchaseEntriesPage() {
                 <Field htmlFor="edit-quantityPurchased" label="Quantity Purchased">
                   <Input
                     id="edit-quantityPurchased"
+                    disabled
                     type="number"
                     value={editingEntry.quantityPurchased}
                     onChange={(event) =>
