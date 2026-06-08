@@ -14,6 +14,28 @@ const compactFilter = (fields) =>
 
 const normalizeText = (value) => String(value || "").trim();
 
+const parsePurchaseItems = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return [];
+  }
+
+  try {
+    const parsedValue = JSON.parse(trimmedValue);
+    return Array.isArray(parsedValue) ? parsedValue : [];
+  } catch (_error) {
+    return [];
+  }
+};
+
 const shouldUseCouponField = (data) =>
   normalizeText(data?.rawMaterialName) === "Packaging" &&
   normalizeText(data?.packagingType) === "FG" &&
@@ -206,6 +228,46 @@ const createPurchaseEntry = async (req, res) => {
         console.error("Apps Script upload failed:", error);
         return res.status(500).json({ success: false, message: error.message || "Unable to upload attachment via Apps Script." });
       }
+    }
+
+    const purchaseItems = parsePurchaseItems(req.body.purchaseItems);
+
+    if (purchaseItems.length > 0) {
+      const commonPurchaseFields = {
+        date: req.body.date || "",
+        time: req.body.time || "",
+        user: req.body.user || "",
+        supplierName: req.body.supplierName || "",
+        invoiceNo: req.body.invoiceNo || "",
+        unloadBy: req.body.unloadBy || "",
+        remarks: req.body.remarks || "",
+        attachFile: req.body.attachFile || "",
+        attachFileName: req.body.attachFileName || "",
+        attachFileId: req.body.attachFileId || "",
+      };
+
+      const normalizedPurchaseItems = purchaseItems.map((item) =>
+        normalizePurchaseData(
+          {
+            ...commonPurchaseFields,
+            ...item,
+          },
+          null,
+          uploadedAttachment,
+        )
+      );
+
+      const purchases = await PurchaseEntry.insertMany(normalizedPurchaseItems);
+
+      for (const purchaseData of normalizedPurchaseItems) {
+        await addPurchaseToInventory(purchaseData, purchaseData.quantityPurchased);
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "Purchase entries created successfully",
+        data: purchases,
+      });
     }
 
     const purchaseData = normalizePurchaseData(req.body, null, uploadedAttachment);

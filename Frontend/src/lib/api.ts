@@ -196,7 +196,19 @@ export async function submitEntry(
     const formData = new FormData();
 
     Object.entries(payloadWithUser).forEach(([key, value]) => {
-      formData.append(key, String(value ?? ""));
+      if (value === undefined || value === null) {
+        formData.append(key, "");
+        return;
+      }
+
+      const isFileValue = typeof File !== "undefined" && value != null && (value as unknown as File) instanceof File;
+
+      if (Array.isArray(value) || (typeof value === "object" && value !== null && !isFileValue)) {
+        formData.append(key, JSON.stringify(value));
+        return;
+      }
+
+      formData.append(key, String(value));
     });
 
     if (file) {
@@ -530,5 +542,3 @@ function safeParseJson(text: string): ApiResponse {
     return null;
   }
 }
-
-

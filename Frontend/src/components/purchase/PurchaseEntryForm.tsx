@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Eye, ReceiptText, RotateCcw, Save, Upload } from "lucide-react";
+import { Eye, RotateCcw, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -43,13 +43,20 @@ const purchaseOtherFields = [
   "bucketSize",
   "colorOfSandEpoxy",
   "unit",
-  "unloadBy",
 ] as const;
 type PurchaseOtherField = (typeof purchaseOtherFields)[number];
 
-const initialFormData = {
+const initialCommonFormData = {
   date: "",
   time: "",
+  supplierName: "",
+  invoiceNo: "",
+  unloadBy: "",
+  attachFile: "",
+  remarks: "",
+};
+
+const initialPurchaseItemData = {
   rawMaterialName: "",
   packagingType: "",
   level2: "",
@@ -62,11 +69,16 @@ const initialFormData = {
   colorOfSandEpoxy: "",
   quantityPurchased: "",
   unit: "",
-  supplierName: "",
-  invoiceNo: "",
-  unloadBy: "",
-  attachFile: "",
-  remarks: "",
+  bagQuantity: "",
+};
+
+type PurchaseItemData = typeof initialPurchaseItemData;
+
+type PurchaseItemState = {
+  id: string;
+  data: PurchaseItemData;
+  packagingItemType: string;
+  otherSelections: Record<PurchaseOtherField, boolean>;
 };
 
 function formatMetricTonnesFromKilograms(kilograms: number) {
@@ -148,7 +160,7 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
           "Sodium Gluconate",
           "Benzalkonium Chloride (BKC)",
           "Premium Fragrance & Dye",
-          "Alcohol Ethoxylate"
+          "Alcohol Ethoxylate",
         ],
       },
       "Tile Adhesive": {
@@ -157,7 +169,7 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
       },
       "Tile Grout": {
         label: "Select Chemical",
-        options: ["Calcium Carbonate", "Yellow Pigment", "Black Pigment", "Red Pigment", "Blue Pigment",],
+        options: ["Calcium Carbonate", "Yellow Pigment", "Black Pigment", "Red Pigment", "Blue Pigment"],
       },
     },
   },
@@ -180,7 +192,7 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
         children: {
           "Tile Adhesive": {
             label: "Packaging Size",
-            options: ["20kg", "50kg",],
+            options: ["20kg", "50kg"],
             children: {
               K50: {
                 label: "Packaging Size",
@@ -262,7 +274,6 @@ function getOptionsWithOther(options: string[]) {
   return [...normalizedOptions, "Other"];
 }
 
-
 function Field({
   children,
   className,
@@ -295,13 +306,211 @@ function hasDecimalValue(value: string) {
   return value.includes(".");
 }
 
-export function PurchaseEntryForm() {
+function createPurchaseItemState(): PurchaseItemState {
+  return {
+    id: crypto.randomUUID(),
+    data: { ...initialPurchaseItemData },
+    packagingItemType: "",
+    otherSelections: { ...initialPurchaseOtherState },
+  };
+}
 
-  const [formData, setFormData] = useState(initialFormData)
-  const [otherSelections, setOtherSelections] = useState(initialPurchaseOtherState);
+function getItemConfig(item: PurchaseItemState) {
+  return hasRawMaterialConfig(item.data.rawMaterialName as RawMaterialOption)
+    ? rawMaterialConfig[item.data.rawMaterialName as RawMaterialName]
+    : undefined;
+}
+
+function getLevel2Config(item: PurchaseItemState) {
+  const config = getItemConfig(item);
+  return config && "children" in config
+    ? config.children?.[item.data.packagingType as keyof typeof config.children]
+    : undefined;
+}
+
+function getCementLevel2Options(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Cement" && item.data.packagingType === "PPC"
+    ? ["Silo", "Bag"]
+    : item.data.rawMaterialName === "Cement" && item.data.packagingType === "White Cement"
+      ? ["Bag"]
+      : ["Silo"];
+}
+
+function shouldShowPackagingBagField(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Packaging" &&
+    item.data.packagingType === "FG" &&
+    (item.data.level2 === "Tile Adhesive" || item.data.level2 === "Bondure");
+}
+
+function shouldShowPackagingBagColorField(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Packaging" &&
+    item.data.packagingType === "FG" &&
+    item.data.level2 === "Tile Adhesive";
+}
+
+function showPackagingItemTypeField(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Packaging" &&
+    item.data.packagingType === "FG" &&
+    item.data.level2 === "Tile Adhesive";
+}
+
+function getSelectedLevel2Config(item: PurchaseItemState) {
+  const level2Config = getLevel2Config(item);
+  return level2Config && "children" in level2Config
+    ? level2Config.children?.[item.data.level2 as keyof typeof level2Config.children]
+    : undefined;
+}
+
+function getLevel3Config(item: PurchaseItemState) {
+  const selectedLevel2Config = getSelectedLevel2Config(item);
+  if (!selectedLevel2Config) {
+    return undefined;
+  }
+
+  if (shouldShowPackagingBagField(item)) {
+    return "children" in selectedLevel2Config
+      ? selectedLevel2Config.children?.[item.data.packagingBag as keyof typeof selectedLevel2Config.children]
+      : undefined;
+  }
+
+  return selectedLevel2Config;
+}
+
+function shouldShowEpoxySandColorField(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Packaging" &&
+    item.data.packagingType === "FG" &&
+    item.data.level2 === "Epoxy" &&
+    item.data.level3 === "Coloured Sand";
+}
+
+function shouldShowTileCleanerBucketSizeField(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Packaging" &&
+    item.data.packagingType === "FG" &&
+    item.data.level2 === "Tile Cleaner" &&
+    item.data.level3 === "Can";
+}
+
+function getPackagingBagOptions(item: PurchaseItemState) {
+  return item.data.level2 === "Bondure" ? ["Bondure"] : ["K50", "K60", "K80", "K90", "Kamdhenu X"];
+}
+
+function getPackagingBagColorOptions(item: PurchaseItemState) {
+  return item.data.packagingBag === "K50" ? ["Grey"] : ["White", "Grey"];
+}
+
+function isPpcCementBagFlow(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Cement" &&
+    item.data.packagingType === "PPC" &&
+    item.data.level2 === "Bag";
+}
+
+function shouldShowAutoBagQuantityField(item: PurchaseItemState) {
+  return (item.data.rawMaterialName === "Sand" &&
+    (item.data.packagingType === "White" || (item.data.packagingType === "Grey" && Boolean(item.data.level2)))) ||
+    (item.data.rawMaterialName === "Cement" &&
+      (item.data.packagingType === "White Cement" || isPpcCementBagFlow(item)) &&
+      item.data.level2 === "Bag");
+}
+
+function getAutoBagWeightInKg(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Sand"
+    ? item.data.packagingType === "Grey"
+      ? 40
+      : item.data.packagingType === "White"
+        ? 50
+        : 0
+    : item.data.rawMaterialName === "Cement" &&
+      (item.data.packagingType === "White Cement" || isPpcCementBagFlow(item))
+      ? 50
+      : 0;
+}
+
+function isPackagingTileAdhesiveFlow(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Packaging" &&
+    item.data.packagingType === "FG" &&
+    item.data.level2 === "Tile Adhesive" &&
+    Boolean(item.data.packagingBag);
+}
+
+function isPackagingFgFlow(item: PurchaseItemState) {
+  return item.data.rawMaterialName === "Packaging" &&
+    item.data.packagingType === "FG";
+}
+
+function getAutoSelectedUnit(item: PurchaseItemState) {
+  return shouldShowAutoBagQuantityField(item) || item.data.rawMaterialName === "Cement"
+    ? "mt"
+    : item.data.rawMaterialName === "Chemical"
+      ? "kg"
+      : isPackagingTileAdhesiveFlow(item) && item.packagingItemType === "Bag" && (item.data.level3 === "20kg" || item.data.level3 === "50kg")
+        ? "bags"
+        : isPackagingTileAdhesiveFlow(item) && item.packagingItemType === "Coupon" && (item.data.level3 === "20kg" || item.data.level3 === "50kg")
+          ? "pcs"
+          : isPackagingFgFlow(item) && item.data.level2 === "Tile Cleaner"
+            ? "pcs"
+            : isPackagingFgFlow(item) && item.data.level2 === "Bondure"
+              ? "bags"
+              : isPackagingFgFlow(item) &&
+                item.data.level2 === "Epoxy" &&
+                item.data.level3 === "Coloured Sand"
+                ? "kg"
+                : isPackagingFgFlow(item) &&
+                  (item.data.level2 === "Tile Grout" || item.data.level2 === "Epoxy")
+                  ? "nos"
+                  : "";
+}
+
+function getUnloadByMode(item: PurchaseItemState | undefined) {
+  if (!item) return "input";
+  if (item.data.rawMaterialName === "Cement" && item.data.level2 === "Silo") return "cement-silo";
+  if (item.data.rawMaterialName === "Cement" && item.data.level2 === "Bag") return "cement-bag";
+  if (item.data.rawMaterialName === "Chemical") return "chemical";
+  if (item.data.rawMaterialName === "Packaging") return "packaging";
+  if (item.data.rawMaterialName === "Sand") return "sand";
+  return "input";
+}
+
+function getUnloadByOptions(mode: string) {
+  switch (mode) {
+    case "cement-silo":
+      return [
+        { value: "Chandrashekhar", label: "Chandrashekhar" },
+        { value: "Anand", label: "Anand" },
+      ];
+    case "cement-bag":
+      return [
+        { value: "Anand", label: "Sujeet" },
+        { value: "Chandrashekhar", label: "Thailesh" },
+        { value: "Vasu", label: "Vasu" },
+      ];
+    case "chemical":
+      return [
+        { value: "Thailesh", label: "Thalesh" },
+        { value: "Sujeet", label: "Sujeet" },
+        { value: "Vasu", label: "Vasu" },
+      ];
+    case "packaging":
+      return [
+        { value: "Thailesh", label: "Thailesh" },
+        { value: "Sujeet", label: "Sujeet" },
+        { value: "Vasu", label: "Vasu" },
+      ];
+    case "sand":
+      return [
+        { value: "Sujeet", label: "Sujeet" },
+        { value: "Thailesh", label: "Thailesh" },
+        { value: "Vasu", label: "Vasu" },
+      ];
+    default:
+      return [];
+  }
+}
+
+export function PurchaseEntryForm() {
+  const [commonFormData, setCommonFormData] = useState(initialCommonFormData);
+  const [purchaseItems, setPurchaseItems] = useState<PurchaseItemState[]>([createPurchaseItemState()]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [packagingItemType, setPackagingItemType] = useState("");
-  const [sandBagQuantity, setSandBagQuantity] = useState("");
+  const [isUnloadByOther, setIsUnloadByOther] = useState(false);
   const [recentPurchases, setRecentPurchases] = useState<PurchaseEntry[]>([]);
   const [recentPurchasesPage, setRecentPurchasesPage] = useState(1);
   const [recentPurchasesPageSize, setRecentPurchasesPageSize] = useState(() =>
@@ -314,26 +523,6 @@ export function PurchaseEntryForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const quantityAllowsDecimal = isMetricTonUnit(formData.unit);
-  const quantityPurchasedValidationMessage = useMemo(() => {
-    if (!formData.quantityPurchased || quantityAllowsDecimal || !hasDecimalValue(formData.quantityPurchased)) {
-      return "";
-    }
-
-    return "Decimal values are allowed only for mt unit.";
-  }, [formData.quantityPurchased, quantityAllowsDecimal]);
-
-  const packagingBagColorOptions =
-    formData.packagingBag === "K50"
-      ? ["Grey"]
-      : ["White", "Grey"];
-
-  useEffect(() => {
-    if (formData.packagingBag === "K50") {
-      updateField("packagingBagColor", "Grey");
-    }
-  }, [formData.packagingBag]);
-
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -380,466 +569,383 @@ export function PurchaseEntryForm() {
     }
   }, [recentPurchasesPage, totalRecentPurchasePages]);
 
-  const config = useMemo(() => {
-    return hasRawMaterialConfig(formData.rawMaterialName as RawMaterialOption)
-      ? rawMaterialConfig[formData.rawMaterialName as RawMaterialName]
-      : undefined;
-  }, [formData.rawMaterialName])
-
-  const level2Config = useMemo(() => {
-    return config && "children" in config
-      ? config.children?.[formData.packagingType as keyof typeof config.children]
-      : undefined;
-  }, [config, formData.packagingType])
-  const cementLevel2Options =
-    formData.rawMaterialName === "Cement" && formData.packagingType === "PPC"
-      ? ["Silo", "Bag"]
-      : formData.rawMaterialName === "Cement" && formData.packagingType === "White Cement"
-        ? ["Bag"]
-        : ["Silo"];
-
-  const shouldShowPackagingBagField =
-    formData.rawMaterialName === "Packaging" &&
-    formData.packagingType === "FG" &&
-    (formData.level2 === "Tile Adhesive" || formData.level2 === "Bondure");
-  const shouldShowPackagingBagColorField =
-    formData.rawMaterialName === "Packaging" &&
-    formData.packagingType === "FG" &&
-    formData.level2 === "Tile Adhesive";
-  const showPackagingItemTypeField =
-    formData.rawMaterialName === "Packaging" &&
-    formData.packagingType === "FG" &&
-    formData.level2 === "Tile Adhesive";
-  const showCouponField =
-    showPackagingItemTypeField &&
-    packagingItemType === "Coupon";
-
-  const selectedLevel2Config = useMemo(() => {
-    return level2Config && "children" in level2Config
-      ? level2Config.children?.[formData.level2 as keyof typeof level2Config.children]
-      : undefined;
-  }, [level2Config, formData.level2]);
-
-  const level3Config = useMemo(() => {
-    if (!selectedLevel2Config) {
-      return undefined;
-    }
-
-    if (shouldShowPackagingBagField) {
-      return "children" in selectedLevel2Config
-        ? selectedLevel2Config.children?.[formData.packagingBag as keyof typeof selectedLevel2Config.children]
-        : undefined;
-    }
-
-    return selectedLevel2Config;
-  }, [formData.packagingBag, selectedLevel2Config, shouldShowPackagingBagField]);
-
-  const shouldShowEpoxySandColorField =
-    formData.rawMaterialName === "Packaging" &&
-    formData.packagingType === "FG" &&
-    formData.level2 === "Epoxy" &&
-    formData.level3 === "Coloured Sand";
-  const shouldShowTileCleanerBucketSizeField =
-    formData.rawMaterialName === "Packaging" &&
-    formData.packagingType === "FG" &&
-    formData.level2 === "Tile Cleaner" &&
-    formData.level3 === "Can";
-  const packagingBagOptions =
-    formData.level2 === "Bondure" ? ["Bondure"] : ["K50", "K60", "K80", "K90", "Kamdhenu X"];
-  const bucketSizeOptions = ["1L", "5L"];
-  const isPpcCementBagFlow =
-    formData.rawMaterialName === "Cement" &&
-    formData.packagingType === "PPC" &&
-    formData.level2 === "Bag";
-  const shouldShowAutoBagQuantityField =
-    (formData.rawMaterialName === "Sand" &&
-      (formData.packagingType === "White" || (formData.packagingType === "Grey" && Boolean(formData.level2)))) ||
-    (formData.rawMaterialName === "Cement" &&
-      (formData.packagingType === "White Cement" || isPpcCementBagFlow) &&
-      formData.level2 === "Bag");
-  const autoBagWeightInKg =
-    formData.rawMaterialName === "Sand"
-      ? formData.packagingType === "Grey"
-        ? 40
-        : formData.packagingType === "White"
-          ? 50
-          : 0
-      : formData.rawMaterialName === "Cement" &&
-        (formData.packagingType === "White Cement" || isPpcCementBagFlow)
-        ? 50
-        : 0;
-  const isPackagingTileAdhesiveFlow =
-    formData.rawMaterialName === "Packaging" &&
-    formData.packagingType === "FG" &&
-    formData.level2 === "Tile Adhesive" &&
-    Boolean(formData.packagingBag);
-  const isPackagingFgFlow =
-    formData.rawMaterialName === "Packaging" &&
-    formData.packagingType === "FG";
-  const autoSelectedUnit =
-    shouldShowAutoBagQuantityField || formData.rawMaterialName === "Cement"
-      ? "mt"
-      : formData.rawMaterialName === "Chemical"
-        ? "kg"
-        : isPackagingTileAdhesiveFlow && packagingItemType === "Bag" && (formData.level3 === "20kg" || formData.level3 === "50kg")
-          ? "bags"
-          : isPackagingTileAdhesiveFlow && packagingItemType === "Coupon" && (formData.level3 === "20kg" || formData.level3 === "50kg")
-            ? "pcs"
-            : isPackagingFgFlow && formData.level2 === "Tile Cleaner"
-              ? "pcs"
-              : isPackagingFgFlow && formData.level2 === "Bondure"
-                ? "bags"
-                : isPackagingFgFlow &&
-                  formData.level2 === "Epoxy" &&
-                  formData.level3 === "Coloured Sand"
-                  ? "kg"
-                  : isPackagingFgFlow &&
-                    (formData.level2 === "Tile Grout" || formData.level2 === "Epoxy")
-                    ? "nos"
-                    : "";
-
   useEffect(() => {
-    if (formData.rawMaterialName !== "Cement") {
-      return;
-    }
+    setPurchaseItems((current) => {
+      const next = current.map((item) => {
+        let updatedItem = item;
+        const data = updatedItem.data;
+        const autoSelectedUnit = getAutoSelectedUnit(updatedItem);
 
-    if (
-      formData.packagingType === "OPC" &&
-      formData.level2 !== "Silo"
-    ) {
-      setFormData((current) => ({
-        ...current,
-        level2: "Silo",
-        level3: "",
-        colorOfSandEpoxy: "",
-        bucketSize: "",
-        unloadBy: "",
-      }));
-      setOtherSelections((current) => ({
-        ...current,
-        level2: false,
-        level3: false,
-        colorOfSandEpoxy: false,
-        bucketSize: false,
-        unloadBy: false,
-      }));
-    }
+        if (data.rawMaterialName === "Cement") {
+          if (data.packagingType === "OPC" && data.level2 !== "Silo") {
+            updatedItem = {
+              ...updatedItem,
+              data: {
+                ...updatedItem.data,
+                level2: "Silo",
+                level3: "",
+                colorOfSandEpoxy: "",
+                bucketSize: "",
+              },
+              otherSelections: {
+                ...updatedItem.otherSelections,
+                level2: false,
+                level3: false,
+                colorOfSandEpoxy: false,
+                bucketSize: false,
+              },
+            };
+          }
 
-    if (formData.packagingType === "White Cement" && formData.level2 !== "Bag") {
-      setFormData((current) => ({
-        ...current,
-        level2: "Bag",
-        level3: "",
-        colorOfSandEpoxy: "",
-        bucketSize: "",
-        unloadBy: "",
-      }));
-      setOtherSelections((current) => ({
-        ...current,
-        level2: false,
-        level3: false,
-        colorOfSandEpoxy: false,
-        bucketSize: false,
-        unloadBy: false,
-      }));
-    }
-  }, [formData.level2, formData.packagingType, formData.rawMaterialName]);
-
-  useEffect(() => {
-    if (!shouldShowPackagingBagField) {
-      return;
-    }
-
-    if (formData.level2 === "Bondure") {
-      setFormData((current) => {
-        if (current.packagingBag === "Bondure" && current.level3 === "40 KG") {
-          return current;
+          if (data.packagingType === "White Cement" && data.level2 !== "Bag") {
+            updatedItem = {
+              ...updatedItem,
+              data: {
+                ...updatedItem.data,
+                level2: "Bag",
+                level3: "",
+                colorOfSandEpoxy: "",
+                bucketSize: "",
+              },
+              otherSelections: {
+                ...updatedItem.otherSelections,
+                level2: false,
+                level3: false,
+                colorOfSandEpoxy: false,
+                bucketSize: false,
+              },
+            };
+          }
         }
 
-        return {
-          ...current,
-          packagingBag: "Bondure",
-          level3: "40 KG",
-        };
+        if (shouldShowPackagingBagField(updatedItem) && updatedItem.data.level2 === "Bondure") {
+          if (updatedItem.data.packagingBag !== "Bondure" || updatedItem.data.level3 !== "40 KG") {
+            updatedItem = {
+              ...updatedItem,
+              data: {
+                ...updatedItem.data,
+                packagingBag: "Bondure",
+                level3: "40 KG",
+              },
+              otherSelections: {
+                ...updatedItem.otherSelections,
+                packagingBag: false,
+                level3: false,
+              },
+            };
+          }
+        }
+
+        if (!shouldShowPackagingBagColorField(updatedItem) && updatedItem.data.level4) {
+          updatedItem = {
+            ...updatedItem,
+            data: {
+              ...updatedItem.data,
+              level4: "",
+            },
+          };
+        }
+
+        if (!showPackagingItemTypeField(updatedItem)) {
+          if (updatedItem.packagingItemType || updatedItem.data.coupon) {
+            updatedItem = {
+              ...updatedItem,
+              packagingItemType: "",
+              data: {
+                ...updatedItem.data,
+                coupon: "",
+              },
+            };
+          }
+        } else if (updatedItem.packagingItemType !== "Coupon") {
+          if (updatedItem.data.coupon) {
+            updatedItem = {
+              ...updatedItem,
+              data: {
+                ...updatedItem.data,
+                coupon: "",
+              },
+            };
+          }
+        } else {
+          const nextCoupon = updatedItem.data.level3 ? `${updatedItem.data.level3} Coupon` : "";
+          if (updatedItem.data.coupon !== nextCoupon) {
+            updatedItem = {
+              ...updatedItem,
+              data: {
+                ...updatedItem.data,
+                coupon: nextCoupon,
+              },
+            };
+          }
+        }
+
+        if (updatedItem.data.packagingBag === "K50" && updatedItem.data.packagingBagColor !== "Grey") {
+          updatedItem = {
+            ...updatedItem,
+            data: {
+              ...updatedItem.data,
+              packagingBagColor: "Grey",
+            },
+          };
+        }
+
+        if (autoSelectedUnit && updatedItem.data.unit !== autoSelectedUnit) {
+          updatedItem = {
+            ...updatedItem,
+            data: {
+              ...updatedItem.data,
+              unit: autoSelectedUnit,
+            },
+            otherSelections: {
+              ...updatedItem.otherSelections,
+              unit: false,
+            },
+          };
+        }
+
+        const autoBagWeightInKg = getAutoBagWeightInKg(updatedItem);
+        if (!shouldShowAutoBagQuantityField(updatedItem) || !autoBagWeightInKg) {
+          const isAutoBagMaterial =
+            updatedItem.data.rawMaterialName === "Sand" ||
+            (updatedItem.data.rawMaterialName === "Cement" &&
+              (updatedItem.data.packagingType === "White Cement" ||
+                (updatedItem.data.packagingType === "PPC" && updatedItem.data.level2 === "Bag")));
+
+          if (isAutoBagMaterial && (updatedItem.data.bagQuantity || updatedItem.data.quantityPurchased || updatedItem.data.unit !== (updatedItem.data.rawMaterialName === "Cement" ? "mt" : ""))) {
+            updatedItem = {
+              ...updatedItem,
+              data: {
+                ...updatedItem.data,
+                bagQuantity: "",
+                quantityPurchased: "",
+                unit: updatedItem.data.rawMaterialName === "Cement" ? "mt" : "",
+              },
+              otherSelections: {
+                ...updatedItem.otherSelections,
+                unit: false,
+              },
+            };
+          }
+        } else if (!updatedItem.data.bagQuantity) {
+          if (updatedItem.data.quantityPurchased || updatedItem.data.unit !== "mt") {
+            updatedItem = {
+              ...updatedItem,
+              data: {
+                ...updatedItem.data,
+                quantityPurchased: "",
+                unit: "mt",
+              },
+              otherSelections: {
+                ...updatedItem.otherSelections,
+                unit: false,
+              },
+            };
+          }
+        } else {
+          const totalKilograms = Number(updatedItem.data.bagQuantity) * autoBagWeightInKg;
+          const quantityPurchased = formatMetricTonnesFromKilograms(totalKilograms);
+          if (updatedItem.data.quantityPurchased !== quantityPurchased || updatedItem.data.unit !== "mt") {
+            updatedItem = {
+              ...updatedItem,
+              data: {
+                ...updatedItem.data,
+                quantityPurchased,
+                unit: "mt",
+              },
+              otherSelections: {
+                ...updatedItem.otherSelections,
+                unit: false,
+              },
+            };
+          }
+        }
+
+        return updatedItem;
       });
-      setOtherSelections((current) => ({
-        ...current,
-        packagingBag: false,
-        level3: false,
-      }));
-    }
-  }, [formData.level2, shouldShowPackagingBagField, formData.packagingBag, formData.level3]);
 
-  useEffect(() => {
-    if (shouldShowPackagingBagColorField || !formData.level4) {
-      return;
-    }
-
-    setFormData((current) => ({
-      ...current,
-      level4: "",
-    }));
-  }, [formData.level4, shouldShowPackagingBagColorField]);
-
-  useEffect(() => {
-    if (!showPackagingItemTypeField) {
-      if (!packagingItemType && !formData.coupon) {
-        return;
-      }
-
-      setPackagingItemType("");
-      setFormData((current) => ({
-        ...current,
-        coupon: "",
-      }));
-      return;
-    }
-
-    if (packagingItemType !== "Coupon") {
-      if (!formData.coupon) {
-        return;
-      }
-
-      setFormData((current) => ({
-        ...current,
-        coupon: "",
-      }));
-      return;
-    }
-
-    const nextCoupon = formData.level3 ? `${formData.level3} Coupon` : "";
-
-    if (formData.coupon === nextCoupon) {
-      return;
-    }
-
-    setFormData((current) => ({
-      ...current,
-      coupon: nextCoupon,
-    }));
-  }, [formData.coupon, formData.level3, packagingItemType, showPackagingItemTypeField]);
-
-  useEffect(() => {
-    if (!autoSelectedUnit) {
-      return;
-    }
-
-    setFormData((current) =>
-      current.unit === autoSelectedUnit
-        ? current
-        : {
-          ...current,
-          unit: autoSelectedUnit,
-        },
-    );
-    setOtherSelections((current) => ({
-      ...current,
-      unit: false,
-    }));
-  }, [autoSelectedUnit]);
-
-  useEffect(() => {
-    if (!shouldShowAutoBagQuantityField || !autoBagWeightInKg) {
-      setSandBagQuantity((current) => (current ? "" : current));
-      setFormData((current) => {
-        const isAutoBagMaterial =
-          current.rawMaterialName === "Sand" ||
-          (current.rawMaterialName === "Cement" &&
-            (current.packagingType === "White Cement" ||
-              (current.packagingType === "PPC" && current.level2 === "Bag")));
-
-        if (!isAutoBagMaterial) {
-          return current;
-        }
-
-        const nextUnit = current.rawMaterialName === "Cement" ? "mt" : "";
-
-        if (!current.quantityPurchased && current.unit === nextUnit) {
-          return current;
-        }
-
-        return {
-          ...current,
-          quantityPurchased: "",
-          unit: nextUnit,
-        };
-      });
-      setOtherSelections((current) => ({
-        ...current,
-        unit: false,
-      }));
-      return;
-    }
-
-    if (!sandBagQuantity) {
-      setFormData((current) => {
-        const nextUnit = "mt";
-
-        if (!current.quantityPurchased && current.unit === nextUnit) {
-          return current;
-        }
-
-        return {
-          ...current,
-          quantityPurchased: "",
-          unit: nextUnit,
-        };
-      });
-      setOtherSelections((current) => ({
-        ...current,
-        unit: false,
-      }));
-      return;
-    }
-
-    const totalKilograms = Number(sandBagQuantity) * autoBagWeightInKg;
-    const quantityPurchased = formatMetricTonnesFromKilograms(totalKilograms);
-
-    setFormData((current) => {
-      const nextUnit = "mt";
-
-      if (current.quantityPurchased === quantityPurchased && current.unit === nextUnit) {
-        return current;
-      }
-
-      return {
-        ...current,
-        quantityPurchased,
-        unit: nextUnit,
-      };
+      return JSON.stringify(next) === JSON.stringify(current) ? current : next;
     });
-    setOtherSelections((current) => ({
-      ...current,
-      unit: false,
-    }));
-  }, [autoBagWeightInKg, isPpcCementBagFlow, sandBagQuantity, shouldShowAutoBagQuantityField]);
+  }, [purchaseItems]);
 
-  const updateField = (name: keyof typeof formData, value: string) => {
-    setFormData((current) => ({
+  const updateCommonField = (name: keyof typeof initialCommonFormData, value: string) => {
+    setCommonFormData((current) => ({
       ...current,
       [name]: value,
     }));
   };
 
-  const updateTextField = (name: keyof typeof formData, value: string) => {
-    updateField(name, sanitizeTextOnly(value));
+  const updateCommonTextField = (name: keyof typeof initialCommonFormData, value: string) => {
+    updateCommonField(name, sanitizeTextOnly(value));
   };
 
-  const updateNumberField = (name: keyof typeof formData, value: string, options?: { allowDecimal?: boolean }) => {
-    updateField(name, sanitizeNumberOnly(value, options));
+  const updatePurchaseItemData = (index: number, field: keyof PurchaseItemData, value: string) => {
+    setPurchaseItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+            ...item,
+            data: {
+              ...item.data,
+              [field]: value,
+            },
+          }
+          : item,
+      ),
+    );
   };
 
-  const handleQuantityPurchasedChange = (value: string) => {
-    updateField("quantityPurchased", sanitizeNumberOnly(value, { allowDecimal: true }));
+  const updatePurchaseItemTextField = (index: number, field: keyof PurchaseItemData, value: string) => {
+    updatePurchaseItemData(index, field, sanitizeTextOnly(value));
   };
 
-  const getSelectValue = (field: PurchaseOtherField, value: string) =>
-    otherSelections[field] ? OTHER_OPTION : value;
+  const updatePurchaseItemNumberField = (index: number, field: keyof PurchaseItemData, value: string, options?: { allowDecimal?: boolean }) => {
+    updatePurchaseItemData(index, field, sanitizeNumberOnly(value, options));
+  };
 
-  const handleSelectChange = (
+  const getItemSelectValue = (item: PurchaseItemState, field: PurchaseOtherField, value: string) =>
+    item.otherSelections[field] ? OTHER_OPTION : value;
+
+  const handleItemSelectChange = (
+    index: number,
     field: PurchaseOtherField,
     value: string,
     fieldsToClear: PurchaseOtherField[] = [],
-    extraUpdates: Partial<typeof initialFormData> = {},
+    extraUpdates: Partial<PurchaseItemData> = {},
   ) => {
     const isOtherSelection = value === OTHER_OPTION;
 
-    setOtherSelections((current) => {
-      const next = { ...current, [field]: isOtherSelection };
-      fieldsToClear.forEach((fieldName) => {
-        next[fieldName] = false;
-      });
-      return next;
-    });
+    setPurchaseItems((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) {
+          return item;
+        }
 
-    setFormData((current) => {
-      const next = { ...current, ...extraUpdates };
-      fieldsToClear.forEach((fieldName) => {
-        next[fieldName] = "";
-      });
-      next[field] = isOtherSelection ? "" : value;
-      return next;
-    });
+        const nextOtherSelections = { ...item.otherSelections, [field]: isOtherSelection };
+        fieldsToClear.forEach((fieldName) => {
+          nextOtherSelections[fieldName] = false;
+        });
+
+        const nextData = { ...item.data, ...extraUpdates };
+        fieldsToClear.forEach((fieldName) => {
+          nextData[fieldName] = "";
+        });
+        nextData[field] = isOtherSelection ? "" : value;
+
+        return {
+          ...item,
+          data: nextData,
+          otherSelections: nextOtherSelections,
+        };
+      }),
+    );
   };
 
-  const renderOtherInput = (field: PurchaseOtherField, label: string, placeholder: string) =>
-    otherSelections[field] ? (
-      <Field htmlFor={`${field}-other`} label={`${label} (Other)`}>
+  const addPurchaseItem = () => {
+    setPurchaseItems((current) => [...current, createPurchaseItemState()]);
+  };
+
+  const removePurchaseItem = (index: number) => {
+    setPurchaseItems((current) => current.length === 1 ? current : current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const renderItemOtherInput = (item: PurchaseItemState, index: number, field: PurchaseOtherField, label: string, placeholder: string) =>
+    item.otherSelections[field] ? (
+      <Field htmlFor={`${field}-other-${item.id}`} label={`${label} (Other)`}>
         <Input
-          id={`${field}-other`}
-          value={formData[field]}
+          id={`${field}-other-${item.id}`}
+          value={item.data[field]}
           placeholder={placeholder}
-          onChange={(e) => updateTextField(field, e.target.value)}
+          onChange={(e) => updatePurchaseItemTextField(index, field as keyof PurchaseItemData, e.target.value)}
         />
       </Field>
     ) : null;
 
+  const firstPurchaseItem = purchaseItems[0];
+  const quantityAllowsDecimal = purchaseItems.some((item) => isMetricTonUnit(item.data.unit));
+  const quantityPurchasedValidationMessage = useMemo(() => {
+    const invalidItem = purchaseItems.find((item) =>
+      item.data.quantityPurchased &&
+      !isMetricTonUnit(item.data.unit) &&
+      hasDecimalValue(item.data.quantityPurchased),
+    );
+
+    return invalidItem ? "Decimal values are allowed only for mt unit." : "";
+  }, [purchaseItems]);
+
   const validateForm = () => {
-    if (!formData.date) {
+    if (!commonFormData.date) {
       return "Date is required.";
     }
 
-    if (!formData.time) {
+    if (!commonFormData.time) {
       return "Time is required.";
     }
 
-    if (!formData.rawMaterialName) {
-      return "Raw material name is required.";
+    for (const [index, item] of purchaseItems.entries()) {
+      const config = getItemConfig(item);
+      const level2Config = getLevel2Config(item);
+      const level3Config = getLevel3Config(item);
+      const itemLabel = `Item ${index + 1}`;
+
+      if (!item.data.rawMaterialName) {
+        return `${itemLabel}: Raw material name is required.`;
+      }
+
+      if (config && !item.data.packagingType) {
+        return `${itemLabel}: ${config.label} is required.`;
+      }
+
+      if (level2Config && !item.data.level2) {
+        return `${itemLabel}: ${level2Config.label} is required.`;
+      }
+
+      if (shouldShowPackagingBagField(item) && !item.data.packagingBag) {
+        return `${itemLabel}: Packaging bag is required.`;
+      }
+
+      if (shouldShowPackagingBagColorField(item) && !item.data.packagingBagColor.trim()) {
+        return `${itemLabel}: Packaging bag color is required.`;
+      }
+
+      if (showPackagingItemTypeField(item) && !item.packagingItemType) {
+        return `${itemLabel}: Packaging item type is required.`;
+      }
+
+      if (level3Config && (!shouldShowPackagingBagField(item) || item.data.packagingBag) && (!showPackagingItemTypeField(item) || Boolean(item.packagingItemType)) && !item.data.level3) {
+        return `${itemLabel}: ${level3Config.label} is required.`;
+      }
+
+      if (shouldShowTileCleanerBucketSizeField(item) && !item.data.bucketSize) {
+        return `${itemLabel}: Can size is required.`;
+      }
+
+      if (shouldShowEpoxySandColorField(item) && !item.data.colorOfSandEpoxy) {
+        return `${itemLabel}: Color of sand (epoxy) is required.`;
+      }
+
+      if (shouldShowAutoBagQuantityField(item) && !isPositiveNumber(item.data.bagQuantity)) {
+        return `${itemLabel}: Bag quantity must be greater than 0.`;
+      }
+
+      if (!isPositiveNumber(item.data.quantityPurchased)) {
+        return `${itemLabel}: Quantity purchased must be greater than 0.`;
+      }
+
+      if (!item.data.unit) {
+        return `${itemLabel}: Unit is required.`;
+      }
+
+      if (!isMetricTonUnit(item.data.unit) && hasDecimalValue(item.data.quantityPurchased)) {
+        return `${itemLabel}: Decimal values are allowed only for mt unit.`;
+      }
     }
 
-    if (config && !formData.packagingType) {
-      return `${config.label} is required.`;
-    }
-
-    if (level2Config && !formData.level2) {
-      return `${level2Config.label} is required.`;
-    }
-
-    if (shouldShowPackagingBagField && !formData.packagingBag) {
-      return "Packaging bag is required.";
-    }
-
-    if (shouldShowPackagingBagColorField && !formData.packagingBagColor.trim()) {
-      return "Packaging bag color is required.";
-    }
-
-    if (showPackagingItemTypeField && !packagingItemType) {
-      return "Packaging item type is required.";
-    }
-
-    if (level3Config && (!shouldShowPackagingBagField || formData.packagingBag) && (!showPackagingItemTypeField || Boolean(packagingItemType)) && !formData.level3) {
-      return `${level3Config.label} is required.`;
-    }
-
-    if (shouldShowTileCleanerBucketSizeField && !formData.bucketSize) {
-      return "Can size is required.";
-    }
-
-    if (shouldShowEpoxySandColorField && !formData.colorOfSandEpoxy) {
-      return "Color of sand (epoxy) is required.";
-    }
-
-    if (shouldShowAutoBagQuantityField && !isPositiveNumber(sandBagQuantity)) {
-      return "Bag quantity must be greater than 0.";
-    }
-
-    if (!isPositiveNumber(formData.quantityPurchased)) {
-      return "Quantity purchased must be greater than 0.";
-    }
-
-    if (!formData.unit) {
-      return "Unit is required.";
-    }
-
-    if (!quantityAllowsDecimal && hasDecimalValue(formData.quantityPurchased)) {
-      return "Decimal values are allowed only for mt unit.";
-    }
-
-    if (!formData.supplierName.trim()) {
+    if (!commonFormData.supplierName.trim()) {
       return "Supplier name is required.";
     }
 
-    if (!formData.unloadBy.trim()) {
+    if (!commonFormData.unloadBy.trim()) {
       return "Unload By is required.";
     }
 
@@ -864,34 +970,60 @@ export function PurchaseEntryForm() {
 
     try {
       const submittedEntry = {
-        id: crypto.randomUUID(),
-        serialNo: "",
-        ...formData,
-        purchaseStock: formData.quantityPurchased,
-        currentStock: "",
-        usedInProduction: "",
+        ...commonFormData,
+        purchaseItems: purchaseItems.map((item) => ({
+          rawMaterialName: item.data.rawMaterialName,
+          packagingType: item.data.packagingType,
+          level2: item.data.level2,
+          level3: item.data.level3,
+          level4: item.data.level4,
+          packagingBag: item.data.packagingBag,
+          packagingBagColor: item.data.packagingBagColor,
+          coupon: item.data.coupon,
+          bucketSize: item.data.bucketSize,
+          colorOfSandEpoxy: item.data.colorOfSandEpoxy,
+          quantityPurchased: item.data.quantityPurchased,
+          unit: item.data.unit,
+          bagQuantity: item.data.bagQuantity,
+        })),
       };
 
       await submitEntry("purchase", submittedEntry, selectedFile);
       const latestEntries = await fetchPurchaseEntries();
       setRecentPurchases(latestEntries);
       setRecentPurchasesPage(1);
-      setFormData(initialFormData);
-      setPackagingItemType("");
-      setSandBagQuantity("");
-      setOtherSelections(initialPurchaseOtherState);
+      setCommonFormData(initialCommonFormData);
+      setPurchaseItems([createPurchaseItemState()]);
+      setIsUnloadByOther(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
       setSelectedFile(null);
       toast.success("Purchase entry saved successfully.");
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to save purchase entry.";
       setSubmitStatus("error");
-      setSubmitMessage(error instanceof Error ? error.message : "Unable to save purchase entry.");
+      setSubmitMessage(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const resetForm = () => {
+    setCommonFormData(initialCommonFormData);
+    setPurchaseItems([createPurchaseItemState()]);
+    setSelectedFile(null);
+    setIsUnloadByOther(false);
+    setSubmitStatus("idle");
+    setSubmitMessage("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const unloadByMode = getUnloadByMode(firstPurchaseItem);
+  const unloadByOptions = getUnloadByOptions(unloadByMode);
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -909,27 +1041,15 @@ export function PurchaseEntryForm() {
           </Button>
         </CardHeader>
         <CardContent>
-          <form
-            className="grid gap-5"
-            onReset={() => {
-              setFormData(initialFormData);
-              setPackagingItemType("");
-              setSandBagQuantity("");
-              setOtherSelections(initialPurchaseOtherState);
-              setSelectedFile(null);
-              setSubmitStatus("idle");
-              setSubmitMessage("");
-            }}
-            onSubmit={handleSubmit}
-          >
+          <form className="grid gap-5" onReset={resetForm} onSubmit={handleSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <Field htmlFor="date" label="Date">
                 <Input
                   id="date"
                   name="date"
                   type="date"
-                  value={formData.date}
-                  onChange={(e) => updateField("date", e.target.value)}
+                  value={commonFormData.date}
+                  onChange={(e) => updateCommonField("date", e.target.value)}
                 />
               </Field>
               <Field htmlFor="time" label="Time">
@@ -937,312 +1057,352 @@ export function PurchaseEntryForm() {
                   id="time"
                   name="time"
                   type="time"
-                  value={formData.time}
-                  onChange={(e) => updateField("time", e.target.value)}
+                  value={commonFormData.time}
+                  onChange={(e) => updateCommonField("time", e.target.value)}
                 />
               </Field>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field htmlFor="raw-material-name" label="Raw Material Name">
-                <Select
-                  id="raw-material-name"
-                  name="rawMaterialName"
-                  value={getSelectValue("rawMaterialName", formData.rawMaterialName)}
-                  onChange={(e) =>
-                    handleSelectChange(
-                      "rawMaterialName",
-                      e.target.value,
-                      [
-                        "packagingType",
-                        "level2",
-                        "level3",
-                        "level4",
-                        "packagingBag",
-                        "bucketSize",
-                        "colorOfSandEpoxy",
-                        "unloadBy",
-                      ],
-                    )
-                  }
-                >
-                  <option value="" disabled>
-                    Select Raw Material
-                  </option>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Purchase Items</h2>
+                <Button type="button" onClick={addPurchaseItem} variant="outline">
+                  + Add Item
+                </Button>
+              </div>
 
-                  {(materialOptions).map((option) => (
-                    <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              {renderOtherInput("rawMaterialName", "Raw Material Name", "Enter raw material name")}
+              {purchaseItems.map((item, index) => {
+                const config = getItemConfig(item);
+                const level2Config = getLevel2Config(item);
+                const level3Config = getLevel3Config(item);
+                const shouldShowAutoBagQty = shouldShowAutoBagQuantityField(item);
+                const autoSelectedUnit = getAutoSelectedUnit(item);
+                const itemQuantityAllowsDecimal = isMetricTonUnit(item.data.unit);
 
-              {/* LEVEL 1 */}
-              {config && (
-                <Field htmlFor="level1" label={config.label}>
-                  <Select
-                    id="level1"
-                    name="packagingType"
-                    value={getSelectValue("packagingType", formData.packagingType)}
-                    onChange={(e) =>
-                      handleSelectChange(
-                        "packagingType",
-                        e.target.value,
-                        ["level2", "level3", "level4", "packagingBag", "bucketSize", "colorOfSandEpoxy", "unloadBy"],
-                      )
-                    }
-                  >
-                    <option value="" disabled>
-                      Select {config.label}
-                    </option>
+                return (
+                  <div key={item.id} className="space-y-4 rounded-xl border p-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-semibold">Item {index + 1}</h3>
+                      {purchaseItems.length > 1 ? (
+                        <Button type="button" variant="outline" onClick={() => removePurchaseItem(index)}>
+                          Remove
+                        </Button>
+                      ) : null}
+                    </div>
 
-                    {(config.options).map((option) => (
-                      <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
-              {renderOtherInput("packagingType", config?.label ?? "Packaging Type", "Enter value")}
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <Field htmlFor={`raw-material-name-${item.id}`} label="Raw Material Name">
+                        <Select
+                          id={`raw-material-name-${item.id}`}
+                          name="rawMaterialName"
+                          value={getItemSelectValue(item, "rawMaterialName", item.data.rawMaterialName)}
+                          onChange={(e) =>
+                            handleItemSelectChange(
+                              index,
+                              "rawMaterialName",
+                              e.target.value,
+                              [
+                                "packagingType",
+                                "level2",
+                                "level3",
+                                "level4",
+                                "packagingBag",
+                                "bucketSize",
+                                "colorOfSandEpoxy",
+                                "unit",
+                              ],
+                            )
+                          }
+                        >
+                          <option value="" disabled>
+                            Select Raw Material
+                          </option>
 
-              {/* LEVEL 2 */}
-              {level2Config && (
-                <Field htmlFor="level2" label={level2Config.label}>
-                  <Select
-                    id="level2"
-                    name="level2"
-                    value={getSelectValue("level2", formData.level2)}
-                    disabled={
-                      formData.rawMaterialName === "Cement" &&
-                      (
-                        formData.packagingType === "OPC" ||
-                        formData.packagingType === "White Cement"
-                      )
-                    }
-                    onChange={(e) =>
-                      handleSelectChange(
-                        "level2",
-                        e.target.value,
-                        ["level3", "level4", "packagingBag", "bucketSize", "colorOfSandEpoxy"],
-                      )
-                    }
-                  >
-                    <option value="" disabled>
-                      Select {level2Config.label}
-                    </option>
+                          {materialOptions.map((option) => (
+                            <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                      {renderItemOtherInput(item, index, "rawMaterialName", "Raw Material Name", "Enter raw material name")}
 
-                    {(formData.rawMaterialName === "Cement"
-                      ? cementLevel2Options
-                      : level2Config.options).map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
-              {renderOtherInput("level2", level2Config?.label ?? "Level 2", "Enter value")}
-            </div>
+                      {config ? (
+                        <Field htmlFor={`level1-${item.id}`} label={config.label}>
+                          <Select
+                            id={`level1-${item.id}`}
+                            name="packagingType"
+                            value={getItemSelectValue(item, "packagingType", item.data.packagingType)}
+                            onChange={(e) =>
+                              handleItemSelectChange(
+                                index,
+                                "packagingType",
+                                e.target.value,
+                                ["level2", "level3", "level4", "packagingBag", "bucketSize", "colorOfSandEpoxy", "unit"],
+                              )
+                            }
+                          >
+                            <option value="" disabled>
+                              Select {config.label}
+                            </option>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              {shouldShowAutoBagQuantityField && (
-                <Field htmlFor="sand-bag-quantity" label="Bag Quantity">
-                  <Input
-                    id="sand-bag-quantity"
-                    min="0"
-                    name="sandBagQuantity"
-                    placeholder="Enter bag quantity"
-                    type="number"
-                    value={sandBagQuantity}
-                    onChange={(e) => setSandBagQuantity(sanitizeNumberOnly(e.target.value))}
-                  />
-                </Field>
-              )}
+                            {config.options.map((option) => (
+                              <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      ) : null}
+                      {renderItemOtherInput(item, index, "packagingType", config?.label ?? "Packaging Type", "Enter value")}
 
-              {/* LEVEL 3 */}
-              {shouldShowPackagingBagField && (
-                <Field htmlFor="packagingBag" label="Packaging Bag">
-                  <Select
-                    id="packagingBag"
-                    name="packagingBag"
-                    value={getSelectValue("packagingBag", formData.packagingBag)}
-                    disabled={formData.level2 === "Bondure"}
-                    onChange={(e) => handleSelectChange("packagingBag", e.target.value, ["level4", "bucketSize", "level3"])}
-                  >
-                    <option value="" disabled>
-                      Select Packaging Bag
-                    </option>
+                      {level2Config ? (
+                        <Field htmlFor={`level2-${item.id}`} label={level2Config.label}>
+                          <Select
+                            id={`level2-${item.id}`}
+                            name="level2"
+                            value={getItemSelectValue(item, "level2", item.data.level2)}
+                            disabled={
+                              item.data.rawMaterialName === "Cement" &&
+                              (
+                                item.data.packagingType === "OPC" ||
+                                item.data.packagingType === "White Cement"
+                              )
+                            }
+                            onChange={(e) =>
+                              handleItemSelectChange(
+                                index,
+                                "level2",
+                                e.target.value,
+                                ["level3", "level4", "packagingBag", "bucketSize", "colorOfSandEpoxy"],
+                              )
+                            }
+                          >
+                            <option value="" disabled>
+                              Select {level2Config.label}
+                            </option>
 
-                    {(packagingBagOptions).map((option) => (
-                      <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
-              {renderOtherInput("packagingBag", "Packaging Bag", "Enter packaging bag")}
+                            {(item.data.rawMaterialName === "Cement"
+                              ? getCementLevel2Options(item)
+                              : level2Config.options).map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      ) : null}
+                      {renderItemOtherInput(item, index, "level2", level2Config?.label ?? "Level 2", "Enter value")}
+                    </div>
 
-              {shouldShowPackagingBagColorField && (
-                <Field htmlFor="packagingBagColor" label="Packaging Bag Color">
-                  <Select
-                    id="packagingBagColor"
-                    name="packagingBagColor"
-                    value={formData.packagingBagColor}
-                    onChange={(e) => updateField("packagingBagColor", e.target.value)}
-                  >
-                    <option value="" disabled>
-                      Select packaging bag color
-                    </option>
-                    {packagingBagColorOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
+                    <div className="grid gap-4 md:grid-cols-3">
+                      {shouldShowAutoBagQty ? (
+                        <Field htmlFor={`bag-quantity-${item.id}`} label="Bag Quantity">
+                          <Input
+                            id={`bag-quantity-${item.id}`}
+                            min="0"
+                            name="bagQuantity"
+                            placeholder="Enter bag quantity"
+                            type="number"
+                            value={item.data.bagQuantity}
+                            onChange={(e) => updatePurchaseItemNumberField(index, "bagQuantity", e.target.value)}
+                          />
+                        </Field>
+                      ) : null}
 
-              {showPackagingItemTypeField && (
-                <Field htmlFor="packagingItemType" label="Packaging Item Type">
-                  <Select
-                    id="packagingItemType"
-                    name="packagingItemType"
-                    value={packagingItemType}
-                    onChange={(e) => setPackagingItemType(e.target.value)}
-                  >
-                    <option value="" disabled>
-                      Select packaging item type
-                    </option>
-                    {packagingItemTypeOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
+                      {shouldShowPackagingBagField(item) ? (
+                        <Field htmlFor={`packagingBag-${item.id}`} label="Packaging Bag">
+                          <Select
+                            id={`packagingBag-${item.id}`}
+                            name="packagingBag"
+                            value={getItemSelectValue(item, "packagingBag", item.data.packagingBag)}
+                            disabled={item.data.level2 === "Bondure"}
+                            onChange={(e) => handleItemSelectChange(index, "packagingBag", e.target.value, ["level4", "bucketSize", "level3"])}
+                          >
+                            <option value="" disabled>
+                              Select Packaging Bag
+                            </option>
 
-              {level3Config && (!shouldShowPackagingBagField || formData.packagingBag) && (!showPackagingItemTypeField || Boolean(packagingItemType)) && (
-                <Field htmlFor="level3" label={level3Config.label}>
-                  <Select
-                    id="level3"
-                    name="level3"
-                    value={getSelectValue("level3", formData.level3)}
-                    disabled={formData.level2 === "Bondure"}
-                    onChange={(e) => handleSelectChange("level3", e.target.value, ["bucketSize", "colorOfSandEpoxy"])}
-                  >
-                    <option value="" disabled>
-                      Select {level3Config.label}
-                    </option>
+                            {getPackagingBagOptions(item).map((option) => (
+                              <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      ) : null}
+                      {renderItemOtherInput(item, index, "packagingBag", "Packaging Bag", "Enter packaging bag")}
 
-                    {(level3Config.options).map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
-              {renderOtherInput("level3", level3Config?.label ?? "Level 3", "Enter value")}
+                      {shouldShowPackagingBagColorField(item) ? (
+                        <Field htmlFor={`packagingBagColor-${item.id}`} label="Packaging Bag Color">
+                          <Select
+                            id={`packagingBagColor-${item.id}`}
+                            name="packagingBagColor"
+                            value={item.data.packagingBagColor}
+                            onChange={(e) => updatePurchaseItemData(index, "packagingBagColor", e.target.value)}
+                          >
+                            <option value="" disabled>
+                              Select packaging bag color
+                            </option>
+                            {getPackagingBagColorOptions(item).map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      ) : null}
 
-              {showCouponField && (
-                <Field htmlFor="coupon" label="Coupon">
-                  <Input
-                    id="coupon"
-                    name="coupon"
-                    value={formData.coupon}
-                    placeholder="Select packaging size to set coupon"
-                    readOnly
-                  />
-                </Field>
-              )}
+                      {showPackagingItemTypeField(item) ? (
+                        <Field htmlFor={`packagingItemType-${item.id}`} label="Packaging Item Type">
+                          <Select
+                            id={`packagingItemType-${item.id}`}
+                            name="packagingItemType"
+                            value={item.packagingItemType}
+                            onChange={(e) =>
+                              setPurchaseItems((current) =>
+                                current.map((currentItem, currentIndex) =>
+                                  currentIndex === index
+                                    ? { ...currentItem, packagingItemType: e.target.value }
+                                    : currentItem,
+                                ),
+                              )
+                            }
+                          >
+                            <option value="" disabled>
+                              Select packaging item type
+                            </option>
+                            {packagingItemTypeOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      ) : null}
 
-              {shouldShowTileCleanerBucketSizeField && (
-                <Field htmlFor="bucketSize" label="Can Size">
-                  <Select
-                    id="bucketSize"
-                    name="bucketSize"
-                    value={getSelectValue("bucketSize", formData.bucketSize)}
-                    onChange={(e) => handleSelectChange("bucketSize", e.target.value)}
-                  >
-                    <option value="" disabled>
-                      Select Can Size
-                    </option>
-                    {(bucketSizeOptions).map((option) => (
-                      <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
-              {renderOtherInput("bucketSize", "Can Size", "Enter can size")}
+                      {level3Config && (!shouldShowPackagingBagField(item) || item.data.packagingBag) && (!showPackagingItemTypeField(item) || Boolean(item.packagingItemType)) ? (
+                        <Field htmlFor={`level3-${item.id}`} label={level3Config.label}>
+                          <Select
+                            id={`level3-${item.id}`}
+                            name="level3"
+                            value={getItemSelectValue(item, "level3", item.data.level3)}
+                            disabled={item.data.level2 === "Bondure"}
+                            onChange={(e) => handleItemSelectChange(index, "level3", e.target.value, ["bucketSize", "colorOfSandEpoxy"])}
+                          >
+                            <option value="" disabled>
+                              Select {level3Config.label}
+                            </option>
 
-              {shouldShowEpoxySandColorField && (
-                <Field htmlFor="color-of-sand-epoxy" label="Color Of Sand (Epoxy)">
-                  <Select
-                    id="color-of-sand-epoxy"
-                    name="colorOfSandEpoxy"
-                    value={getSelectValue("colorOfSandEpoxy", formData.colorOfSandEpoxy)}
-                    onChange={(e) => handleSelectChange("colorOfSandEpoxy", e.target.value)}
-                  >
-                    <option value="" disabled>
-                      Select sand color
-                    </option>
-                    {getOptionsWithOther(epoxySandColorOptions).map((option) => (
-                      <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
-              {renderOtherInput("colorOfSandEpoxy", "Color Of Sand (Epoxy)", "Enter sand color")}
+                            {level3Config.options.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      ) : null}
+                      {renderItemOtherInput(item, index, "level3", level3Config?.label ?? "Level 3", "Enter value")}
 
-              <Field htmlFor="quantity-purchased" label="Quantity Purchased">
-                <div className="space-y-2">
-                  <Input
-                    id="quantity-purchased"
-                    aria-invalid={Boolean(quantityPurchasedValidationMessage)}
-                    inputMode={quantityAllowsDecimal ? "decimal" : "numeric"}
-                    name="quantityPurchased"
-                    pattern={quantityAllowsDecimal ? "^\\d*(\\.\\d*)?$" : "^\\d*$"}
-                    placeholder="Enter quantity"
-                    readOnly={shouldShowAutoBagQuantityField}
-                    step={quantityAllowsDecimal ? "any" : "1"}
-                    type="text"
-                    value={formData.quantityPurchased}
-                    onChange={(e) => handleQuantityPurchasedChange(e.target.value)}
-                  />
-                  {quantityPurchasedValidationMessage ? (
-                    <p className="text-sm font-medium text-destructive">
-                      {quantityPurchasedValidationMessage}
-                    </p>
-                  ) : null}
-                </div>
-              </Field>
+                      {showPackagingItemTypeField(item) && item.packagingItemType === "Coupon" ? (
+                        <Field htmlFor={`coupon-${item.id}`} label="Coupon">
+                          <Input
+                            id={`coupon-${item.id}`}
+                            name="coupon"
+                            value={item.data.coupon}
+                            placeholder="Select packaging size to set coupon"
+                            readOnly
+                          />
+                        </Field>
+                      ) : null}
 
-              <Field htmlFor="unit" label="Unit">
-                <Select
-                  id="unit"
-                  name="unit"
-                  value={getSelectValue("unit", formData.unit)}
-                  disabled={Boolean(autoSelectedUnit)}
-                  onChange={(e) => handleSelectChange("unit", e.target.value)}
-                >
-                  <option value="" disabled>
-                    Unit
-                  </option>
-                  {(unitOptions).map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </Select>
-              </Field>
-              {renderOtherInput("unit", "Unit", "Enter unit")}
+                      {shouldShowTileCleanerBucketSizeField(item) ? (
+                        <Field htmlFor={`bucketSize-${item.id}`} label="Can Size">
+                          <Select
+                            id={`bucketSize-${item.id}`}
+                            name="bucketSize"
+                            value={getItemSelectValue(item, "bucketSize", item.data.bucketSize)}
+                            onChange={(e) => handleItemSelectChange(index, "bucketSize", e.target.value)}
+                          >
+                            <option value="" disabled>
+                              Select Can Size
+                            </option>
+                            {["1L", "5L"].map((option) => (
+                              <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      ) : null}
+                      {renderItemOtherInput(item, index, "bucketSize", "Can Size", "Enter can size")}
+
+                      {shouldShowEpoxySandColorField(item) ? (
+                        <Field htmlFor={`color-of-sand-epoxy-${item.id}`} label="Color Of Sand (Epoxy)">
+                          <Select
+                            id={`color-of-sand-epoxy-${item.id}`}
+                            name="colorOfSandEpoxy"
+                            value={getItemSelectValue(item, "colorOfSandEpoxy", item.data.colorOfSandEpoxy)}
+                            onChange={(e) => handleItemSelectChange(index, "colorOfSandEpoxy", e.target.value)}
+                          >
+                            <option value="" disabled>
+                              Select sand color
+                            </option>
+                            {getOptionsWithOther(epoxySandColorOptions).map((option) => (
+                              <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      ) : null}
+                      {renderItemOtherInput(item, index, "colorOfSandEpoxy", "Color Of Sand (Epoxy)", "Enter sand color")}
+
+                      <Field htmlFor={`quantity-purchased-${item.id}`} label="Quantity Purchased">
+                        <div className="space-y-2">
+                          <Input
+                            id={`quantity-purchased-${item.id}`}
+                            aria-invalid={Boolean(quantityPurchasedValidationMessage)}
+                            inputMode={itemQuantityAllowsDecimal ? "decimal" : "numeric"}
+                            name="quantityPurchased"
+                            pattern={itemQuantityAllowsDecimal ? "^\\d*(\\.\\d*)?$" : "^\\d*$"}
+                            placeholder="Enter quantity"
+                            readOnly={shouldShowAutoBagQty}
+                            step={itemQuantityAllowsDecimal ? "any" : "1"}
+                            type="text"
+                            value={item.data.quantityPurchased}
+                            onChange={(e) => updatePurchaseItemData(index, "quantityPurchased", sanitizeNumberOnly(e.target.value, { allowDecimal: true }))}
+                          />
+                        </div>
+                      </Field>
+
+                      <Field htmlFor={`unit-${item.id}`} label="Unit">
+                        <Select
+                          id={`unit-${item.id}`}
+                          name="unit"
+                          value={getItemSelectValue(item, "unit", item.data.unit)}
+                          disabled={Boolean(autoSelectedUnit)}
+                          onChange={(e) => handleItemSelectChange(index, "unit", e.target.value)}
+                        >
+                          <option value="" disabled>
+                            Unit
+                          </option>
+                          {unitOptions.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </Select>
+                      </Field>
+                      {renderItemOtherInput(item, index, "unit", "Unit", "Enter unit")}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {quantityPurchasedValidationMessage ? (
+                <p className="text-sm font-medium text-destructive">
+                  {quantityPurchasedValidationMessage}
+                </p>
+              ) : null}
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -1251,8 +1411,8 @@ export function PurchaseEntryForm() {
                   id="supplier-name"
                   name="supplierName"
                   placeholder="Enter supplier name"
-                  value={formData.supplierName}
-                  onChange={(e) => updateTextField("supplierName", e.target.value)}
+                  value={commonFormData.supplierName}
+                  onChange={(e) => updateCommonTextField("supplierName", e.target.value)}
                 />
               </Field>
               <Field htmlFor="invoice-no" label="Bill / Invoice No. (Optional)">
@@ -1260,116 +1420,60 @@ export function PurchaseEntryForm() {
                   id="invoice-no"
                   name="invoiceNo"
                   placeholder="Invoice number"
-                  value={formData.invoiceNo}
-                  onChange={(e) => updateField("invoiceNo", e.target.value)}
+                  value={commonFormData.invoiceNo}
+                  onChange={(e) => updateCommonField("invoiceNo", e.target.value)}
                 />
               </Field>
               <Field htmlFor="unload-by" label="Unload By">
-
-                {/* Cement + Silo */}
-                {formData.rawMaterialName === "Cement" &&
-                  formData.level2 === "Silo" ? (
-
-                  <select
-                    id="unload-by"
-                    name="unloadBy"
-                    className="w-full h-10 border rounded-md px-3"
-                    value={getSelectValue("unloadBy", formData.unloadBy)}
-                    onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
-                  >
-                    <option value="">Select Person</option>
-                    <option value="Chandrashekhar">Chandrashekhar</option>
-                    <option value="Anand">Anand</option>
-                    <option value={OTHER_OPTION}>Other</option>
-                  </select>
-
-                ) : formData.rawMaterialName === "Cement" &&
-                  formData.level2 === "Bag" ? (
-
-                  /* Cement + Bag */
-
-                  <select
-                    id="unload-by"
-                    name="unloadBy"
-                    className="w-full h-10 border rounded-md px-3"
-                    value={getSelectValue("unloadBy", formData.unloadBy)}
-                    onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
-                  >
-                    <option value="">Select Person</option>
-                    <option value="Anand">Sujeet</option>
-                    <option value="Chandrashekhar">Thailesh</option>
-                    <option value="Vasu">Vasu</option>
-                    <option value={OTHER_OPTION}>Other</option>
-                  </select>
-
-                ) : formData.rawMaterialName === "Chemical" ? (
-
-                  /* Chemical */
-
-                  <select
-                    id="unload-by"
-                    name="unloadBy"
-                    className="w-full h-10 border rounded-md px-3"
-                    value={getSelectValue("unloadBy", formData.unloadBy)}
-                    onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
-                  >
-                    <option value="">Select Person</option>
-                    <option value="Thailesh">Thalesh</option>
-                    <option value="Sujeet">Sujeet</option>
-                    <option value="Vasu">Vasu</option>
-                    <option value={OTHER_OPTION}>Other</option>
-                  </select>
-
-                ) : formData.rawMaterialName === "Packaging" ? (
-
-                  /* Packaging */
-
-                  <select
-                    id="unload-by"
-                    name="unloadBy"
-                    className="w-full h-10 border rounded-md px-3"
-                    value={getSelectValue("unloadBy", formData.unloadBy)}
-                    onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
-                  >
-                    <option value="">Select Person</option>
-                    <option value="Thailesh">Thailesh</option>
-                    <option value="Sujeet">Sujeet</option>
-                    <option value="Vasu">Vasu</option>
-                    <option value={OTHER_OPTION}>Other</option>
-                  </select>
-
-                ) : formData.rawMaterialName === "Sand" ? (
-
-                  /* Sand */
-
-                  <select
-                    id="unload-by"
-                    name="unloadBy"
-                    className="w-full h-10 border rounded-md px-3"
-                    value={getSelectValue("unloadBy", formData.unloadBy)}
-                    onChange={(e) => handleSelectChange("unloadBy", e.target.value)}
-                  >
-                    <option value="">Select Person</option>
-                    <option value="Sujeet">Sujeet</option>
-                    <option value="Thailesh">Thailesh</option>
-                    <option value="Vasu">Vasu</option>
-                    <option value={OTHER_OPTION}>Other</option>
-                  </select>
-
-                ) : (
-
-                  /* Default Input */
-
+                {unloadByMode === "input" ? (
                   <Input
                     id="unload-by"
                     name="unloadBy"
                     placeholder="Person or team name"
-                    value={formData.unloadBy}
-                    onChange={(e) => updateTextField("unloadBy", e.target.value)}
+                    value={commonFormData.unloadBy}
+                    onChange={(e) => {
+                      setIsUnloadByOther(false);
+                      updateCommonTextField("unloadBy", e.target.value);
+                    }}
                   />
+                ) : (
+                  <div className="space-y-2">
+                    <select
+                      id="unload-by"
+                      name="unloadBy"
+                      className="w-full h-10 border rounded-md px-3"
+                      value={isUnloadByOther ? OTHER_OPTION : commonFormData.unloadBy}
+                      onChange={(e) => {
+                        if (e.target.value === OTHER_OPTION) {
+                          setIsUnloadByOther(true);
+                          updateCommonField("unloadBy", "");
+                          return;
+                        }
+
+                        setIsUnloadByOther(false);
+                        updateCommonField("unloadBy", e.target.value);
+                      }}
+                    >
+                      <option value="">Select Person</option>
+                      {unloadByOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                      <option value={OTHER_OPTION}>Other</option>
+                    </select>
+                    {isUnloadByOther ? (
+                      <Input
+                        id="unload-by-other"
+                        name="unloadByOther"
+                        placeholder="Enter person or team name"
+                        value={commonFormData.unloadBy}
+                        onChange={(e) => updateCommonTextField("unloadBy", e.target.value)}
+                      />
+                    ) : null}
+                  </div>
                 )}
               </Field>
-              {renderOtherInput("unloadBy", "Unload By", "Enter person or team name")}
 
               <Field htmlFor="attach-file" label="Attach File (Optional)">
                 <Input
@@ -1389,16 +1493,14 @@ export function PurchaseEntryForm() {
                 id="remarks"
                 name="remarks"
                 placeholder="Add notes about quality, shortage, damage, or payment status"
-                value={formData.remarks}
-                onChange={(e) => updateField("remarks", e.target.value)}
+                value={commonFormData.remarks}
+                onChange={(e) => updateCommonField("remarks", e.target.value)}
               />
             </Field>
 
             <div className="flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:justify-end">
               {submitStatus === "error" && submitMessage && (
-                <p
-                  className="text-sm font-medium text-destructive sm:mr-auto"
-                >
+                <p className="text-sm font-medium text-destructive sm:mr-auto">
                   {submitMessage}
                 </p>
               )}
@@ -1466,7 +1568,7 @@ export function PurchaseEntryForm() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="truncate text-sm font-medium">{materialPath || "Purchase entry"}</p>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {purchase.user || purchase.id}
+                        {purchase.invoiceNo || purchase.id}
                       </span>
                     </div>
                     <div className="mt-2 space-y-1 text-sm text-muted-foreground">
