@@ -27,6 +27,7 @@ import { ReportsPage } from "@/components/reports/ReportsPage";
 import { Button } from "@/components/ui/button";
 import newLogo from "@/assets/new_logo.png";
 import { AUTH_STORAGE_KEY } from "@/lib/auth";
+import ScrollToTop from "./hooks/ScrollToTop";
 
 const navItems: Array<{ icon: LucideIcon; label: string; path: string }> = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -168,9 +169,26 @@ function AppShellLayout() {
             : isDispatchEntriesPage
               ? "Dispatch Entries"
               : "Dashboard";
+  useEffect(() => {
+    const handleUnload = () => {
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.localStorage.removeItem("userName");
+      window.sessionStorage.clear();
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+    window.addEventListener("unload", handleUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      window.removeEventListener("unload", handleUnload);
+    };
+  }, []);
+
   const handleLogout = () => {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     window.localStorage.removeItem("userName");
+    window.sessionStorage.clear();
     setMobileSidebarOpen(false);
     toast.success("Logout Successful");
     navigate("/login", { replace: true });
@@ -266,6 +284,7 @@ function AppShellLayout() {
 function App() {
   return (
     <BrowserRouter>
+    <ScrollToTop />
       <Routes>
         <Route element={<PublicRoute />}>
           <Route element={<LoginPage />} path="/login" />

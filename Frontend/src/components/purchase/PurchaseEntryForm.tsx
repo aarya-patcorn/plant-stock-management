@@ -13,7 +13,7 @@ import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import SubmitLoader from "../ui/SubmitLoader";
 
 const unitOptions = ["kg", "ltr", "mt", "pcs", "bags", "ml", "nos", "others"];
-const materialOptions = ["Cement", "Sand", "Chemical", "Packaging", "Spares"];
+const materialOptions = ["Cement", "Sand", "Chemical", "Packaging"];
 const packagingItemTypeOptions = ["Bag", "Coupon"];
 const epoxySandColorOptions = [
   "White",
@@ -92,7 +92,7 @@ type MaterialConfig = {
   children?: Record<string, MaterialConfig>;
 };
 
-type RawMaterialName = "Cement" | "Sand" | "Chemical" | "Packaging" | "Spares";
+type RawMaterialName = "Cement" | "Sand" | "Chemical" | "Packaging";
 type RawMaterialOption = RawMaterialName | "Other" | "";
 const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
   Cement: {
@@ -254,11 +254,6 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
         },
       },
     },
-  },
-
-  Spares: {
-    label: "Machine Type",
-    options: ["Printing", "Sealing", "Stretching"],
   },
 };
 

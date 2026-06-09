@@ -513,6 +513,18 @@ export function DispatchEntriesPage() {
                     }
                   />
                 </Field>
+                <Field htmlFor="edit-wastageQty" label="Wastage Quantity">
+                  <Input
+                    id="edit-wastageQty"
+                    inputMode="decimal"
+                    step="any"
+                    type="number"
+                    value={editingEntry.wastageQty}
+                    onChange={(event) =>
+                      setEditingEntry((current) => current ? { ...current, wastageQty: event.target.value } : current)
+                    }
+                  />
+                </Field>
                 <Field htmlFor="edit-dispatchSite" label="Dispatch Site">
                   <Input
                     id="edit-dispatchSite"
@@ -597,12 +609,14 @@ export function DispatchEntriesPage() {
                 </Field>
               </div>
 
-              <Field htmlFor="edit-notes" label="Notes">
+              <Field htmlFor="edit-remarks" label="Remarks">
                 <Textarea
-                  id="edit-notes"
-                  value=""
-                  readOnly
-                  placeholder="Dispatch records do not include an attachment field."
+                  id="edit-remarks"
+                  value={editingEntry.remarks}
+                  placeholder="Add dispatch remarks"
+                  onChange={(event) =>
+                    setEditingEntry((current) => current ? { ...current, remarks: event.target.value } : current)
+                  }
                 />
               </Field>
             </div>
@@ -702,6 +716,14 @@ export function DispatchEntriesPage() {
                           <p className="text-xs font-medium uppercase text-muted-foreground">Departed Bags</p>
                           <p className="mt-1">{entry.totalBags || "-"}</p>
                         </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Wastage Qty</p>
+                          <p className="mt-1">{entry.wastageQty || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Remarks</p>
+                          <p className="mt-1">{entry.remarks || "-"}</p>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 text-sm">
@@ -725,18 +747,20 @@ export function DispatchEntriesPage() {
 
               <div className="hidden overflow-x-auto lg:block">
                 <Table className="min-w-max">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap text-center" title="Date">Date</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Time">Time</TableHead>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap text-center" title="Date">Date</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Time">Time</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Challan">Challan</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Product">Product</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Token">Token</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Bag Size">Bag Size</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Departed Bags">Departed Bags</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Vehicle">Vehicle</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Driver">Driver</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Dispatch Site">Dispatch Site</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Token">Token</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Bag Size">Bag Size</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Departed Bags">Departed Bags</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Wastage Quantity">Wastage Qty</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Remarks">Remarks</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Vehicle">Vehicle</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Driver">Driver</TableHead>
+                    <TableHead className="whitespace-nowrap text-center" title="Dispatch Site">Dispatch Site</TableHead>
                       <TableHead className="whitespace-nowrap text-center" title="Entry By">Entry By</TableHead>
                       <TableHead className="w-[120px] whitespace-nowrap text-center" title="Actions">Actions</TableHead>
                     </TableRow>
@@ -749,15 +773,17 @@ export function DispatchEntriesPage() {
                           : "-"}</TableCell>
                         <TableCell className="whitespace-nowrap" title={entry.time || "-"}>{entry.time || "-"}</TableCell>
                         <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.challanNo || entry.challanName || "-"}>{entry.challanNo || entry.challanName || "-"}</TableCell>
-                        <TableCell className="min-w-[220px] max-w-[220px] truncate whitespace-nowrap" title={buildDispatchLabel(entry) || "-"}>{buildDispatchLabel(entry) || "-"}</TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.token || "-"}>{entry.token || "-"}</TableCell>
-                        <TableCell className="whitespace-nowrap" title={entry.bagSize || "-"}>{entry.bagSize || "-"}</TableCell>
-                        <TableCell className="whitespace-nowrap" title={entry.totalBags || "-"}>{entry.totalBags || "-"}</TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.vehicleNo || "-"}>{entry.vehicleNo || "-"}</TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.driverName || "-"}>{entry.driverName || "-"}</TableCell>
-                        <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.user || "-"}>{entry.user || "-"}</TableCell>
-                        <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.dispatchSite || "-"}>{entry.dispatchSite || "-"}</TableCell>
-                        <TableCell className="text-center">
+                    <TableCell className="min-w-[220px] max-w-[220px] truncate whitespace-nowrap" title={buildDispatchLabel(entry) || "-"}>{buildDispatchLabel(entry) || "-"}</TableCell>
+                    <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.token || "-"}>{entry.token || "-"}</TableCell>
+                    <TableCell className="whitespace-nowrap" title={entry.bagSize || "-"}>{entry.bagSize || "-"}</TableCell>
+                    <TableCell className="whitespace-nowrap" title={entry.totalBags || "-"}>{entry.totalBags || "-"}</TableCell>
+                    <TableCell className="whitespace-nowrap" title={entry.wastageQty || "-"}>{entry.wastageQty || "-"}</TableCell>
+                    <TableCell className="max-w-[180px] truncate whitespace-nowrap" title={entry.remarks || "-"}>{entry.remarks || "-"}</TableCell>
+                    <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.vehicleNo || "-"}>{entry.vehicleNo || "-"}</TableCell>
+                    <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.driverName || "-"}>{entry.driverName || "-"}</TableCell>
+                    <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.dispatchSite || "-"}>{entry.dispatchSite || "-"}</TableCell>
+                    <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.user || "-"}>{entry.user || "-"}</TableCell>
+                    <TableCell className="text-center">
                           <div className="flex justify-center gap-2">
                             <Button
                               size="icon"

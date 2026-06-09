@@ -64,8 +64,10 @@ export function LoginPage() {
         throw new Error("User not found. Please check your credentials.");
       }
 
-      window.localStorage.setItem(AUTH_STORAGE_KEY, formData.userId);
-      window.localStorage.setItem("userName", getAuthenticatedUserName(response));
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.localStorage.removeItem("userName");
+      window.sessionStorage.setItem(AUTH_STORAGE_KEY, formData.userId);
+      window.sessionStorage.setItem("userName", getAuthenticatedUserName(response));
 
       toast.success("Login successful.");
       navigate("/", { replace: true });

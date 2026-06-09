@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import {
   fetchDispatchEntries,
@@ -40,6 +41,8 @@ const initialFormData = {
   productName: "",
   quantity: "",
   totalBags: "",
+  wastageQty: "",
+  remarks: "",
 };
 
 type DispatchProductSelection = Pick<
@@ -559,6 +562,10 @@ export function ProductDepartureForm() {
       return "Today vehicle No. must be greater than 0.";
     }
 
+    if (Number(formData.wastageQty || 0) < 0) {
+      return "Wastage quantity cannot be negative.";
+    }
+
     const productsToSubmit = getProductsForSubmission();
 
     for (let index = 0; index < productsToSubmit.length; index += 1) {
@@ -749,6 +756,31 @@ export function ProductDepartureForm() {
                 />
               </Field>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field htmlFor="wastage-qty" label="Wastage Quantity (In KG)">
+                <Input
+                  id="wastage-qty"
+                  inputMode="decimal"
+                  name="wastageQty"
+                  placeholder="Enter wastage quantity"
+                  step="any"
+                  type="text"
+                  value={formData.wastageQty}
+                  onChange={(e) => updateNumberField("wastageQty", e.target.value, { allowDecimal: true })}
+                />
+              </Field>
+            </div>
+
+            <Field htmlFor="remarks" label="Remarks">
+              <Textarea
+                id="remarks"
+                name="remarks"
+                placeholder="Add dispatch remarks"
+                value={formData.remarks}
+                onChange={(e) => updateTextField("remarks", e.target.value)}
+              />
+            </Field>
 
             <div className="grid gap-4 md:grid-cols-2">
 

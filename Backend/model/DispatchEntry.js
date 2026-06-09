@@ -20,6 +20,11 @@ const dispatchEntrySchema = new mongoose.Schema(
     bagSize: String,
     quantity: Number,
     totalBags: Number,
+    wastageQty: Number,
+    remarks: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );

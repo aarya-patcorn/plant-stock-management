@@ -1,6 +1,7 @@
 const PurchaseEntry = require("../model/PurchaseEntry");
 const Inventory = require("../model/Inventory");
 const uploadFileToDriveViaAppsScript = require("../config/googleAppsScriptUpload");
+const { sendEmailWithAttachment } = require("../utils/resendMailer");
 
 const parseNumber = (value) => {
   const num = Number(value);
@@ -13,6 +14,22 @@ const compactFilter = (fields) =>
   );
 
 const normalizeText = (value) => String(value || "").trim();
+
+const hasValue = (value) => {
+  if (value === 0) return true;
+  if (value === null || value === undefined) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+  return String(value).trim() !== "";
+};
+
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
 const parsePurchaseItems = (value) => {
   if (Array.isArray(value)) {
@@ -217,6 +234,129 @@ const updatePurchaseInventory = async (oldPurchaseData, newPurchaseData) => {
   await addPurchaseToInventory(newPurchaseData, newQuantity);
 };
 
+const buildPurchaseEmailItems = ({ sourceItems, savedEntries }) =>
+  savedEntries.map((entry, index) => {
+    const sourceItem = Array.isArray(sourceItems) ? sourceItems[index] || {} : {};
+
+    return {
+      rawMaterialName: sourceItem.rawMaterialName ?? entry.rawMaterialName,
+      packagingType: sourceItem.packagingType ?? entry.packagingType,
+      level2: sourceItem.level2 ?? entry.level2,
+      level3: sourceItem.level3 ?? entry.level3,
+      level4: sourceItem.level4 ?? entry.level4,
+      packagingBag: sourceItem.packagingBag ?? "",
+      bucketSize: sourceItem.bucketSize ?? entry.bucketSize,
+      packagingBagColor: sourceItem.packagingBagColor ?? entry.packagingBagColor,
+      colorOfSandEpoxy: sourceItem.colorOfSandEpoxy ?? sourceItem.sandEpoxyColor ?? entry.sandEpoxyColor,
+      quantityPurchased: sourceItem.quantityPurchased ?? entry.quantityPurchased,
+      unit: sourceItem.unit ?? entry.unit,
+      bagQuantity: sourceItem.bagQuantity ?? "",
+    };
+  });
+
+const sendPurchaseEntryEmailReport = async ({ data, entries, uploadedAttachment }) => {
+  const purchaseEntries = Array.isArray(entries) ? entries : [entries];
+
+  if (purchaseEntries.length === 0 || !data) {
+    return;
+  }
+
+  const sourceItems = parsePurchaseItems(data.purchaseItems);
+  const purchaseItems = sourceItems.length > 0
+    ? buildPurchaseEmailItems({ sourceItems, savedEntries: purchaseEntries })
+    : buildPurchaseEmailItems({ sourceItems: [data], savedEntries: purchaseEntries });
+
+  const attachmentUrl =
+    uploadedAttachment?.fileUrl ||
+    data.attachFileUrl ||
+    data.attachFile ||
+    purchaseEntries[0]?.attachFile ||
+    "";
+
+  const commonFields = [
+    ["Date", data.date],
+    ["Time", data.time],
+    ["Supplier Name", data.supplierName],
+    ["Invoice No", data.invoiceNo],
+    ["Unload By", data.unloadBy],
+    ["User", data.user],
+    ["Remarks", data.remarks],
+    ["Attachment", attachmentUrl],
+  ].filter(([, value]) => hasValue(value));
+
+  const possibleColumns = [
+    ["rawMaterialName", "Raw Material Name"],
+    ["packagingType", "Packaging Type"],
+    ["level2", "Level 2"],
+    ["level3", "Level 3"],
+    ["level4", "Level 4"],
+    ["packagingBag", "Packaging Bag"],
+    ["bucketSize", "Bucket Size"],
+    ["packagingBagColor", "Packaging Bag Color"],
+    ["colorOfSandEpoxy", "Color Of Sand Epoxy"],
+    ["quantityPurchased", "Quantity Purchased"],
+    ["unit", "Unit"],
+    ["bagQuantity", "Bag Quantity"],
+  ].filter(([field]) => purchaseItems.some((item) => hasValue(item[field])));
+
+  const commonFieldsHtml = commonFields.length > 0
+    ? `
+      <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin-bottom:16px;">
+        <tbody>
+          ${commonFields
+            .map(
+              ([label, value]) => `
+                <tr>
+                  <td style="font-weight:bold;background:#f5f5f5;">${escapeHtml(label)}</td>
+                  <td>${escapeHtml(value)}</td>
+                </tr>
+              `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    `
+    : "";
+
+  const tableHeadHtml = `
+    <tr>
+      <th>S.No.</th>
+      ${possibleColumns
+        .map(([, label]) => `<th>${escapeHtml(label)}</th>`)
+        .join("")}
+    </tr>
+  `;
+
+  const tableBodyHtml = purchaseItems
+    .map(
+      (item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          ${possibleColumns
+            .map(([field]) => `<td>${hasValue(item[field]) ? escapeHtml(item[field]) : ""}</td>`)
+            .join("")}
+        </tr>
+      `,
+    )
+    .join("");
+
+  await sendEmailWithAttachment({
+    subject: "New Purchase Entry Added",
+    html: `
+      <h2>New Purchase Entry Added</h2>
+      ${commonFieldsHtml}
+      <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
+        <thead>
+          ${tableHeadHtml}
+        </thead>
+        <tbody>
+          ${tableBodyHtml}
+        </tbody>
+      </table>
+    `,
+  });
+};
+
 const createPurchaseEntry = async (req, res) => {
   try {
     let uploadedAttachment = null;
@@ -263,6 +403,13 @@ const createPurchaseEntry = async (req, res) => {
         await addPurchaseToInventory(purchaseData, purchaseData.quantityPurchased);
       }
 
+      try {
+        await sendPurchaseEntryEmailReport({ data: req.body, entries: purchases, uploadedAttachment });
+        console.log("[Purchase Email] Sent successfully for multi-item purchase save.");
+      } catch (emailError) {
+        console.error("[Purchase Email] Failed for multi-item purchase save:", emailError.message);
+      }
+
       return res.status(201).json({
         success: true,
         message: "Purchase entries created successfully",
@@ -273,6 +420,13 @@ const createPurchaseEntry = async (req, res) => {
     const purchaseData = normalizePurchaseData(req.body, null, uploadedAttachment);
     const purchase = await PurchaseEntry.create(purchaseData);
     await addPurchaseToInventory(purchaseData, purchaseData.quantityPurchased);
+
+    try {
+      await sendPurchaseEntryEmailReport({ data: req.body, entries: purchase, uploadedAttachment });
+      console.log("[Purchase Email] Sent successfully for single purchase save.");
+    } catch (emailError) {
+      console.error("[Purchase Email] Failed for single purchase save:", emailError.message);
+    }
 
     res.status(201).json({ success: true, message: "Purchase entry created successfully", data: purchase });
   } catch (error) {

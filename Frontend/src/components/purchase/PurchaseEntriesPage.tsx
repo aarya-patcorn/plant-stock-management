@@ -23,7 +23,7 @@ import {
 } from "@/lib/api";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 
-const rawMaterialOptions = ["Cement", "Sand", "Chemical", "Packaging", "Spares", "Other"];
+const rawMaterialOptions = ["Cement", "Sand", "Chemical", "Packaging", "Other"];
 const unitOptions = ["kg", "ltr", "pcs", "bags", "ml", "nos", "others"];
 const packagingBagColorOptions = ["White", "Grey"];
 const packagingBagOptions = ["K50", "K60", "K70", "K80", "K90", "Kamdhenu X"];
@@ -37,7 +37,7 @@ type MaterialConfig = {
   children?: Record<string, MaterialConfig>;
 };
 
-type RawMaterialName = "Cement" | "Sand" | "Chemical" | "Packaging" | "Spares";
+type RawMaterialName = "Cement" | "Sand" | "Chemical" | "Packaging";
 type RawMaterialOption = RawMaterialName | "Other" | "";
 
 const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
@@ -137,10 +137,6 @@ const rawMaterialConfig: Record<RawMaterialName, MaterialConfig> = {
         },
       },
     },
-  },
-  Spares: {
-    label: "Machine Type",
-    options: ["Printing", "Sealing", "Stretching"],
   },
 };
 

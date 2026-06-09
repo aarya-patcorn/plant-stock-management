@@ -1,5 +1,6 @@
 const DispatchEntry = require("../model/DispatchEntry");
 const ProductMaterialLog  = require("../model/ProductMaterialLog");
+const Wastage = require("../model/Wastage");
 
 const parseNumber = (value) => {
   const num = Number(value);
@@ -26,6 +27,60 @@ const buildProductMaterialLabel = (data) => {
   ]
     .filter(Boolean)
     .join(" ");
+};
+
+const getTphBatchFromDispatch = ({ productCategory, color, productColor }) => {
+  const dispatchColor = color || productColor || "";
+
+  if (productCategory === "Grout" || productCategory === "Tile Grout") return "Manual Blender";
+  if (productCategory === "Epoxy") return "Sigma Mixer";
+  if (productCategory === "Tile Cleaner") return "Manual Hand Mixer";
+
+  if (productCategory === "Tile Adhesive") {
+    if (dispatchColor === "Grey") return "2TPH";
+    if (dispatchColor === "White") return "1TPH";
+  }
+
+  return "";
+};
+
+const validateDispatchWastage = (data) => {
+  const wastageQty = parseNumber(data.wastageQty);
+
+  if (wastageQty < 0) {
+    throw new Error("Wastage quantity cannot be negative.");
+  }
+
+  if (wastageQty <= 0) {
+    return {
+      wastageQty,
+      tphBatch: "",
+      finishedProductName: "",
+    };
+  }
+
+  const productCategory = data.productCategory || "";
+  const productColor = data.productColor || data.color || "";
+
+  if (productCategory === "Tile Adhesive" && !String(productColor).trim()) {
+    throw new Error("Product color is required for Tile Adhesive wastage.");
+  }
+
+  const tphBatch = getTphBatchFromDispatch({
+    productCategory,
+    color: data.color,
+    productColor,
+  });
+
+  if (!tphBatch) {
+    throw new Error("TPH batch mapping not found for dispatch wastage.");
+  }
+
+  return {
+    wastageQty,
+    tphBatch,
+    finishedProductName: data.productName || data.finishedProductName || "",
+  };
 };
 
 const reduceProductMaterialStock = async (dispatchItems) => {
@@ -83,6 +138,8 @@ const normalizeDispatchData = (data) => ({
   bagSize: data.bagSize || "",
   quantity: parseNumber(data.quantity),
   totalBags: parseNumber(data.totalBags),
+  wastageQty: parseNumber(data.wastageQty),
+  remarks: data.remarks || "",
 });
 
 const getDispatchEntries = async (_req, res) => {
@@ -96,9 +153,38 @@ const getDispatchEntries = async (_req, res) => {
 
 const createDispatchEntry = async (req, res) => {
   try {
+    const wastageDetails = validateDispatchWastage(req.body);
     const entry = await DispatchEntry.create(normalizeDispatchData(req.body));
     
     await reduceProductMaterialStock(entry);
+
+    if (wastageDetails.wastageQty > 0) {
+      const wastageFilter = {
+        tphBatch: wastageDetails.tphBatch,
+        finishedProductName: wastageDetails.finishedProductName,
+      };
+
+      console.log("[Dispatch Wastage] filter:", wastageFilter);
+
+      const existingWastage = await Wastage.findOne(wastageFilter);
+
+      console.log("[Dispatch Wastage] existing:", existingWastage);
+      console.log("[Dispatch Wastage] adding qty:", req.body.wastageQty);
+
+      if (existingWastage) {
+        existingWastage.wastageQty =
+          (Number(existingWastage.wastageQty) || 0) + wastageDetails.wastageQty;
+        existingWastage.date = req.body.date || req.body.dispatchDate || existingWastage.date;
+        await existingWastage.save();
+      } else {
+        await Wastage.create({
+          date: req.body.date || req.body.dispatchDate || "",
+          tphBatch: wastageDetails.tphBatch,
+          finishedProductName: wastageDetails.finishedProductName,
+          wastageQty: wastageDetails.wastageQty,
+        });
+      }
+    }
 
     res.status(201).json({ success: true, message: "Dispatch entry created successfully", data: entry });
   } catch (error) {
@@ -109,6 +195,7 @@ const createDispatchEntry = async (req, res) => {
 
 const updateDispatchEntry = async (req, res) => {
   try {
+    validateDispatchWastage(req.body);
     const entry = await DispatchEntry.findByIdAndUpdate(req.params.id, normalizeDispatchData(req.body), {
       new: true,
       runValidators: true,

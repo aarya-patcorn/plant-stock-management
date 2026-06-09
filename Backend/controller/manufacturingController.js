@@ -242,9 +242,10 @@ const normalizeBondureBagSize = (value = "") => {
   return number ? `${number} KG` : String(value).trim();
 };
 
-const normalizeBucketSize = (value) => {
+const normalizeBucketSize = (value = "") => {
   const normalized = String(value || "")
     .replace(/^bucket\s+/i, "")
+    .replace(/\s+/g, "")
     .trim()
     .toUpperCase();
 
@@ -252,6 +253,13 @@ const normalizeBucketSize = (value) => {
   if (normalized === "5KG") return "5KG";
 
   return normalized;
+};
+
+const getChemicalHardnerGramPerBucket = (bucketSize) => {
+  const size = normalizeBucketSize(bucketSize);
+  if (size === "1KG") return 112;
+  if (size === "5KG") return 385;
+  return 0;
 };
 
 const getPackagingCategoryLevel2 = (productCategory) =>
@@ -355,6 +363,16 @@ const buildPackagingInventoryLabel = (fields) =>
   ]
     .filter(Boolean)
     .join(" / ");
+
+const buildChemicalHardnerInventoryFilter = () =>
+  ({
+    rawMaterialName: "Chemical",
+    packagingType: "Epoxy",
+    level2: "Hardner",
+    unit: "kg",
+  });
+
+const buildChemicalHardnerLabel = () => "Chemical / Epoxy / Hardner / kg";
 
 const buildPackagingItems = (data) => {
   const items = [];
@@ -504,6 +522,62 @@ const buildPackagingItems = (data) => {
   return items;
 };
 
+const buildChemicalHardnerItems = (data) => {
+  if (!isEpoxyProductCategory(data.productCategory)) {
+    return [];
+  }
+
+  const items = [];
+  const productItems = Array.isArray(data.productItems)
+    ? data.productItems
+    : [];
+
+  productItems.forEach((productItem) => {
+    const totalBagsProduced = parseNumber(productItem.totalBagsProduced);
+    const bucketSize = productItem.bagSize || "";
+    const hardnerGramPerBucket = getChemicalHardnerGramPerBucket(bucketSize);
+
+    if (totalBagsProduced <= 0 || hardnerGramPerBucket <= 0) {
+      return;
+    }
+
+    const chemicalHardnerQtyKg = (hardnerGramPerBucket * totalBagsProduced) / 1000;
+
+    console.log("[Epoxy Chemical Hardner] bucketSize:", bucketSize);
+    console.log("[Epoxy Chemical Hardner] totalBags:", totalBagsProduced);
+    console.log("[Epoxy Chemical Hardner] qtyKg:", chemicalHardnerQtyKg);
+
+    items.push({
+      filter: buildChemicalHardnerInventoryFilter(),
+      label: buildChemicalHardnerLabel(),
+      quantity: chemicalHardnerQtyKg,
+      errorNotFound: "Chemical Hardner inventory not found",
+      errorInsufficient: "Insufficient Chemical Hardner stock",
+    });
+  });
+
+  return items;
+};
+
+const groupChemicalHardnerItemsByInventory = (items) => {
+  const groupedItems = new Map();
+
+  items.forEach((item) => {
+    const key = JSON.stringify(item.filter);
+    const current = groupedItems.get(key);
+
+    groupedItems.set(key, {
+      filter: item.filter,
+      label: current?.label || item.label,
+      quantity: (current?.quantity || 0) + parseNumber(item.quantity),
+      errorNotFound: item.errorNotFound,
+      errorInsufficient: item.errorInsufficient,
+    });
+  });
+
+  return Array.from(groupedItems.values());
+};
+
 const groupPackagingItemsByInventory = (packagingItems) => {
   const groupedItems = new Map();
 
@@ -527,6 +601,21 @@ const groupPackagingItemsByInventory = (packagingItems) => {
   });
 
   return Array.from(groupedItems.values());
+};
+
+const buildChemicalHardnerDeltaMap = (data, direction = 1) => {
+  const deltas = new Map();
+  const groupedItems = groupChemicalHardnerItemsByInventory(buildChemicalHardnerItems(data));
+
+  groupedItems.forEach((item) => {
+    const key = JSON.stringify(item.filter);
+    deltas.set(key, {
+      ...item,
+      quantity: item.quantity * direction,
+    });
+  });
+
+  return deltas;
 };
 
 const buildPackagingDeltaMap = (data, direction = 1) => {
@@ -569,6 +658,31 @@ const combinePackagingDeltas = (previousData, nextData) => {
   return Array.from(combined.values()).filter((item) => item.quantity !== 0);
 };
 
+const combineChemicalHardnerDeltas = (previousData, nextData) => {
+  const combined = new Map();
+  const mergeDeltas = (deltas) => {
+    deltas.forEach((value, key) => {
+      const current = combined.get(key);
+
+      combined.set(key, {
+        ...value,
+        label: current?.label || value.label,
+        quantity: (current?.quantity || 0) + value.quantity,
+      });
+    });
+  };
+
+  if (previousData) {
+    mergeDeltas(buildChemicalHardnerDeltaMap(previousData, -1));
+  }
+
+  if (nextData) {
+    mergeDeltas(buildChemicalHardnerDeltaMap(nextData, 1));
+  }
+
+  return Array.from(combined.values()).filter((item) => item.quantity !== 0);
+};
+
 const validatePackagingStockChange = async (previousData, nextData) => {
   const deltas = combinePackagingDeltas(previousData, nextData);
 
@@ -578,6 +692,28 @@ const validatePackagingStockChange = async (previousData, nextData) => {
     }
 
     const inventory = await findPackagingInventory(item, "validate");
+
+    if (!inventory) {
+      throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
+    }
+
+    const currentStock = parseNumber(inventory.currentStock);
+
+    if (currentStock < item.quantity) {
+      throw new Error(item.errorInsufficient || `${item.label} does not have enough stock.`);
+    }
+  }
+};
+
+const validateChemicalHardnerStockChange = async (previousData, nextData) => {
+  const deltas = combineChemicalHardnerDeltas(previousData, nextData);
+
+  for (const item of deltas) {
+    if (item.quantity <= 0) {
+      continue;
+    }
+
+    const inventory = await Inventory.findOne(item.filter);
 
     if (!inventory) {
       throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
@@ -641,6 +777,39 @@ const addPackagingStockBack = async (data) => {
       $inc: {
         usedInProduction: -quantityToRestore,
         currentStock: quantityToRestore,
+      },
+    });
+  }
+};
+
+const reduceChemicalHardnerStock = async (data) => {
+  const groupedItems = groupChemicalHardnerItemsByInventory(buildChemicalHardnerItems(data));
+
+  for (const item of groupedItems) {
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
+    }
+
+    const currentStock = parseNumber(inventory.currentStock);
+
+    if (currentStock < item.quantity) {
+      throw new Error(item.errorInsufficient || `${item.label} does not have enough stock.`);
+    }
+  }
+
+  for (const item of groupedItems) {
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
+    }
+
+    await Inventory.updateOne(item.filter, {
+      $inc: {
+        usedInProduction: item.quantity,
+        currentStock: -item.quantity,
       },
     });
   }
@@ -732,6 +901,46 @@ const updatePackagingStock = async (previousData, nextData) => {
   }
 };
 
+const updateChemicalHardnerStock = async (previousData, nextData) => {
+  const deltas = combineChemicalHardnerDeltas(previousData, nextData);
+  await validateChemicalHardnerStockChange(previousData, nextData);
+
+  for (const item of deltas) {
+    if (item.quantity > 0) {
+      const inventory = await Inventory.findOne(item.filter);
+
+      if (!inventory) {
+        throw new Error(item.errorNotFound || `${item.label} stock is not available in inventory.`);
+      }
+
+      await Inventory.updateOne(item.filter, {
+        $inc: {
+          usedInProduction: item.quantity,
+          currentStock: -item.quantity,
+        },
+      });
+      continue;
+    }
+
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      continue;
+    }
+
+    const restoreQuantity = Math.abs(item.quantity);
+    const usedInProduction = parseNumber(inventory.usedInProduction);
+    const quantityToRestore = Math.min(usedInProduction, restoreQuantity);
+
+    await Inventory.updateOne(item.filter, {
+      $inc: {
+        usedInProduction: -quantityToRestore,
+        currentStock: quantityToRestore,
+      },
+    });
+  }
+};
+
 const addRawMaterialStockBack = async (rawMaterials) => {
   const groupedItems = groupRawMaterialsByInventory(rawMaterials);
 
@@ -749,6 +958,28 @@ const addRawMaterialStockBack = async (rawMaterials) => {
     );
     const usedInProduction = parseNumber(inventory.usedInProduction);
     const quantityToRestore = Math.min(usedInProduction, restoreQty);
+
+    await Inventory.updateOne(item.filter, {
+      $inc: {
+        usedInProduction: -quantityToRestore,
+        currentStock: quantityToRestore,
+      },
+    });
+  }
+};
+
+const addChemicalHardnerStockBack = async (data) => {
+  const groupedItems = groupChemicalHardnerItemsByInventory(buildChemicalHardnerItems(data));
+
+  for (const item of groupedItems) {
+    const inventory = await Inventory.findOne(item.filter);
+
+    if (!inventory) {
+      continue;
+    }
+
+    const usedInProduction = parseNumber(inventory.usedInProduction);
+    const quantityToRestore = Math.min(usedInProduction, item.quantity);
 
     await Inventory.updateOne(item.filter, {
       $inc: {
@@ -955,8 +1186,10 @@ const createManufacturingEntry = async (req, res) => {
     data.batchNo = trimmedBatchNo;
 
     await validatePackagingStockChange(null, data);
+    await validateChemicalHardnerStockChange(null, data);
     await reduceRawMaterialStock(data.rawMaterials);
     await reducePackagingStock(data);
+    await reduceChemicalHardnerStock(data);
 
     const entry = await ManufacturingEntry.create(data);
 
@@ -1023,6 +1256,7 @@ const updateManufacturingEntry = async (req, res) => {
     data.batchNo = trimmedBatchNo;
 
     await validatePackagingStockChange(current, data);
+    await validateChemicalHardnerStockChange(current, data);
 
     if (hasRawMaterialUpdates) {
       await addRawMaterialStockBack(current.rawMaterials || []);
@@ -1030,6 +1264,7 @@ const updateManufacturingEntry = async (req, res) => {
     }
 
     await updatePackagingStock(current, data);
+    await updateChemicalHardnerStock(current, data);
 
     await applyProductMaterialLogDeltas(current, data);
 
@@ -1050,6 +1285,7 @@ const deleteManufacturingEntry = async (req, res) => {
 
     await addRawMaterialStockBack(current.rawMaterials || []);
     await addPackagingStockBack(current);
+    await addChemicalHardnerStockBack(current);
     await applyProductMaterialLogDeltas(current, null);
     await ManufacturingEntry.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Production entry deleted successfully" });

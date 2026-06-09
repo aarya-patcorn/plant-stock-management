@@ -127,6 +127,8 @@ export type DispatchEntry = {
   productName: string;
   quantity: string;
   totalBags: string;
+  wastageQty: string;
+  remarks: string;
 };
 
 const endpointByFormType: Record<FormType, string> = {
@@ -174,7 +176,7 @@ export async function submitEntry(
   payload: FormPayload,
   file?: File | null,
 ) {
-  const user = window.localStorage.getItem("userName") || "User";
+  const user = window.sessionStorage.getItem("userName") || "User";
 
   const payloadWithUser = {
     ...payload,
@@ -507,6 +509,8 @@ function normalizeDispatchEntry(entry: unknown): DispatchEntry {
     productName: stringifyValue(record.productName),
     quantity: stringifyValue(record.quantity),
     totalBags: stringifyValue(record.totalBags),
+    wastageQty: stringifyValue(record.wastageQty),
+    remarks: stringifyValue(record.remarks),
   };
 }
 

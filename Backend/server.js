@@ -33,6 +33,7 @@ app.use("/api/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
+const HOST = "0.0.0.0";
 
 if (!MONGODB_URI) {
   console.error("MONGODB_URI is missing in environment variables.");
@@ -45,9 +46,12 @@ mongoose
   })
   .then(() => {
     console.log("MongoDB connected");
+    require("./jobs/reportScheduler");
 
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+
+    app.listen(PORT, HOST, () => {
+      console.log(`Server running on http://0.0.0.0:${PORT}`);
+      console.log(`Access from other devices: http://192.168.29.11:${PORT}`);
     });
   })
   .catch((error) => {
