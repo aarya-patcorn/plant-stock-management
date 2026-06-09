@@ -1023,7 +1023,7 @@ export function PurchaseEntriesPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold">{buildMaterialLabel(entry) || "Purchase entry"}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{entry.invoiceNo || entry.id}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{entry.invoiceNo || "-"}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button

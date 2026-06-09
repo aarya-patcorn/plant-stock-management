@@ -400,7 +400,7 @@ export function DashboardPage() {
         .slice(0, 4)
         .map((entry) => ({
           id: entry.id,
-          meta: entry.invoiceNo || entry.id,
+          meta: entry.invoiceNo || "-",
           primary: buildInventoryLabel(entry) || "Purchase entry",
           secondary: [entry.quantityPurchased, entry.unit, entry.supplierName].filter(Boolean).join(" | "),
         })),
@@ -416,7 +416,7 @@ export function DashboardPage() {
         .slice(0, 4)
         .map((entry) => ({
           id: entry.id,
-          meta: entry.batchNo || entry.id,
+          meta: entry.batchNo || "-",
           primary:
             [entry.productCategory, entry.finishedProductName, entry.color].filter(Boolean).join(" / ") ||
             "Production entry",
@@ -432,7 +432,7 @@ export function DashboardPage() {
         .slice(0, 4)
         .map((entry) => ({
           id: entry.id,
-          meta: entry.dispatchSite || entry.id,
+          meta: entry.dispatchSite || "-",
           primary:
             [entry.productCategory, entry.productName, entry.productColor].filter(Boolean).join(" / ") ||
             "Dispatch entry",
