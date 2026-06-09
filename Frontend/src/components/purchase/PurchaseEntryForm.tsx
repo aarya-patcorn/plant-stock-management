@@ -28,6 +28,10 @@ const epoxySandColorOptions = [
   "Sabal",
   "Savetrane",
   "Terracotta",
+  "Antique White",
+  "Sandstone",
+  "Platinum",
+  "Kenyan Red",
 ];
 
 const MOBILE_RECENT_PURCHASES_PAGE_SIZE = 3;
