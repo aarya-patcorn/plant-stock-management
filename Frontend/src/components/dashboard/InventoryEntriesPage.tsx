@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import { fetchInventory, type PurchaseEntry } from "@/lib/api";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { Select } from "@/components/ui/select";
 
@@ -80,6 +81,62 @@ export function InventoryEntriesPage() {
     [packagingTypeFilter, rawMaterialFilter, sortedEntries],
   );
 
+  const inventoryColumns = useMemo<ColumnDef<PurchaseEntry>[]>(
+    () => [
+      {
+        id: "material",
+        accessorFn: (row) => buildInventoryLabel(row),
+        header: "Material",
+        cell: ({ row }) => (
+          <div className="min-w-[260px] max-w-[320px] space-y-1">
+            <p className="truncate font-medium text-slate-900" title={buildInventoryLabel(row.original) || "-"}>
+              {buildInventoryLabel(row.original) || "Inventory item"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {row.original.rawMaterialName ? (
+                <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge>
+              ) : null}
+              {row.original.packagingType ? (
+                <DataBadge type="productCategory">{row.original.packagingType}</DataBadge>
+              ) : null}
+              {row.original.packagingBagColor ? (
+                <DataBadge type="packagingBagColor">{row.original.packagingBagColor}</DataBadge>
+              ) : null}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "quantity",
+        accessorFn: (row) => [row.purchaseStock || row.quantityPurchased, row.unit].filter(Boolean).join(" "),
+        header: "Quantity",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <span>{[row.original.purchaseStock || row.original.quantityPurchased, row.original.unit].filter(Boolean).join(" ") || "-"}</span>
+            {row.original.unit ? <DataBadge type="unit">{row.original.unit}</DataBadge> : null}
+          </div>
+        ),
+      },
+      {
+        id: "purchaseStock",
+        accessorFn: (row) => row.purchaseStock || row.quantityPurchased || "0",
+        header: "Purchase Stock",
+        cell: ({ row }) => row.original.purchaseStock || row.original.quantityPurchased || "0",
+      },
+      {
+        accessorKey: "usedInProduction",
+        header: "Used In Production",
+        cell: ({ row }) => row.original.usedInProduction || "0",
+      },
+      {
+        accessorKey: "currentStock",
+        header: "Current Stock",
+        cell: ({ row }) => row.original.currentStock || "0",
+      },
+    ],
+    [],
+  );
+
   return (
     <div className="space-y-5">
       <Card>
@@ -144,43 +201,11 @@ export function InventoryEntriesPage() {
                 </div>
               </div>
 
-              {filteredEntries.length === 0 ? (
-                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                  No inventory entries match the selected filters.
-                </div>
-              ) : filteredEntries.map((entry) => (
-                <div className="rounded-xl border bg-background/70 p-4" key={entry.id}>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{buildInventoryLabel(entry) || "Inventory item"}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {[entry.purchaseStock || entry.quantityPurchased, entry.unit].filter(Boolean).join(" ") || "Quantity not available"}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary">{entry.serialNo || "Serial N/A"}</Badge>
-                      <Badge variant="outline">{entry.invoiceNo || entry.id}</Badge>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Purchase Stock</p>
-                      <p className="mt-1 text-sm font-medium text-foreground">
-                        {entry.purchaseStock || entry.quantityPurchased || "0"}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Used In Production</p>
-                      <p className="mt-1 text-sm font-medium text-foreground">{entry.usedInProduction || "0"}</p>
-                    </div>
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Current Stock</p>
-                      <p className="mt-1 text-sm font-medium text-foreground">{entry.currentStock || "0"}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <DataTable
+                columns={inventoryColumns}
+                data={filteredEntries}
+                emptyMessage="No inventory entries match the selected filters."
+              />
             </div>
           )}
         </CardContent>

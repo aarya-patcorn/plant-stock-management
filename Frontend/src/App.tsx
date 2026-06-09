@@ -169,21 +169,6 @@ function AppShellLayout() {
             : isDispatchEntriesPage
               ? "Dispatch Entries"
               : "Dashboard";
-  useEffect(() => {
-    const handleUnload = () => {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY);
-      window.localStorage.removeItem("userName");
-      window.sessionStorage.clear();
-    };
-
-    window.addEventListener("beforeunload", handleUnload);
-    window.addEventListener("unload", handleUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleUnload);
-      window.removeEventListener("unload", handleUnload);
-    };
-  }, []);
 
   const handleLogout = () => {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -272,8 +257,6 @@ function AppShellLayout() {
               {currentTime}
             </div>
           </header>
-
-
           <Outlet />
         </section>
       </div>

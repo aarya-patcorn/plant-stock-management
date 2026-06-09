@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import { fetchProductionMaterialLogs, type ProductionMaterialLog } from "@/lib/api";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Select } from "@/components/ui/select";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 
@@ -107,6 +108,63 @@ export function ProductionMaterialLogsPage() {
     [filteredEntries],
   );
 
+  const logColumns = useMemo<ColumnDef<ProductionMaterialLog>[]>(
+    () => [
+      {
+        id: "product",
+        accessorFn: (row) => buildProductLabel(row),
+        header: "Product",
+        cell: ({ row }) => (
+          <div className="min-w-[240px] max-w-[300px] space-y-1">
+            <p className="truncate font-medium text-slate-900" title={buildProductLabel(row.original) || "-"}>
+              {buildProductLabel(row.original) || "Production log"}
+            </p>
+            {row.original.productCategory ? (
+              <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "token",
+        header: "Token",
+        cell: ({ row }) =>
+          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "-",
+      },
+      {
+        accessorKey: "bagSize",
+        header: "Bag Size",
+        cell: ({ row }) => row.original.bagSize || "-",
+      },
+      {
+        accessorKey: "currentQuantity",
+        header: "Current Stock",
+        cell: ({ row }) => formatCount(toNumber(row.original.currentQuantity)),
+      },
+      {
+        id: "availableBags",
+        accessorFn: (row) => row.currentQuantity,
+        header: "Available Bags",
+        cell: ({ row }) => formatCount(toNumber(row.original.currentQuantity)),
+      },
+      {
+        accessorKey: "shippedQuantity",
+        header: "Dispatched Bags",
+        cell: ({ row }) => formatCount(toNumber(row.original.shippedQuantity)),
+      },
+      {
+        accessorKey: "remarks",
+        header: "Remarks",
+        cell: ({ row }) => (
+          <span className="block max-w-[220px] truncate" title={row.original.remarks || "-"}>
+            {row.original.remarks || "-"}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
     <div className="space-y-5">
       <Card>
@@ -178,46 +236,11 @@ export function ProductionMaterialLogsPage() {
           ) : sortedEntries.length === 0 ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">Production material logs will appear here once available.</div>
           ) : (
-            <div className="space-y-3">
-              {sortedEntries.map((entry) => (
-                <div className="rounded-xl border bg-background/70 p-4" key={entry.id}>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{buildProductLabel(entry) || "Production log"}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary">{entry.token || "Token N/A"}</Badge>
-                      <Badge variant="outline">{entry.bagSize || "Bag size N/A"}</Badge>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Current Stock</p>
-                      <p className="mt-1 text-sm font-medium text-foreground">
-                        {formatCount(toNumber(entry.currentQuantity))}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Available Bags</p>
-                      <p className="mt-1 text-sm font-medium text-foreground">
-                        {formatCount(toNumber(entry.currentQuantity))}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <p className="text-xs font-medium uppercase text-muted-foreground">Dispatched Bags</p>
-                      <p className="mt-1 text-sm font-medium text-foreground">
-                        {formatCount(toNumber(entry.shippedQuantity))}
-                      </p>
-                    </div>
-                  </div>
-
-                  {entry.remarks ? (
-                    <p className="mt-3 text-sm text-muted-foreground">{entry.remarks}</p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            <DataTable
+              columns={logColumns}
+              data={sortedEntries}
+              emptyMessage="Production material logs will appear here once available."
+            />
           )}
         </CardContent>
       </Card>

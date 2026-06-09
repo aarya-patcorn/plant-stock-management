@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Boxes, Package, ShoppingBag } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import {
   fetchDashboardReports,
@@ -19,9 +20,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/input";
 import LoadingLoader from "@/components/ui/LoadingLoader";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type DashboardData = {
   dispatchEntries: DispatchEntry[];
@@ -505,6 +506,59 @@ export function DashboardPage() {
     [STOCK_PAGE_SIZE, activeCategoryProductStocks, stockPage],
   );
 
+  const reportStockColumns = useMemo<ColumnDef<DashboardReportProductStock>[]>(
+    () => [
+      {
+        accessorKey: "productName",
+        header: "Product Name",
+        cell: ({ row }) => (
+          <span className="block max-w-[220px] truncate font-medium text-slate-900" title={row.original.productName || "-"}>
+            {row.original.productName || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "color",
+        header: "Color",
+        cell: ({ row }) =>
+          row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-",
+      },
+      {
+        accessorKey: "token",
+        header: "Token",
+        cell: ({ row }) =>
+          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "-",
+      },
+      {
+        accessorKey: "bagSize",
+        header: "Bag Size",
+        cell: ({ row }) => row.original.bagSize || "-",
+      },
+      {
+        accessorKey: "currentQuantity",
+        header: "Current Stock",
+        cell: ({ row }) => (
+          <span className="block text-right">{formatCount(parseNumber(row.original.currentQuantity))}</span>
+        ),
+      },
+      {
+        accessorKey: "availableBags",
+        header: "Available Bags",
+        cell: ({ row }) => (
+          <span className="block text-right">{formatCount(parseNumber(row.original.availableBags))}</span>
+        ),
+      },
+      {
+        accessorKey: "dispatchedBags",
+        header: "Dispatched Bags",
+        cell: ({ row }) => (
+          <span className="block text-right">{formatCount(parseNumber(row.original.dispatchedBags))}</span>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden border-0 bg-[linear-gradient(135deg,rgba(15,118,110,0.96)_0%,rgba(20,184,166,0.9)_52%,rgba(245,158,11,0.82)_100%)] text-white shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
@@ -772,33 +826,12 @@ export function DashboardPage() {
                       No product stock found for this category.
                     </div>
                   ) : (
-                    <div className="mt-4 overflow-hidden rounded-xl border bg-white">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Product Name</TableHead>
-                            <TableHead>Color</TableHead>
-                            <TableHead>Token</TableHead>
-                            <TableHead>Bag Size</TableHead>
-                            <TableHead className="text-right">Current Stock</TableHead>
-                            <TableHead className="text-right">Available Bags</TableHead>
-                            <TableHead className="text-right">Dispatched Bags</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedStocks.map((stock, index) => (
-                            <TableRow key={`${stock.productName}-${stock.color}-${stock.token}-${stock.bagSize}-${index}`}>
-                              <TableCell className="font-medium text-foreground">{stock.productName || "-"}</TableCell>
-                              <TableCell>{stock.color || "-"}</TableCell>
-                              <TableCell>{stock.token || "-"}</TableCell>
-                              <TableCell>{stock.bagSize || "-"}</TableCell>
-                              <TableCell className="text-right">{formatCount(parseNumber(stock.currentQuantity))}</TableCell>
-                              <TableCell className="text-right">{formatCount(parseNumber(stock.availableBags))}</TableCell>
-                              <TableCell className="text-right">{formatCount(parseNumber(stock.dispatchedBags))}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                    <div className="mt-4">
+                      <DataTable
+                        columns={reportStockColumns}
+                        data={paginatedStocks}
+                        emptyMessage="No product stock found for this category."
+                      />
                     </div>
                   )}
 

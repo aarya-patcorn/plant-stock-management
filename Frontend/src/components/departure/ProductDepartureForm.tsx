@@ -73,7 +73,9 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label className="text-sm font-medium text-slate-700" htmlFor={htmlFor}>
+        {label}
+      </Label>
       <div className="mt-2">{children}</div>
     </div>
   );
@@ -625,10 +627,13 @@ export function ProductDepartureForm() {
   };
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <Card className="min-w-0">
-        <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <Card className="min-w-0 rounded-[1.75rem] border border-white/70 bg-white/90 shadow-[0_24px_60px_rgba(15,23,42,0.10)] backdrop-blur">
+        <CardHeader className="gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
-            <CardTitle>Product dispatch form</CardTitle>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Dispatch Workspace
+            </p>
+            <CardTitle className="text-3xl tracking-[-0.03em]">Product dispatch form</CardTitle>
             <CardDescription>Capture challan, vehicle, dispatch, and one or more product departure lines.</CardDescription>
           </div>
           <Button asChild variant="outline">
@@ -638,7 +643,7 @@ export function ProductDepartureForm() {
             </Link>
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 sm:p-6">
           <form
             className="grid gap-5"
             onReset={() => {
@@ -650,7 +655,12 @@ export function ProductDepartureForm() {
             }}
             onSubmit={handleSubmit}
           >
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Dispatch timing</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Set the date, time, and dispatch identifiers before selecting products.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="date" label="Date">
                 <Input
                   id="date"
@@ -669,9 +679,15 @@ export function ProductDepartureForm() {
                   onChange={(e) => updateField("time", e.target.value)}
                 />
               </Field>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Challan details</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Keep challan references consistent for dispatch documentation.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="challan-no" label="Challan No.">
                 <Input
                   id="challan-no"
@@ -690,9 +706,15 @@ export function ProductDepartureForm() {
                   onChange={(e) => updateTextField("challanName", e.target.value)}
                 />
               </Field>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Transport details</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Capture vehicle, driver, and dispatch movement details.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="vehicle-no" label="Vehicle No.">
                 <Input
                   id="vehicle-no"
@@ -732,9 +754,15 @@ export function ProductDepartureForm() {
                   onChange={(e) => updateField("dispatchTime", e.target.value)}
                 />
               </Field>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Site and wastage</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Track site routing, vehicle count, and optional wastage quantity.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="dispatch-site" label="Dispatch Site">
                 <Input
                   id="dispatch-site"
@@ -755,9 +783,6 @@ export function ProductDepartureForm() {
                   onChange={(e) => updateNumberField("todayVehicleNo", e.target.value)}
                 />
               </Field>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
               <Field htmlFor="wastage-qty" label="Wastage Quantity (In KG)">
                 <Input
                   id="wastage-qty"
@@ -770,19 +795,27 @@ export function ProductDepartureForm() {
                   onChange={(e) => updateNumberField("wastageQty", e.target.value, { allowDecimal: true })}
                 />
               </Field>
+              </div>
+
+              <div className="mt-4">
+                <Field htmlFor="remarks" label="Remarks">
+                  <Textarea
+                    id="remarks"
+                    name="remarks"
+                    placeholder="Add dispatch remarks"
+                    value={formData.remarks}
+                    onChange={(e) => updateTextField("remarks", e.target.value)}
+                  />
+                </Field>
+              </div>
             </div>
 
-            <Field htmlFor="remarks" label="Remarks">
-              <Textarea
-                id="remarks"
-                name="remarks"
-                placeholder="Add dispatch remarks"
-                value={formData.remarks}
-                onChange={(e) => updateTextField("remarks", e.target.value)}
-              />
-            </Field>
-
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Product selection</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Choose the finished product, stock details, and dispatched bag count.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 
               <Field htmlFor="product-category" label="Product Category">
                 <Select
@@ -889,9 +922,9 @@ export function ProductDepartureForm() {
                   ))}
                 </Select>
               </Field>
-            </div>
+              </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="quantity" label="Available Stock">
                 <Input
                   id="quantity"
@@ -916,9 +949,9 @@ export function ProductDepartureForm() {
                   onChange={(e) => updateNumberField("totalBags", e.target.value, { allowDecimal: true })}
                 />
               </Field>
-            </div>
+              </div>
 
-            <div className="space-y-3 rounded-md border border-slate-200/80 bg-background/60 p-4">
+              <div className="mt-4 space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Selected products</h3>
@@ -966,6 +999,7 @@ export function ProductDepartureForm() {
                   ))}
                 </div>
               )}
+            </div>
             </div>
             <div className="flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:justify-end">
               {submitStatus === "error" && submitMessage && (

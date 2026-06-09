@@ -30,7 +30,7 @@ export function WastageSection({
   wastageTotalBags,
 }: WastageSectionProps) {
   return (
-    <div className="space-y-4 rounded-xl border p-4">
+    <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">Wastage Quantity Usage</h2>
         <p className="text-sm text-muted-foreground">Use available wastage stock separately from finished product packing.</p>
@@ -51,7 +51,7 @@ export function WastageSection({
               <div>Packed Wastage: {packedWastageQty} KG</div>
               <div>Remaining Wastage: {Math.max(0, remainingWastageQty)} KG</div>
             </div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-2 mt-4">
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
               <Field className="md:col-span-1" htmlFor="wastageBagSize" label={wastageSizeLabel}>
                 <Select
                   id="wastageBagSize"

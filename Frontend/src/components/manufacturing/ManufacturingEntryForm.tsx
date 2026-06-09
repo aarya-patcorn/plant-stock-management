@@ -780,10 +780,13 @@ export function ManufacturingEntryForm() {
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <Card className="min-w-0">
-        <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <Card className="min-w-0 rounded-[1.75rem] border border-white/70 bg-white/90 shadow-[0_24px_60px_rgba(15,23,42,0.10)] backdrop-blur">
+        <CardHeader className="gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
-            <CardTitle>Production entry form</CardTitle>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Production Workspace
+            </p>
+            <CardTitle className="text-3xl tracking-[-0.03em]">Production entry form</CardTitle>
             <CardDescription>Record production batches, material usage, output, bags, and wastage.</CardDescription>
           </div>
           <Button asChild variant="outline">
@@ -793,7 +796,7 @@ export function ManufacturingEntryForm() {
             </Link>
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 sm:p-6">
           <form className="grid gap-5" onReset={resetForm} onSubmit={handleSubmit}>
             <BatchDetailsSection
               formData={formData}

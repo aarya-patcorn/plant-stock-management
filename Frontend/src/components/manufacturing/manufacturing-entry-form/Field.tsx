@@ -14,7 +14,9 @@ export function Field({
 }) {
   return (
     <div className={className}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label className="text-sm font-medium text-slate-700" htmlFor={htmlFor}>
+        {label}
+      </Label>
       <div className="mt-2">{children}</div>
     </div>
   );

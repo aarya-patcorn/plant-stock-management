@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   type ColumnDef,
   type SortingState,
@@ -34,10 +32,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import LoadingLoader from "@/components/ui/LoadingLoader";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type ReportType = "production" | "dispatch";
 
@@ -457,22 +455,35 @@ export function ReportsPage() {
           {
             header: "Product Category",
             accessorFn: (row) => row.reportMode === "production" ? row.productCategory : "",
-            cell: ({ row }) => row.original.reportMode === "production" ? row.original.productCategory || "-" : "-",
+            cell: ({ row }) =>
+              row.original.reportMode === "production" && row.original.productCategory
+                ? <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+                : "-",
           },
           {
             header: "Product Name",
             accessorFn: (row) => row.reportMode === "production" ? row.productName : "",
-            cell: ({ row }) => row.original.reportMode === "production" ? row.original.productName || "-" : "-",
+            cell: ({ row }) => (
+              <span className="block max-w-[220px] truncate" title={row.original.reportMode === "production" ? row.original.productName || "-" : "-"}>
+                {row.original.reportMode === "production" ? row.original.productName || "-" : "-"}
+              </span>
+            ),
           },
           {
             header: "Color",
             accessorFn: (row) => row.reportMode === "production" ? row.color : "",
-            cell: ({ row }) => row.original.reportMode === "production" ? row.original.color || "-" : "-",
+            cell: ({ row }) =>
+              row.original.reportMode === "production" && row.original.color
+                ? <DataBadge type="color">{row.original.color}</DataBadge>
+                : "-",
           },
           {
             header: "Token",
             accessorFn: (row) => row.reportMode === "production" ? row.token : "",
-            cell: ({ row }) => row.original.reportMode === "production" ? row.original.token || "-" : "-",
+            cell: ({ row }) =>
+              row.original.reportMode === "production" && row.original.token
+                ? <DataBadge type="token">{row.original.token}</DataBadge>
+                : "-",
           },
           {
             header: "Bag Size",
@@ -483,19 +494,25 @@ export function ReportsPage() {
             header: "Current Stock",
             accessorFn: (row) => row.reportMode === "production" ? row.currentQuantity : 0,
             cell: ({ row }) =>
-              row.original.reportMode === "production" ? formatCount(row.original.currentQuantity) : "-",
+              row.original.reportMode === "production" ? (
+                <span className="block text-right">{formatCount(row.original.currentQuantity)}</span>
+              ) : "-",
           },
           {
             header: "Available Bags",
             accessorFn: (row) => row.reportMode === "production" ? row.availableBags : 0,
             cell: ({ row }) =>
-              row.original.reportMode === "production" ? formatCount(row.original.availableBags) : "-",
+              row.original.reportMode === "production" ? (
+                <span className="block text-right">{formatCount(row.original.availableBags)}</span>
+              ) : "-",
           },
           {
             header: "Dispatched Bags",
             accessorFn: (row) => row.reportMode === "production" ? row.dispatchedBags : 0,
             cell: ({ row }) =>
-              row.original.reportMode === "production" ? formatCount(row.original.dispatchedBags) : "-",
+              row.original.reportMode === "production" ? (
+                <span className="block text-right">{formatCount(row.original.dispatchedBags)}</span>
+              ) : "-",
           },
           {
             header: "Updated On",
@@ -512,22 +529,35 @@ export function ReportsPage() {
           {
             header: "Product Category",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.productCategory : "",
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.productCategory || "-" : "-",
+            cell: ({ row }) =>
+              row.original.reportMode === "dispatch" && row.original.productCategory
+                ? <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+                : "-",
           },
           {
             header: "Product Name",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.productName : "",
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.productName || "-" : "-",
+            cell: ({ row }) => (
+              <span className="block max-w-[220px] truncate" title={row.original.reportMode === "dispatch" ? row.original.productName || "-" : "-"}>
+                {row.original.reportMode === "dispatch" ? row.original.productName || "-" : "-"}
+              </span>
+            ),
           },
           {
             header: "Color",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.color : "",
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.color || "-" : "-",
+            cell: ({ row }) =>
+              row.original.reportMode === "dispatch" && row.original.color
+                ? <DataBadge type="color">{row.original.color}</DataBadge>
+                : "-",
           },
           {
             header: "Token",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.token : "",
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.token || "-" : "-",
+            cell: ({ row }) =>
+              row.original.reportMode === "dispatch" && row.original.token
+                ? <DataBadge type="token">{row.original.token}</DataBadge>
+                : "-",
           },
           {
             header: "Bag Size",
@@ -537,37 +567,68 @@ export function ReportsPage() {
           {
             header: "Dispatch Site",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.dispatchSite : "",
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.dispatchSite || "-" : "-",
+            cell: ({ row }) => (
+              <span className="block max-w-[180px] truncate" title={row.original.reportMode === "dispatch" ? row.original.dispatchSite || "-" : "-"}>
+                {row.original.reportMode === "dispatch" ? row.original.dispatchSite || "-" : "-"}
+              </span>
+            ),
           },
           {
             header: "Vehicle No",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.vehicleNo : "",
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.vehicleNo || "-" : "-",
+            cell: ({ row }) => (
+              <span className="block max-w-[160px] truncate" title={row.original.reportMode === "dispatch" ? row.original.vehicleNo || "-" : "-"}>
+                {row.original.reportMode === "dispatch" ? row.original.vehicleNo || "-" : "-"}
+              </span>
+            ),
           },
           {
             header: "Departed Bags",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.totalBags : 0,
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? formatCount(row.original.totalBags) : "-",
+            cell: ({ row }) =>
+              row.original.reportMode === "dispatch" ? (
+                <span className="block text-right">{formatCount(row.original.totalBags)}</span>
+              ) : "-",
           },
         ],
     [reportType],
   );
 
-  const table = useReactTable({
+  const sortingTable = useReactTable({
     columns,
     data: tableData,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    onPaginationChange: setPagination,
     onSortingChange: setSorting,
     state: {
-      pagination,
       sorting,
     },
   });
 
-  const sortedExportRows = table.getSortedRowModel().rows.map((row) => row.original);
+  const sortedExportRows = useMemo(
+    () => sortingTable.getSortedRowModel().rows.map((row) => row.original),
+    [sortingTable, sorting],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(sortedExportRows.length / pagination.pageSize));
+
+  const paginatedRows = useMemo(
+    () =>
+      sortedExportRows.slice(
+        pagination.pageIndex * pagination.pageSize,
+        (pagination.pageIndex + 1) * pagination.pageSize,
+      ),
+    [pagination.pageIndex, pagination.pageSize, sortedExportRows],
+  );
+
+  useEffect(() => {
+    if (pagination.pageIndex >= totalPages) {
+      setPagination((current) => ({
+        ...current,
+        pageIndex: Math.max(0, totalPages - 1),
+      }));
+    }
+  }, [pagination.pageIndex, totalPages]);
 
   const exportCsv = () => {
     if (sortedExportRows.length === 0) {
@@ -916,38 +977,14 @@ export function ReportsPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto rounded-xl border bg-white">
-                <Table className="min-w-full">
-                  <TableHeader>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <TableHead
-                            className="whitespace-nowrap"
-                            key={header.id}
-                            onClick={header.column.getToggleSortingHandler()}
-                          >
-                            <button className="flex items-center gap-2" type="button">
-                              {flexRender(header.column.columnDef.header, header.getContext())}
-                            </button>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableHeader>
-                  <TableBody>
-                    {table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell className="whitespace-nowrap" key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable
+                columns={columns}
+                data={paginatedRows}
+                emptyMessage="No report rows found for the selected filter."
+                manualSorting
+                onSortingChange={setSorting}
+                sorting={sorting}
+              />
 
               <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
@@ -956,20 +993,30 @@ export function ReportsPage() {
                 </p>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-muted-foreground">
-                    Page {pagination.pageIndex + 1} of {table.getPageCount()}
+                    Page {pagination.pageIndex + 1} of {totalPages}
                   </span>
                   <div className="flex gap-2">
                     <Button
-                      disabled={!table.getCanPreviousPage()}
-                      onClick={() => table.previousPage()}
+                      disabled={pagination.pageIndex === 0}
+                      onClick={() =>
+                        setPagination((current) => ({
+                          ...current,
+                          pageIndex: Math.max(0, current.pageIndex - 1),
+                        }))
+                      }
                       type="button"
                       variant="outline"
                     >
                       Previous
                     </Button>
                     <Button
-                      disabled={!table.getCanNextPage()}
-                      onClick={() => table.nextPage()}
+                      disabled={pagination.pageIndex + 1 >= totalPages}
+                      onClick={() =>
+                        setPagination((current) => ({
+                          ...current,
+                          pageIndex: Math.min(totalPages - 1, current.pageIndex + 1),
+                        }))
+                      }
                       type="button"
                       variant="outline"
                     >

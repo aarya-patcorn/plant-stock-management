@@ -16,14 +16,16 @@ export function RawMaterialsSection({
   updateRawMaterialTextField,
 }: RawMaterialsSectionProps) {
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Raw Materials Used</h2>
-      <hr className="my-0" />
+    <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+      <div>
+        <h2 className="text-lg font-semibold">Raw Materials Used</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Review the exact material lines that will be submitted for this production entry.</p>
+      </div>
 
       {rawMaterials.map((item, index) => (
         <div
           key={index}
-          className="flex flex-col gap-4 rounded-md border p-4 md:items-end xl:grid xl:grid-cols-4"
+          className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm md:grid-cols-2 xl:grid-cols-4"
         >
           <Field className="min-w-0" htmlFor={`rawMaterialName-${index}`} label="Raw Material">
             <Input

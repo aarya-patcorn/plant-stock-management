@@ -22,46 +22,52 @@ export function BatchDetailsSection({
   renderOtherInput,
 }: BatchDetailsSectionProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <Field htmlFor="productionDate" label="Production Date">
-        <Input
-          id="productionDate"
-          name="productionDate"
-          type="date"
-          value={formData.productionDate}
-          onChange={(e) => onProductionDateChange(e.target.value)}
-        />
-      </Field>
+    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-foreground">Batch details</h3>
+        <p className="mt-1 text-xs text-muted-foreground">Choose the production date, batch line, and batch number.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Field htmlFor="productionDate" label="Production Date">
+          <Input
+            id="productionDate"
+            name="productionDate"
+            type="date"
+            value={formData.productionDate}
+            onChange={(e) => onProductionDateChange(e.target.value)}
+          />
+        </Field>
 
-      <Field htmlFor="tphBatch" label="TPH / Batch">
-        <Select
-          id="tphBatch"
-          name="tphBatch"
-          value={getSelectValue("tphBatch", formData.tphBatch)}
-          onChange={(e) => onTphBatchChange(e.target.value)}
-        >
-          <option value="" disabled>
-            Select TPH/Batch
-          </option>
-
-          {TPH_BATCH_OPTIONS.map((option) => (
-            <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
-              {option}
+        <Field htmlFor="tphBatch" label="TPH / Batch">
+          <Select
+            id="tphBatch"
+            name="tphBatch"
+            value={getSelectValue("tphBatch", formData.tphBatch)}
+            onChange={(e) => onTphBatchChange(e.target.value)}
+          >
+            <option value="" disabled>
+              Select TPH/Batch
             </option>
-          ))}
-        </Select>
-      </Field>
-      {renderOtherInput("tphBatch", "TPH / Batch", "Enter batch type")}
 
-      <Field htmlFor="batchNo" label="Batch No.">
-        <Input
-          id="batchNo"
-          name="batchNo"
-          placeholder="e.g. B-2405-018"
-          value={formData.batchNo}
-          onChange={(e) => onBatchNoChange(e.target.value)}
-        />
-      </Field>
+            {TPH_BATCH_OPTIONS.map((option) => (
+              <option key={option} value={option === "Other" ? OTHER_OPTION : option}>
+                {option}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        {renderOtherInput("tphBatch", "TPH / Batch", "Enter batch type")}
+
+        <Field htmlFor="batchNo" label="Batch No.">
+          <Input
+            id="batchNo"
+            name="batchNo"
+            placeholder="e.g. B-2405-018"
+            value={formData.batchNo}
+            onChange={(e) => onBatchNoChange(e.target.value)}
+          />
+        </Field>
+      </div>
     </div>
   );
 }

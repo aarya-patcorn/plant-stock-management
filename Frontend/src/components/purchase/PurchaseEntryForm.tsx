@@ -282,7 +282,9 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label className="text-sm font-medium text-slate-700" htmlFor={htmlFor}>
+        {label}
+      </Label>
       <div className="mt-2">{children}</div>
     </div>
   );
@@ -1022,10 +1024,13 @@ export function PurchaseEntryForm() {
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <Card className="min-w-0">
-        <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <Card className="min-w-0 rounded-[1.75rem] border border-white/70 bg-white/90 shadow-[0_24px_60px_rgba(15,23,42,0.10)] backdrop-blur">
+        <CardHeader className="gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
-            <CardTitle>Purchase entry form</CardTitle>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Purchase Workspace
+            </p>
+            <CardTitle className="text-3xl tracking-[-0.03em]">Purchase entry form</CardTitle>
             <CardDescription>Capture each purchase using the same columns as your Google Sheet.</CardDescription>
           </div>
           <Button asChild variant="outline">
@@ -1035,9 +1040,14 @@ export function PurchaseEntryForm() {
             </Link>
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 sm:p-6">
           <form className="grid gap-5" onReset={resetForm} onSubmit={handleSubmit}>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Entry timing</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Set the purchase date and time before adding item lines.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="date" label="Date">
                 <Input
                   id="date"
@@ -1056,11 +1066,15 @@ export function PurchaseEntryForm() {
                   onChange={(e) => updateCommonField("time", e.target.value)}
                 />
               </Field>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Purchase Items</h2>
+                <div>
+                  <h2 className="text-lg font-semibold">Purchase Items</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">Add one or more purchase lines with the same material logic already in use.</p>
+                </div>
                 <Button type="button" onClick={addPurchaseItem} variant="outline">
                   + Add Item
                 </Button>
@@ -1075,7 +1089,7 @@ export function PurchaseEntryForm() {
                 const itemQuantityAllowsDecimal = isMetricTonUnit(item.data.unit);
 
                 return (
-                  <div key={item.id} className="space-y-4 rounded-xl border p-4">
+                  <div key={item.id} className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <h3 className="text-base font-semibold">Item {index + 1}</h3>
                       {purchaseItems.length > 1 ? (
@@ -1085,7 +1099,7 @@ export function PurchaseEntryForm() {
                       ) : null}
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                       <Field htmlFor={`raw-material-name-${item.id}`} label="Raw Material Name">
                         <Select
                           id={`raw-material-name-${item.id}`}
@@ -1190,7 +1204,7 @@ export function PurchaseEntryForm() {
                       {renderItemOtherInput(item, index, "level2", level2Config?.label ?? "Level 2", "Enter value")}
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {shouldShowAutoBagQty ? (
                         <Field htmlFor={`bag-quantity-${item.id}`} label="Bag Quantity">
                           <Input
@@ -1400,7 +1414,12 @@ export function PurchaseEntryForm() {
               ) : null}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Supplier and document details</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Keep vendor, invoice, unload, and attachment details together.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="supplier-name" label="Supplier Name">
                 <Input
                   id="supplier-name"
@@ -1433,10 +1452,9 @@ export function PurchaseEntryForm() {
                   />
                 ) : (
                   <div className="space-y-2">
-                    <select
+                    <Select
                       id="unload-by"
                       name="unloadBy"
-                      className="w-full h-10 border rounded-md px-3"
                       value={isUnloadByOther ? OTHER_OPTION : commonFormData.unloadBy}
                       onChange={(e) => {
                         if (e.target.value === OTHER_OPTION) {
@@ -1456,7 +1474,7 @@ export function PurchaseEntryForm() {
                         </option>
                       ))}
                       <option value={OTHER_OPTION}>Other</option>
-                    </select>
+                    </Select>
                     {isUnloadByOther ? (
                       <Input
                         id="unload-by-other"
@@ -1481,17 +1499,24 @@ export function PurchaseEntryForm() {
                   }}
                 />
               </Field>
+              </div>
             </div>
 
-            <Field htmlFor="remarks" label="Remarks">
-              <Textarea
-                id="remarks"
-                name="remarks"
-                placeholder="Add notes about quality, shortage, damage, or payment status"
-                value={commonFormData.remarks}
-                onChange={(e) => updateCommonField("remarks", e.target.value)}
-              />
-            </Field>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Remarks</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Capture any quality, shortage, damage, or payment notes.</p>
+              </div>
+              <Field htmlFor="remarks" label="Remarks">
+                <Textarea
+                  id="remarks"
+                  name="remarks"
+                  placeholder="Add notes about quality, shortage, damage, or payment status"
+                  value={commonFormData.remarks}
+                  onChange={(e) => updateCommonField("remarks", e.target.value)}
+                />
+              </Field>
+            </div>
 
             <div className="flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:justify-end">
               {submitStatus === "error" && submitMessage && (
@@ -1563,7 +1588,7 @@ export function PurchaseEntryForm() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="truncate text-sm font-medium">{materialPath || "Purchase entry"}</p>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {purchase.invoiceNo || purchase.id}
+                        {purchase.user || purchase.invoiceNo}
                       </span>
                     </div>
                     <div className="mt-2 space-y-1 text-sm text-muted-foreground">

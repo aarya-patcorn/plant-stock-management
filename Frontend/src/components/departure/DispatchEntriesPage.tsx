@@ -1,20 +1,14 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, Pencil, Save } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
   fetchDispatchEntries,
@@ -302,6 +296,128 @@ export function DispatchEntriesPage() {
         : current,
     );
   }, [selectedProductionEntry]);
+
+  const dispatchColumns = useMemo<ColumnDef<DispatchEntry>[]>(
+    () => [
+      {
+        accessorKey: "date",
+        header: "Date",
+        cell: ({ row }) =>
+          row.original.date
+            ? new Date(row.original.date).toLocaleDateString("en-GB").replace(/\//g, "-")
+            : "-",
+      },
+      {
+        accessorKey: "time",
+        header: "Time",
+        cell: ({ row }) => row.original.time || "-",
+      },
+      {
+        id: "challan",
+        accessorFn: (row) => row.challanNo || row.challanName || "",
+        header: "Challan",
+        cell: ({ row }) => (
+          <span className="block max-w-[160px] truncate" title={row.original.challanNo || row.original.challanName || "-"}>
+            {row.original.challanNo || row.original.challanName || "-"}
+          </span>
+        ),
+      },
+      {
+        id: "product",
+        accessorFn: (row) => buildDispatchLabel(row),
+        header: "Product",
+        cell: ({ row }) => (
+          <div className="min-w-[220px] max-w-[260px] space-y-1">
+            <p className="truncate font-medium text-slate-900" title={buildDispatchLabel(row.original) || "-"}>
+              {buildDispatchLabel(row.original) || "-"}
+            </p>
+            {row.original.productCategory ? (
+              <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "token",
+        header: "Token",
+        cell: ({ row }) =>
+          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "-",
+      },
+      {
+        accessorKey: "bagSize",
+        header: "Bag Size",
+        cell: ({ row }) => row.original.bagSize || "-",
+      },
+      {
+        accessorKey: "totalBags",
+        header: "Departed Bags",
+        cell: ({ row }) => row.original.totalBags || "-",
+      },
+      {
+        accessorKey: "wastageQty",
+        header: "Wastage Qty",
+        cell: ({ row }) => row.original.wastageQty || "-",
+      },
+      {
+        accessorKey: "remarks",
+        header: "Remarks",
+        cell: ({ row }) => (
+          <span className="block max-w-[180px] truncate" title={row.original.remarks || "-"}>
+            {row.original.remarks || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "vehicleNo",
+        header: "Vehicle",
+        cell: ({ row }) => (
+          <span className="block max-w-[140px] truncate" title={row.original.vehicleNo || "-"}>
+            {row.original.vehicleNo || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "driverName",
+        header: "Driver",
+        cell: ({ row }) => (
+          <span className="block max-w-[140px] truncate" title={row.original.driverName || "-"}>
+            {row.original.driverName || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "dispatchSite",
+        header: "Dispatch Site",
+        cell: ({ row }) => (
+          <span className="block max-w-[160px] truncate" title={row.original.dispatchSite || "-"}>
+            {row.original.dispatchSite || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "user",
+        header: "Entry By",
+        cell: ({ row }) => (
+          <span className="block max-w-[160px] truncate" title={row.original.user || "-"}>
+            {row.original.user || "-"}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="flex justify-center gap-2">
+            <Button size="icon" type="button" variant="outline" onClick={() => startEditing(row.original)}>
+              <Pencil />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [startEditing],
+  );
 
   return (
     <div className="space-y-6">
@@ -745,60 +861,12 @@ export function DispatchEntriesPage() {
                 ))}
               </div>
 
-              <div className="hidden overflow-x-auto lg:block">
-                <Table className="min-w-max">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap text-center" title="Date">Date</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Time">Time</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Challan">Challan</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Product">Product</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Token">Token</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Bag Size">Bag Size</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Departed Bags">Departed Bags</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Wastage Quantity">Wastage Qty</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Remarks">Remarks</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Vehicle">Vehicle</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Driver">Driver</TableHead>
-                    <TableHead className="whitespace-nowrap text-center" title="Dispatch Site">Dispatch Site</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Entry By">Entry By</TableHead>
-                      <TableHead className="w-[120px] whitespace-nowrap text-center" title="Actions">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedEntries.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="whitespace-nowrap" title={entry.date || "-"}>{entry.date
-                          ? new Date(entry.date).toLocaleDateString("en-GB").replace(/\//g, "-")
-                          : "-"}</TableCell>
-                        <TableCell className="whitespace-nowrap" title={entry.time || "-"}>{entry.time || "-"}</TableCell>
-                        <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.challanNo || entry.challanName || "-"}>{entry.challanNo || entry.challanName || "-"}</TableCell>
-                    <TableCell className="min-w-[220px] max-w-[220px] truncate whitespace-nowrap" title={buildDispatchLabel(entry) || "-"}>{buildDispatchLabel(entry) || "-"}</TableCell>
-                    <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.token || "-"}>{entry.token || "-"}</TableCell>
-                    <TableCell className="whitespace-nowrap" title={entry.bagSize || "-"}>{entry.bagSize || "-"}</TableCell>
-                    <TableCell className="whitespace-nowrap" title={entry.totalBags || "-"}>{entry.totalBags || "-"}</TableCell>
-                    <TableCell className="whitespace-nowrap" title={entry.wastageQty || "-"}>{entry.wastageQty || "-"}</TableCell>
-                    <TableCell className="max-w-[180px] truncate whitespace-nowrap" title={entry.remarks || "-"}>{entry.remarks || "-"}</TableCell>
-                    <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.vehicleNo || "-"}>{entry.vehicleNo || "-"}</TableCell>
-                    <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.driverName || "-"}>{entry.driverName || "-"}</TableCell>
-                    <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.dispatchSite || "-"}>{entry.dispatchSite || "-"}</TableCell>
-                    <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.user || "-"}>{entry.user || "-"}</TableCell>
-                    <TableCell className="text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              size="icon"
-                              type="button"
-                              variant="outline"
-                              onClick={() => startEditing(entry)}
-                            >
-                              <Pencil />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="hidden lg:block">
+                <DataTable
+                  columns={dispatchColumns}
+                  data={paginatedEntries}
+                  emptyMessage="No dispatch entries available."
+                />
               </div>
             </>
           )}

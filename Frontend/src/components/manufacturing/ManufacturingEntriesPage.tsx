@@ -1,21 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, Pencil, Plus, Save, Trash2 } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   fetchManufacturingEntries,
   type ManufacturingEntry,
@@ -314,6 +308,124 @@ export function ManufacturingEntriesPage() {
         : editingEntry?.tphBatch === "Manual Hand Mixer"
           ? "Total Can"
           : "Total Bags";
+
+  const manufacturingColumns = useMemo<ColumnDef<ManufacturingEntry>[]>(
+    () => [
+      {
+        accessorKey: "productionDate",
+        header: "Date",
+        cell: ({ row }) =>
+          row.original.productionDate
+            ? new Date(row.original.productionDate).toLocaleDateString("en-GB").replace(/\//g, "-")
+            : "-",
+      },
+      {
+        accessorKey: "batchNo",
+        header: "Batch No",
+        cell: ({ row }) => (
+          <span className="block max-w-[140px] truncate" title={row.original.batchNo || "-"}>
+            {row.original.batchNo || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "tphBatch",
+        header: "Batch Type",
+        cell: ({ row }) => row.original.tphBatch || "-",
+      },
+      {
+        accessorKey: "productCategory",
+        header: "Category",
+        cell: ({ row }) =>
+          row.original.productCategory ? (
+            <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        accessorKey: "finishedProductName",
+        header: "Product",
+        cell: ({ row }) => (
+          <span className="block max-w-[220px] truncate" title={row.original.finishedProductName || "-"}>
+            {row.original.finishedProductName || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "color",
+        header: "Color",
+        cell: ({ row }) =>
+          row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-",
+      },
+      {
+        id: "productItems",
+        accessorFn: (row) => formatProductItems(row),
+        header: "Product Items",
+        cell: ({ row }) => (
+          <span className="block min-w-[260px] max-w-[320px] truncate" title={formatProductItems(row.original) || "-"}>
+            {formatProductItems(row.original) || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "totalBagsProduced",
+        header: "Total Quantity",
+        cell: ({ row }) => row.original.totalBagsProduced || "-",
+      },
+      {
+        accessorKey: "wastageQty",
+        header: "Wastage",
+        cell: ({ row }) => row.original.wastageQty || "-",
+      },
+      {
+        id: "rawMaterials",
+        accessorFn: (row) => [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits].filter(Boolean).join(" / "),
+        header: "Raw Materials",
+        cell: ({ row }) => {
+          const value = [row.original.rawMaterialNames, row.original.rawMaterialQty, row.original.rawMaterialUnits]
+            .filter(Boolean)
+            .join(" / ");
+          return (
+            <span className="block max-w-[220px] truncate" title={value || "-"}>
+              {value || "-"}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "user",
+        header: "Entry By",
+        cell: ({ row }) => (
+          <span className="block max-w-[220px] truncate" title={row.original.user || "-"}>
+            {row.original.user || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "remarks",
+        header: "Remarks",
+        cell: ({ row }) => (
+          <span className="block max-w-[220px] truncate" title={row.original.remarks || "-"}>
+            {row.original.remarks || "-"}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="flex justify-center gap-2">
+            <Button size="icon" type="button" variant="outline" onClick={() => setEditingEntry(row.original)}>
+              <Pencil />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="space-y-6">
@@ -789,60 +901,12 @@ export function ManufacturingEntriesPage() {
                 ))}
               </div>
 
-              <div className="hidden overflow-x-auto lg:block">
-                <Table className="min-w-max">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap text-center" title="Date">Date</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Batch No">Batch No</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Batch Type">Batch Type</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Category">Category</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Product">Product</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Color">Color</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Product Items">Product Items</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Total Quantity">Total Quantity</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Wastage">Wastage</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Raw Materials">Raw Materials</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Entry By">Entry By</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Remarks">Remarks</TableHead>
-                      <TableHead className="w-[120px] whitespace-nowrap text-center" title="Actions">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedEntries.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="whitespace-nowrap" title={entry.productionDate || "-"}>{entry.productionDate
-                          ? new Date(entry.productionDate).toLocaleDateString("en-GB").replace(/\//g, "-")
-                          : "-"}</TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.batchNo || "-"}>{entry.batchNo || "-"}</TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.tphBatch || "-"}>{entry.tphBatch || "-"}</TableCell>
-                        <TableCell className="max-w-[160px] truncate whitespace-nowrap" title={entry.productCategory || "-"}>{entry.productCategory || "-"}</TableCell>
-                        <TableCell className="max-w-[220px] truncate whitespace-nowrap" title={entry.finishedProductName || "-"}>{entry.finishedProductName || "-"}</TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.color || "-"}>{entry.color || "-"}</TableCell>
-                        <TableCell className="min-w-[260px] max-w-[320px] truncate whitespace-nowrap" title={formatProductItems(entry) || "-"}>{formatProductItems(entry) || "-"}</TableCell>
-                        <TableCell className="whitespace-nowrap" title={entry.totalBagsProduced || "-"}>{entry.totalBagsProduced || "-"}</TableCell>
-                        <TableCell className="whitespace-nowrap" title={entry.wastageQty || "-"}>{entry.wastageQty || "-"}</TableCell>
-                        <TableCell className="max-w-[220px] truncate whitespace-nowrap" title={[entry.rawMaterialNames, entry.rawMaterialQty, entry.rawMaterialUnits].filter(Boolean).join(" / ") || "-"}>
-                          {[entry.rawMaterialNames, entry.rawMaterialQty, entry.rawMaterialUnits].filter(Boolean).join(" / ") || "-"}
-                        </TableCell>
-                        <TableCell className="max-w-[220px] truncate whitespace-nowrap" title={entry.user || "-"}>{entry.user || "-"}</TableCell>
-                        <TableCell className="max-w-[220px] truncate whitespace-nowrap" title={entry.remarks || "-"}>{entry.remarks || "-"}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              size="icon"
-                              type="button"
-                              variant="outline"
-                              onClick={() => setEditingEntry(entry)}
-                            >
-                              <Pencil />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="hidden lg:block">
+                <DataTable
+                  columns={manufacturingColumns}
+                  data={paginatedEntries}
+                  emptyMessage="No production entries available."
+                />
               </div>
             </>
           )}

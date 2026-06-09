@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Pencil, Save } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -7,14 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Textarea } from "@/components/ui/textarea";
 import {
   fetchPurchaseEntries,
@@ -466,6 +460,114 @@ export function PurchaseEntriesPage() {
 
     setEditingEntry((current) => (current ? { ...current, coupon: "" } : current));
   }, [editingEntry, shouldShowEditCouponField]);
+
+  const purchaseColumns = useMemo<ColumnDef<PurchaseEntry>[]>(
+    () => [
+      {
+        accessorKey: "date",
+        header: "Date",
+        cell: ({ row }) =>
+          row.original.date
+            ? new Date(row.original.date).toLocaleDateString("en-GB").replace(/\//g, "-")
+            : "-",
+      },
+      {
+        accessorKey: "time",
+        header: "Time",
+        cell: ({ row }) => row.original.time || "-",
+      },
+      {
+        id: "material",
+        accessorFn: (row) => buildMaterialLabel(row),
+        header: "Material",
+        cell: ({ row }) => (
+          <div className="min-w-[220px] max-w-[260px] space-y-1">
+            <p className="truncate font-medium text-slate-900" title={buildMaterialLabel(row.original) || "-"}>
+              {buildMaterialLabel(row.original) || "-"}
+            </p>
+            {row.original.rawMaterialName ? (
+              <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: "quantity",
+        accessorFn: (row) => [row.quantityPurchased, row.unit].filter(Boolean).join(" "),
+        header: "Quantity",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <span>{[row.original.quantityPurchased, row.original.unit].filter(Boolean).join(" ") || "-"}</span>
+            {row.original.unit ? <DataBadge type="unit">{row.original.unit}</DataBadge> : null}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "supplierName",
+        header: "Supplier",
+        cell: ({ row }) => (
+          <span className="block max-w-[180px] truncate" title={row.original.supplierName || "-"}>
+            {row.original.supplierName || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "invoiceNo",
+        header: "Invoice",
+        cell: ({ row }) => (
+          <span className="block max-w-[140px] truncate" title={row.original.invoiceNo || "-"}>
+            {row.original.invoiceNo || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "unloadBy",
+        header: "Unload By",
+        cell: ({ row }) => (
+          <span className="block max-w-[140px] truncate" title={row.original.unloadBy || "-"}>
+            {row.original.unloadBy || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorFn: (row) => row.attachFileName || row.attachFile || "",
+        id: "attachment",
+        header: "Attachment",
+        cell: ({ row }) => renderAttachmentActions(row.original.attachFile, row.original.attachFileId, row.original.attachFileName),
+      },
+      {
+        accessorKey: "user",
+        header: "Entry By",
+        cell: ({ row }) => (
+          <span className="block max-w-[180px] truncate" title={row.original.user || "-"}>
+            {row.original.user || "-"}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "remarks",
+        header: "Remarks",
+        cell: ({ row }) => (
+          <span className="block max-w-[220px] truncate" title={row.original.remarks || "-"}>
+            {row.original.remarks || "-"}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="flex justify-center gap-2">
+            <Button size="icon" type="button" variant="outline" onClick={() => startEditing(row.original)}>
+              <Pencil />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [startEditing],
+  );
 
   return (
     <div className="space-y-6">
@@ -981,74 +1083,12 @@ export function PurchaseEntriesPage() {
                 ))}
               </div>
 
-              <div className="hidden overflow-x-auto lg:block">
-                <Table className="min-w-max">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap text-center" title="Date">Date</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Time">Time</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Material">Material</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Quantity">Quantity</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Supplier">Supplier</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Invoice">Invoice</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Unload By">Unload By</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Attachment">Attachment</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Entry By">Entry By</TableHead>
-                      <TableHead className="whitespace-nowrap text-center" title="Remarks">Remarks</TableHead>
-                      <TableHead className="w-[120px] whitespace-nowrap text-center" title="Actions">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedEntries.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="whitespace-nowrap" title={entry.date || "-"}>
-                          {entry.date
-                            ? new Date(entry.date).toLocaleDateString("en-GB").replace(/\//g, "-")
-                            : "-"}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap" title={entry.time || "-"}>
-                          {entry.time || "-"}
-                        </TableCell>
-                        <TableCell className="min-w-[220px] max-w-[220px] truncate whitespace-nowrap" title={buildMaterialLabel(entry) || "-"}>
-                          {buildMaterialLabel(entry) || "-"}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap" title={[entry.quantityPurchased, entry.unit].filter(Boolean).join(" ") || "-"}>
-                          {[entry.quantityPurchased, entry.unit].filter(Boolean).join(" ") || "-"}
-                        </TableCell>
-                        <TableCell className="max-w-[180px] truncate whitespace-nowrap" title={entry.supplierName || "-"}>
-                          {entry.supplierName || "-"}
-                        </TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.invoiceNo || "-"}>
-                          {entry.invoiceNo || "-"}
-                        </TableCell>
-                        <TableCell className="max-w-[140px] truncate whitespace-nowrap" title={entry.unloadBy || "-"}>
-                          {entry.unloadBy || "-"}
-                        </TableCell>
-                        <TableCell className="min-w-[150px] whitespace-nowrap" title={entry.attachFileName || "No file"}>
-                          {renderAttachmentActions(entry.attachFile, entry.attachFileId, entry.attachFileName)}
-                        </TableCell>
-                        <TableCell className="max-w-[180px] truncate whitespace-nowrap" title={entry.user || "-"}>
-                          {entry.user || "-"}
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate whitespace-nowrap" title={entry.remarks || "-"}>
-                          {entry.remarks || "-"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              size="icon"
-                              type="button"
-                              variant="outline"
-                              onClick={() => startEditing(entry)}
-                            >
-                              <Pencil />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="hidden lg:block">
+                <DataTable
+                  columns={purchaseColumns}
+                  data={paginatedEntries}
+                  emptyMessage="No purchase entries available."
+                />
               </div>
             </>
           )}
