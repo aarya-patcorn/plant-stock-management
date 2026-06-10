@@ -8,6 +8,7 @@ interface FinishedProductSectionProps {
   addProductItem: () => void;
   bagSizeLabel: string;
   batchKg: number;
+  disableAddProductItem: boolean;
   formProductCategory: string;
   formTphBatch: string;
   getAutoProducedQuantity: (productCategory: string, totalProducedKg: number, bagSize: string) => string;
@@ -29,6 +30,7 @@ export function FinishedProductSection({
   addProductItem,
   bagSizeLabel,
   batchKg,
+  disableAddProductItem,
   formProductCategory,
   formTphBatch,
   getAutoProducedQuantity,
@@ -57,7 +59,7 @@ export function FinishedProductSection({
           type="button"
           onClick={addProductItem}
           variant="outline"
-          disabled={isAutoCalculatedPackagingProduct}
+          disabled={disableAddProductItem}
         >
           + Add Item
         </Button>

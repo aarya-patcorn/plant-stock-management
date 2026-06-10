@@ -1063,6 +1063,6 @@ export function DashboardPage() {
           title="Recent Dispatch"
         />
       </div>
-    </div>
+  </div>
   );
 }

@@ -8,6 +8,9 @@ export type RawMaterialRecipeItem = {
   materialUnit: string;
 };
 
+export type TileCleanerFormulaName = "ShineX" | "CrystalX";
+export type TileCleanerFormulaMap = Record<TileCleanerFormulaName, Record<string, number>>;
+
 export const epoxyColors = [
   "Deep Safayar",
   "Light Grey",
@@ -219,46 +222,68 @@ export const epoxyRecipes: Record<string, RawMaterialRecipeItem[]> = {
   ],
 };
 
-export const tileCleanerRecipes: Record<string, RawMaterialRecipeItem[]> = {
-  "Crystal X 1L": [
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Alcohol Ethoxylate", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Sodium Gluconate", level3: "", colorOfSandEpoxy: "", materialQuantity: "25", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "2-Butoxyethanol", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Isopropyl Alcohol (IPA 99%)", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Benzalkonium Chloride (BKC)", level3: "", colorOfSandEpoxy: "", materialQuantity: "5", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Premium Fragrance & Dye", level3: "", colorOfSandEpoxy: "", materialQuantity: "5", materialUnit: "ml" },
-  ],
-  "Crystal X 5L": [
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Alcohol Ethoxylate", level3: "", colorOfSandEpoxy: "", materialQuantity: "300", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Sodium Gluconate", level3: "", colorOfSandEpoxy: "", materialQuantity: "125", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "2-Butoxyethanol", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Isopropyl Alcohol (IPA 99%)", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Benzalkonium Chloride (BKC)", level3: "", colorOfSandEpoxy: "", materialQuantity: "25", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Premium Fragrance & Dye", level3: "", colorOfSandEpoxy: "", materialQuantity: "25", materialUnit: "ml" },
-  ],
-  "Shine X 1L": [
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Urea (Technical Grade)", level3: "", colorOfSandEpoxy: "", materialQuantity: "30", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Sulphamic Acid", level3: "", colorOfSandEpoxy: "", materialQuantity: "35", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Hydrochloric Acid (32%)", level3: "", colorOfSandEpoxy: "", materialQuantity: "30", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Citric Acid", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "2-Butoxyethanol", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Cocamidopropyl Betaine", level3: "", colorOfSandEpoxy: "", materialQuantity: "35", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Alphox-200", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Xanthan Gum", level3: "", colorOfSandEpoxy: "", materialQuantity: "3", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Fragrance & Dye", level3: "", colorOfSandEpoxy: "", materialQuantity: "2", materialUnit: "ml" },
-  ],
-  "Shine X 5L": [
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Urea (Technical Grade)", level3: "", colorOfSandEpoxy: "", materialQuantity: "150", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Sulphamic Acid", level3: "", colorOfSandEpoxy: "", materialQuantity: "175", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Hydrochloric Acid (32%)", level3: "", colorOfSandEpoxy: "", materialQuantity: "150", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Citric Acid", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "2-Butoxyethanol", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Cocamidopropyl Betaine", level3: "", colorOfSandEpoxy: "", materialQuantity: "175", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Alphox-200", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Xanthan Gum", level3: "", colorOfSandEpoxy: "", materialQuantity: "15", materialUnit: "ml" },
-    { rawMaterialName: "Chemical", packagingType: "Tile Cleaner", level2: "Fragrance & Dye", level3: "", colorOfSandEpoxy: "", materialQuantity: "10", materialUnit: "ml" },
-  ],
+export const tileCleanerFormulas: TileCleanerFormulaMap = {
+  ShineX: {
+    "Urea (Technical Grade)": 3,
+    "2-Butoxyethanol": 2,
+    "Sulphamic Acid": 3.5,
+    "Citric Acid": 2,
+    "Hydrochloric Acid (32%)": 3,
+    "Alphox-200": 2,
+    "Cocamidopropyl Betaine": 3.5,
+    "Xanthan Gum": 0.3,
+    "Fragrance & Dye": 0.2,
+  },
+  CrystalX: {
+    "Alcohol Ethoxylate": 6,
+    "Sodium Gluconate": 2.5,
+    "2-Butoxyethanol": 2.5,
+    "Isopropyl Alcohol (IPA 99%)": 1,
+    "Benzalkonium Chloride (BKC)": 0.9,
+    "Fragrance & Dye": 0.4,
+  },
 };
+
+export function normalizeTileCleanerProductName(value: string): TileCleanerFormulaName | "" {
+  const normalized = String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+
+  if (normalized.startsWith("shinex")) return "ShineX";
+  if (normalized.startsWith("crystalx")) return "CrystalX";
+
+  return "";
+}
+
+function parseTileCleanerCanSizeToLiters(canSize: string) {
+  const match = String(canSize || "").match(/(\d+(?:\.\d+)?)/);
+  const liters = match ? Number(match[1]) : 0;
+  return Number.isFinite(liters) ? liters : 0;
+}
+
+export function buildTileCleanerRecipe(
+  productName: string,
+  canSize: string,
+  totalCan: string | number,
+): RawMaterialRecipeItem[] {
+  const normalizedProductName = normalizeTileCleanerProductName(productName);
+  const formula = normalizedProductName ? tileCleanerFormulas[normalizedProductName] : null;
+  const litersPerCan = parseTileCleanerCanSizeToLiters(canSize);
+  const totalCanCount = Number(totalCan) || 0;
+  const totalLiquidML = litersPerCan * totalCanCount * 1000;
+
+  if (!formula || !litersPerCan || totalCanCount <= 0 || totalLiquidML <= 0) {
+    return [];
+  }
+
+  return Object.entries(formula).map(([chemicalName, percentage]) => ({
+    rawMaterialName: "Chemical",
+    packagingType: "Tile Cleaner",
+    level2: chemicalName,
+    level3: "",
+    colorOfSandEpoxy: "",
+    materialQuantity: String((totalLiquidML * percentage) / 100),
+    materialUnit: "ml",
+  }));
+}
 
 export const bondureRecipes: RawMaterialRecipeItem[] = [
   { rawMaterialName: "Cement", packagingType: "PPC", level2: "Silo", level3: "", colorOfSandEpoxy: "", materialQuantity: "400", materialUnit: "kg" },

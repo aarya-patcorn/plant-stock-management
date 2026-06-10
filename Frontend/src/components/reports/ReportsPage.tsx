@@ -227,6 +227,12 @@ function StatCard({
   );
 }
 
+function getDefaultSorting(reportType: ReportType): SortingState {
+  return reportType === "production"
+    ? [{ desc: true, id: "stockDate" }]
+    : [{ desc: true, id: "date" }];
+}
+
 export function ReportsPage() {
   const initialRange = useMemo(() => getCurrentMonthDateRange(), []);
   const [data, setData] = useState<ReportsData>({
@@ -240,7 +246,7 @@ export function ReportsPage() {
   const [fromDate, setFromDate] = useState(initialRange.fromDate);
   const [toDate, setToDate] = useState(initialRange.toDate);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(() => getDefaultSorting("production"));
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 8,
@@ -453,6 +459,7 @@ export function ReportsPage() {
       reportType === "production"
         ? [
           {
+            id: "productCategory",
             header: "Product Category",
             accessorFn: (row) => row.reportMode === "production" ? row.productCategory : "",
             cell: ({ row }) =>
@@ -461,6 +468,7 @@ export function ReportsPage() {
                 : "-",
           },
           {
+            id: "productName",
             header: "Product Name",
             accessorFn: (row) => row.reportMode === "production" ? row.productName : "",
             cell: ({ row }) => (
@@ -470,6 +478,7 @@ export function ReportsPage() {
             ),
           },
           {
+            id: "color",
             header: "Color",
             accessorFn: (row) => row.reportMode === "production" ? row.color : "",
             cell: ({ row }) =>
@@ -478,6 +487,7 @@ export function ReportsPage() {
                 : "-",
           },
           {
+            id: "token",
             header: "Token",
             accessorFn: (row) => row.reportMode === "production" ? row.token : "",
             cell: ({ row }) =>
@@ -486,11 +496,13 @@ export function ReportsPage() {
                 : "-",
           },
           {
+            id: "bagSize",
             header: "Bag Size",
             accessorFn: (row) => row.reportMode === "production" ? row.bagSize : "",
             cell: ({ row }) => row.original.reportMode === "production" ? row.original.bagSize || "-" : "-",
           },
           {
+            id: "currentQuantity",
             header: "Current Stock",
             accessorFn: (row) => row.reportMode === "production" ? row.currentQuantity : 0,
             cell: ({ row }) =>
@@ -499,6 +511,7 @@ export function ReportsPage() {
               ) : "-",
           },
           {
+            id: "availableBags",
             header: "Available Bags",
             accessorFn: (row) => row.reportMode === "production" ? row.availableBags : 0,
             cell: ({ row }) =>
@@ -507,6 +520,7 @@ export function ReportsPage() {
               ) : "-",
           },
           {
+            id: "dispatchedBags",
             header: "Dispatched Bags",
             accessorFn: (row) => row.reportMode === "production" ? row.dispatchedBags : 0,
             cell: ({ row }) =>
@@ -515,6 +529,7 @@ export function ReportsPage() {
               ) : "-",
           },
           {
+            id: "stockDate",
             header: "Updated On",
             accessorFn: (row) => row.reportMode === "production" ? row.stockDate : "",
             cell: ({ row }) => row.original.reportMode === "production" ? row.original.stockDate || "-" : "-",
@@ -522,11 +537,13 @@ export function ReportsPage() {
         ]
         : [
           {
+            id: "date",
             header: "Date",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.date : "",
             cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.date || "-" : "-",
           },
           {
+            id: "productCategory",
             header: "Product Category",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.productCategory : "",
             cell: ({ row }) =>
@@ -535,6 +552,7 @@ export function ReportsPage() {
                 : "-",
           },
           {
+            id: "productName",
             header: "Product Name",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.productName : "",
             cell: ({ row }) => (
@@ -544,6 +562,7 @@ export function ReportsPage() {
             ),
           },
           {
+            id: "color",
             header: "Color",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.color : "",
             cell: ({ row }) =>
@@ -552,6 +571,7 @@ export function ReportsPage() {
                 : "-",
           },
           {
+            id: "token",
             header: "Token",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.token : "",
             cell: ({ row }) =>
@@ -560,11 +580,13 @@ export function ReportsPage() {
                 : "-",
           },
           {
+            id: "bagSize",
             header: "Bag Size",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.bagSize : "",
             cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.bagSize || "-" : "-",
           },
           {
+            id: "dispatchSite",
             header: "Dispatch Site",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.dispatchSite : "",
             cell: ({ row }) => (
@@ -574,6 +596,7 @@ export function ReportsPage() {
             ),
           },
           {
+            id: "vehicleNo",
             header: "Vehicle No",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.vehicleNo : "",
             cell: ({ row }) => (
@@ -583,6 +606,7 @@ export function ReportsPage() {
             ),
           },
           {
+            id: "totalBags",
             header: "Departed Bags",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.totalBags : 0,
             cell: ({ row }) =>
@@ -593,6 +617,10 @@ export function ReportsPage() {
         ],
     [reportType],
   );
+
+  useEffect(() => {
+    setSorting(getDefaultSorting(reportType));
+  }, [reportType]);
 
   const sortingTable = useReactTable({
     columns,
@@ -607,7 +635,7 @@ export function ReportsPage() {
 
   const sortedExportRows = useMemo(
     () => sortingTable.getSortedRowModel().rows.map((row) => row.original),
-    [sortingTable, sorting],
+    [columns, sorting, sortingTable, tableData],
   );
 
   const totalPages = Math.max(1, Math.ceil(sortedExportRows.length / pagination.pageSize));

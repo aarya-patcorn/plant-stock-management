@@ -56,6 +56,8 @@ export type ManufacturingEntry = {
   finishedProductName: string;
   bagSize: string;
   totalBagsProduced: string;
+  canSize: string;
+  totalCan: string;
   productItems: ManufacturingProductItem[];
   wastageQty: string;
   wastageTotalBags: string;
@@ -412,12 +414,24 @@ function normalizeManufacturingEntry(entry: unknown): ManufacturingEntry {
     }))
     : [{
       token: stringifyValue(record.token),
-      bagSize: stringifyValue(record.bagSize),
-      totalBagsProduced: stringifyValue(record.totalBagsProduced),
+      bagSize: stringifyValue(record.bagSize ?? record.canSize),
+      totalBagsProduced: stringifyValue(record.totalBagsProduced ?? record.totalCan),
     }].filter((item) => item.token || item.bagSize || item.totalBagsProduced);
   const totalBagsProduced = productItems.length > 0
     ? String(productItems.reduce((sum, item) => sum + (Number(item.totalBagsProduced) || 0), 0))
     : stringifyValue(record.totalBagsProduced);
+  const rawFinishedProductName = stringifyValue(record.finishedProductName ?? record.productName);
+  const normalizedTileCleanerProductName =
+    rawFinishedProductName.replace(/\s+/g, "").toLowerCase().startsWith("shinex")
+      ? "ShineX"
+      : rawFinishedProductName.replace(/\s+/g, "").toLowerCase().startsWith("crystalx")
+        ? "CrystalX"
+        : rawFinishedProductName;
+  const derivedTileCleanerCanSize =
+    stringifyValue(record.canSize) ||
+    (rawFinishedProductName.includes("1L") ? "1L" : rawFinishedProductName.includes("5L") ? "5L" : "");
+  const derivedTileCleanerTotalCan = stringifyValue(record.totalCan) || totalBagsProduced;
+  const isTileCleanerCategory = stringifyValue(record.productCategory) === "Tile Cleaner";
 
   return {
     id: stringifyValue(record.id ?? record._id),
@@ -428,9 +442,11 @@ function normalizeManufacturingEntry(entry: unknown): ManufacturingEntry {
     productCategory: stringifyValue(record.productCategory),
     token: productItems.map((item) => item.token).filter(Boolean).join(", ") || stringifyValue(record.token),
     color: stringifyValue(record.color ?? record.productColor),
-    finishedProductName: stringifyValue(record.finishedProductName ?? record.productName),
+    finishedProductName: isTileCleanerCategory ? normalizedTileCleanerProductName : rawFinishedProductName,
     bagSize: productItems.map((item) => item.bagSize).filter(Boolean).join(", ") || stringifyValue(record.bagSize),
     totalBagsProduced,
+    canSize: isTileCleanerCategory ? derivedTileCleanerCanSize : stringifyValue(record.canSize),
+    totalCan: isTileCleanerCategory ? derivedTileCleanerTotalCan : stringifyValue(record.totalCan),
     productItems,
     wastageQty: stringifyValue(record.wastageQty),
     wastageTotalBags: stringifyValue(record.wastageTotalBags),

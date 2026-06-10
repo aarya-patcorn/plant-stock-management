@@ -20,6 +20,8 @@ export interface ManufacturingFormData {
   finishedProductName: string;
   bagSize: string;
   totalBagsProduced: string;
+  canSize: string;
+  totalCan: string;
   sticker: string;
   sponge: string;
   wastageQty: string;

@@ -10,6 +10,7 @@ import { fetchWastageQty, reduceWastageQty, submitEntry } from "@/lib/api";
 import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import {
   bondureRecipes,
+  buildTileCleanerRecipe,
   epoxyColors,
   epoxyProductColorMap,
   epoxyProducts,
@@ -17,8 +18,8 @@ import {
   groutProductColorMap,
   groutProducts,
   groutRecipes,
+  normalizeTileCleanerProductName,
   tileAdhesiveRecipes,
-  tileCleanerRecipes,
 } from "@/components/manufacturing/manufacturingData";
 import SubmitLoader from "../ui/SubmitLoader";
 import { BatchDetailsSection } from "./manufacturing-entry-form/components/BatchDetailsSection";
@@ -98,7 +99,9 @@ export function ManufacturingEntryForm() {
     [productItems],
   );
   const isTileAdhesiveProduct = selectedProductCategory === "Tile Adhesive";
+  const isTileCleanerProduct = selectedProductCategory === "Tile Cleaner";
   const isAutoCalculatedPackagingProduct = ["Epoxy", "Grout"].includes(selectedProductCategory);
+  const isSinglePackagingRowProduct = isAutoCalculatedPackagingProduct || isTileCleanerProduct;
   const wastageSizeLabel = getWastageSizeLabel(formData.productCategory);
   const wastageSizeOptions = getWastageSizeOptions(formData.productCategory);
   const totalAvailableWastage = Number(availableWastageQty || 0);
@@ -163,7 +166,8 @@ export function ManufacturingEntryForm() {
   const isRecipeLocked =
     isTileAdhesiveProduct ||
     selectedProductCategory === "Bondure" ||
-    selectedProductCategory === "Grout";
+    selectedProductCategory === "Grout" ||
+    isTileCleanerProduct;
 
   useEffect(() => {
     const hasUsedWastage =
@@ -326,12 +330,12 @@ export function ManufacturingEntryForm() {
   }, [batchKg, formData.tphBatch, isAutoCalculatedPackagingProduct, productItems.length, selectedProductCategory, wastageTotalBags]);
 
   useEffect(() => {
-    if (!isAutoCalculatedPackagingProduct || productItems.length <= 1) {
+    if (!isSinglePackagingRowProduct || productItems.length <= 1) {
       return;
     }
 
     setProductItems((current) => current.slice(0, 1));
-  }, [isAutoCalculatedPackagingProduct, productItems.length]);
+  }, [isSinglePackagingRowProduct, productItems.length]);
 
   const addProductItem = () => {
     setProductItems((current) => [...current, EMPTY_PRODUCT_ITEM]);
@@ -461,18 +465,18 @@ export function ManufacturingEntryForm() {
   }, [selectedProductCategory, selectedColor]);
 
   useEffect(() => {
-    if (selectedProductCategory !== "Tile Cleaner" || !formData.finishedProductName) {
+    if (selectedProductCategory !== "Tile Cleaner") {
       return;
     }
 
-    const recipe = tileCleanerRecipes[formData.finishedProductName];
+    const primaryItem = productItems[0];
+    const tileCleanerProductName = normalizeTileCleanerProductName(formData.finishedProductName);
+    const canSize = primaryItem?.bagSize || formData.canSize;
+    const totalCan = primaryItem?.totalBagsProduced || formData.totalCan;
+    const recipe = buildTileCleanerRecipe(tileCleanerProductName, canSize, totalCan);
 
-    if (!recipe) {
-      return;
-    }
-
-    setRawMaterials(recipe);
-  }, [selectedProductCategory, formData.finishedProductName]);
+    setRawMaterials(recipe.length > 0 ? recipe : INITIAL_RAW_MATERIALS);
+  }, [selectedProductCategory, formData.finishedProductName, formData.canSize, formData.totalCan, productItems]);
 
   useEffect(() => {
     setFormData((current) => {
@@ -523,22 +527,36 @@ export function ManufacturingEntryForm() {
       return;
     }
 
-    const mappedBagSize =
-      formData.finishedProductName === "Crystal X 1L" || formData.finishedProductName === "Shine X 1L"
-        ? "1L"
-        : formData.finishedProductName === "Crystal X 5L" || formData.finishedProductName === "Shine X 5L"
-          ? "5L"
-          : "";
-
-    if (!mappedBagSize || formData.bagSize === mappedBagSize) {
+    const normalizedProductName = normalizeTileCleanerProductName(formData.finishedProductName);
+    if (!normalizedProductName || formData.finishedProductName === normalizedProductName) {
       return;
     }
 
     setFormData((current) => ({
       ...current,
-      bagSize: mappedBagSize,
+      finishedProductName: normalizedProductName,
     }));
-  }, [selectedProductCategory, formData.finishedProductName, formData.bagSize]);
+  }, [selectedProductCategory, formData.finishedProductName]);
+
+  useEffect(() => {
+    if (!isTileCleanerProduct) {
+      return;
+    }
+
+    const primaryItem = productItems[0];
+    const nextCanSize = primaryItem?.bagSize || "";
+    const nextTotalCan = primaryItem?.totalBagsProduced || "";
+
+    setFormData((current) =>
+      current.canSize === nextCanSize && current.totalCan === nextTotalCan
+        ? current
+        : {
+          ...current,
+          canSize: nextCanSize,
+          totalCan: nextTotalCan,
+        },
+    );
+  }, [isTileCleanerProduct, productItems]);
 
   useEffect(() => {
     if (selectedProductCategory !== "Epoxy") {
@@ -676,6 +694,8 @@ export function ManufacturingEntryForm() {
         ...formData,
         color: selectedColor,
         productCategory: selectedProductCategory,
+        canSize: isTileCleanerProduct ? productItems[0]?.bagSize || formData.canSize : "",
+        totalCan: isTileCleanerProduct ? productItems[0]?.totalBagsProduced || formData.totalCan : "",
         sticker: selectedProductCategory === "Epoxy" ? formData.sticker : "",
         sponge: selectedProductCategory === "Epoxy" ? formData.sponge : "",
         rawMaterials: getRawMaterialsForSubmission(),
@@ -787,7 +807,6 @@ export function ManufacturingEntryForm() {
               Production Workspace
             </p>
             <CardTitle className="text-3xl tracking-[-0.03em]">Production entry form</CardTitle>
-            <CardDescription>Record production batches, material usage, output, bags, and wastage.</CardDescription>
           </div>
           <Button asChild variant="outline">
             <Link to="/manufacturing-entries">
@@ -896,6 +915,7 @@ export function ManufacturingEntryForm() {
               addProductItem={addProductItem}
               bagSizeLabel={bagSizeLabel}
               batchKg={batchKg}
+              disableAddProductItem={isSinglePackagingRowProduct}
               formProductCategory={formData.productCategory}
               formTphBatch={formData.tphBatch}
               getAutoProducedQuantity={getAutoProducedQuantity}

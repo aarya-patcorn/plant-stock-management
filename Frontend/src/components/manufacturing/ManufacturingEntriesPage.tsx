@@ -30,7 +30,7 @@ const productCategories = ["Tile Adhesive", "Bondure", "Epoxy", "Grout", "Tile C
 const groutColors = ["Black", "White", "Ivory", "Coffee Brown", "Grey", "Light Grey", "Green", "Blue", "Red", "Yellow"];
 const tileAdhesiveWhiteProducts = ["K60", "K80", "K90", "Kamdhenu X"];
 const tileAdhesiveGreyProducts = ["K50", "K60", "K80", "K90", "Kamdhenu X"];
-const tileCleanerProducts = ["Crystal X 1L", "Shine X 1L", "Crystal X 5L", "Shine X 5L"];
+const tileCleanerProducts = ["ShineX", "CrystalX"];
 
 const getBatchDefaults = (tphBatch: string) => {
   switch (tphBatch) {
@@ -556,20 +556,9 @@ export function ManufacturingEntriesPage() {
                             : selectedProductCategory === "Epoxy"
                               ? epoxyProductColorMap[finishedProductName] || editingEntry.color
                               : editingEntry.color;
-                        const nextBagSize =
-                          finishedProductName === "Crystal X 1L" || finishedProductName === "Shine X 1L"
-                            ? "1L"
-                            : finishedProductName === "Crystal X 5L" || finishedProductName === "Shine X 5L"
-                              ? "5L"
-                              : editingEntry.bagSize;
-
                         updateEditingEntry({
                           finishedProductName,
                           color: nextColor,
-                          bagSize: nextBagSize,
-                          productItems: nextBagSize
-                            ? [{ ...getProductItems(editingEntry)[0], bagSize: nextBagSize }]
-                            : editingEntry.productItems,
                         });
                       }}
                     >
@@ -649,7 +638,6 @@ export function ManufacturingEntriesPage() {
                         <Select
                           id={`edit-token-${index}`}
                           value={item.token}
-                          disabled
                           onChange={(event) => updateEditingProductItem(index, "token", event.target.value)}
                         >
                           {isTileAdhesiveProduct ? (

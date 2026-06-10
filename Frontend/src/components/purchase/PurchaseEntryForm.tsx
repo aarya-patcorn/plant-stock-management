@@ -1035,7 +1035,6 @@ export function PurchaseEntryForm() {
               Purchase Workspace
             </p>
             <CardTitle className="text-3xl tracking-[-0.03em]">Purchase entry form</CardTitle>
-            <CardDescription>Capture each purchase using the same columns as your Google Sheet.</CardDescription>
           </div>
           <Button asChild variant="outline">
             <Link to="/purchase-entries">

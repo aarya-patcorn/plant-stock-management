@@ -634,7 +634,6 @@ export function ProductDepartureForm() {
               Dispatch Workspace
             </p>
             <CardTitle className="text-3xl tracking-[-0.03em]">Product dispatch form</CardTitle>
-            <CardDescription>Capture challan, vehicle, dispatch, and one or more product departure lines.</CardDescription>
           </div>
           <Button asChild variant="outline">
             <Link to="/dispatch-entries">

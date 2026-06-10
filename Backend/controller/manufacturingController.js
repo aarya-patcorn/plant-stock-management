@@ -9,6 +9,28 @@ const parseNumber = (value) => {
   return Number.isFinite(num) ? num : 0;
 };
 
+const TILE_CLEANER_FORMULAS = {
+  ShineX: {
+    "Urea (Technical Grade)": 3,
+    "2-Butoxyethanol": 2,
+    "Sulphamic Acid": 3.5,
+    "Citric Acid": 2,
+    "Hydrochloric Acid (32%)": 3,
+    "Alphox-200": 2,
+    "Cocamidopropyl Betaine": 3.5,
+    "Xanthan Gum": 0.3,
+    "Fragrance & Dye": 0.2,
+  },
+  CrystalX: {
+    "Alcohol Ethoxylate": 6,
+    "Sodium Gluconate": 2.5,
+    "2-Butoxyethanol": 2.5,
+    "Isopropyl Alcohol (IPA 99%)": 1,
+    "Benzalkonium Chloride (BKC)": 0.9,
+    "Fragrance & Dye": 0.4,
+  },
+};
+
 const convertQuantityToInventoryUnit = (quantity, fromUnit, toUnit) => {
   const qty = Number(quantity) || 0;
   const from = String(fromUnit || "").toLowerCase();
@@ -22,6 +44,8 @@ const convertQuantityToInventoryUnit = (quantity, fromUnit, toUnit) => {
 
   if (from === "mt" && to === "kg") return qty * 1000;
   if (from === "kg" && to === "mt") return qty / 1000;
+  if ((from === "ltr" || from === "l") && to === "ml") return qty * 1000;
+  if (from === "ml" && (to === "ltr" || to === "l")) return qty / 1000;
 
   return qty;
 };
@@ -32,6 +56,48 @@ const compactFilter = (fields) =>
   );
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
+
+const normalizeTileCleanerProductName = (value) => {
+  const normalized = normalizeText(value).replace(/\s+/g, "");
+
+  if (normalized.startsWith("shinex")) return "ShineX";
+  if (normalized.startsWith("crystalx")) return "CrystalX";
+
+  return "";
+};
+
+const parseTileCleanerCanSizeToLiters = (value) => {
+  const match = String(value || "").match(/(\d+(?:\.\d+)?)/);
+  const liters = match ? Number(match[1]) : 0;
+  return Number.isFinite(liters) ? liters : 0;
+};
+
+const buildTileCleanerRawMaterials = (productName, canSize, totalCan) => {
+  const normalizedProductName = normalizeTileCleanerProductName(productName);
+  const formula = normalizedProductName ? TILE_CLEANER_FORMULAS[normalizedProductName] : null;
+  const litersPerCan = parseTileCleanerCanSizeToLiters(canSize);
+  const totalCanCount = parseNumber(totalCan);
+  const totalLiquidML = litersPerCan * totalCanCount * 1000;
+
+  if (!formula || !litersPerCan || totalCanCount <= 0 || totalLiquidML <= 0) {
+    return [];
+  }
+
+  return Object.entries(formula).map(([chemicalName, percentage]) => ({
+    rawMaterialName: "Chemical",
+    packagingType: "Tile Cleaner",
+    level2: chemicalName,
+    level3: "",
+    level4: "",
+    packagingBagColor: "",
+    bucketSize: "",
+    bagColor: "",
+    sandEpoxyColor: "",
+    colorOfSandEpoxy: "",
+    materialQuantity: (totalLiquidML * percentage) / 100,
+    materialUnit: "ml",
+  }));
+};
 
 const normalizeProductItems = (items = []) => {
   return items.map((item) => ({
@@ -93,20 +159,70 @@ const normalizeManufacturingData = (data, fallbackRawMaterials) => ({
   materialUnit: data.materialUnit || "",
 
   color: data.color || "",
-  finishedProductName: data.finishedProductName || data.productName || "",
+  finishedProductName: (() => {
+    const productCategory = String(data.productCategory || "").trim();
+    const rawProductName = data.finishedProductName || data.productName || "";
+    return productCategory === "Tile Cleaner"
+      ? normalizeTileCleanerProductName(rawProductName) || String(rawProductName || "").trim()
+      : rawProductName;
+  })(),
+  canSize: (() => {
+    const productCategory = String(data.productCategory || "").trim();
+    const rawProductName = String(data.finishedProductName || data.productName || "");
+    const derivedCanSize =
+      String(data.canSize || data.bagSize || "").trim() ||
+      (rawProductName.includes("1L") ? "1L" : rawProductName.includes("5L") ? "5L" : "");
+    return productCategory === "Tile Cleaner" ? derivedCanSize : "";
+  })(),
+  totalCan: (() => {
+    const productCategory = String(data.productCategory || "").trim();
+    return productCategory === "Tile Cleaner"
+      ? String(data.totalCan ?? data.totalBagsProduced ?? "")
+      : "";
+  })(),
 
-  productItems: Array.isArray(data.productItems)
-    ? normalizeProductItems(data.productItems)
-    : [],
+  productItems: (() => {
+    const normalizedItems = Array.isArray(data.productItems)
+      ? normalizeProductItems(data.productItems)
+      : [];
+
+    if (String(data.productCategory || "").trim() !== "Tile Cleaner") {
+      return normalizedItems;
+    }
+
+    const canSize = String(data.canSize || data.bagSize || normalizedItems[0]?.bagSize || "").trim();
+    const totalCan = parseNumber(data.totalCan ?? data.totalBagsProduced ?? normalizedItems[0]?.totalBagsProduced);
+
+    if (canSize && totalCan > 0) {
+      return [{
+        token: "N/A",
+        bagSize: canSize,
+        totalBagsProduced: totalCan,
+      }];
+    }
+
+    return normalizedItems;
+  })(),
 
   sticker: data.sticker || "",
   sponge: data.sponge || "",
   wastageQty: parseNumber(data.wastageQty),
   remarks: data.remarks || "",
 
-  rawMaterials: Array.isArray(data.rawMaterials)
-    ? normalizeRawMaterials(data.rawMaterials)
-    : fallbackRawMaterials ?? [],
+  rawMaterials: (() => {
+    const productCategory = String(data.productCategory || "").trim();
+
+    if (productCategory === "Tile Cleaner") {
+      const productName = normalizeTileCleanerProductName(data.finishedProductName || data.productName || "");
+      const canSize = String(data.canSize || data.bagSize || "").trim();
+      const totalCan = data.totalCan ?? data.totalBagsProduced ?? 0;
+      return buildTileCleanerRawMaterials(productName, canSize, totalCan);
+    }
+
+    return Array.isArray(data.rawMaterials)
+      ? normalizeRawMaterials(data.rawMaterials)
+      : fallbackRawMaterials ?? [];
+  })(),
 });
 
 const getProductionMonthRange = (productionDateValue) => {
@@ -337,6 +453,17 @@ const buildPackagingInventoryFilter = (fields) => {
     });
   }
 
+  if (fields.packagingItemType === "tile-cleaner-can") {
+    return compactFilter({
+      rawMaterialName: "Packaging",
+      packagingType: "FG",
+      level2: "Tile Cleaner",
+      level3: "Can",
+      bucketSize: fields.bucketSize || "",
+      unit: fields.unit || "pcs",
+    });
+  }
+
   const isCoupon = fields.unit === "pcs" && fields.coupon;
 
   return compactFilter({
@@ -358,6 +485,7 @@ const buildPackagingInventoryLabel = (fields) =>
     fields.level2,
     fields.level3,
     fields.level4,
+    fields.bucketSize,
     fields.packagingBagColor,
     fields.unit,
   ]
@@ -426,6 +554,33 @@ const buildPackagingItems = (data) => {
         unit: "nos",
         errorNotFound: "Packaging bucket inventory not found",
         errorInsufficient: "Insufficient packaging bucket stock",
+      });
+    } else if (String(data.productCategory || "").trim() === "Tile Cleaner" && productItem.bagSize) {
+      items.push({
+        packagingItemType: "tile-cleaner-can",
+        level2: "Tile Cleaner",
+        level3: "Can",
+        bucketSize: productItem.bagSize,
+        quantity: qty,
+        unit: "pcs",
+        errorNotFound: "Tile Cleaner can inventory not found",
+        errorInsufficient: "Insufficient Tile Cleaner can stock",
+      });
+      items.push({
+        level2: "Tile Cleaner",
+        level3: "Sticker",
+        quantity: qty,
+        unit: "pcs",
+        errorNotFound: "Tile Cleaner sticker inventory not found",
+        errorInsufficient: "Insufficient Tile Cleaner sticker stock",
+      });
+      items.push({
+        level2: "Tile Cleaner",
+        level3: "Seal",
+        quantity: qty,
+        unit: "pcs",
+        errorNotFound: "Tile Cleaner seal inventory not found",
+        errorInsufficient: "Insufficient Tile Cleaner seal stock",
       });
     } else if (actualToken && productItem.bagSize) {
       items.push({

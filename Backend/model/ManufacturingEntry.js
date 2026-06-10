@@ -45,6 +45,8 @@ const manufacturingEntrySchema = new mongoose.Schema(
 
     color: String,
     finishedProductName: String,
+    canSize: String,
+    totalCan: String,
 
     productItems: [productItemSchema],
 
