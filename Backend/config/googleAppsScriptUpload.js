@@ -5,6 +5,7 @@ const uploadFileToDriveViaAppsScript = async (file) => {
 
   if (!appsScriptUrl) {
     throw new Error("GOOGLE_APPS_SCRIPT_URL is not configured.");
+    console.log("GOOGLE_APPS_SCRIPT_URL exists:", !!process.env.GOOGLE_APPS_SCRIPT_URL);
   }
 
   if (!file?.buffer?.length) {
