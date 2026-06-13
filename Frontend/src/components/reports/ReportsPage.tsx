@@ -52,6 +52,7 @@ type ProductionTableRow = {
   reportMode: "production";
   productCategory: string;
   productName: string;
+  totalBagsProduced: number;
   color: string;
   token: string;
   bagSize: string;
@@ -418,6 +419,7 @@ export function ReportsPage() {
         reportMode: "production",
         productCategory: entry.productCategory,
         productName: entry.productName,
+        totalBagsProduced: parseNumber(entry.currentQuantity) + parseNumber(entry.shippedQuantity),
         color: entry.productColor,
         token: entry.token,
         bagSize: entry.bagSize,
@@ -509,7 +511,7 @@ export function ReportsPage() {
             accessorFn: (row) => row.reportMode === "production" ? row.totalBagsProduced : 0,
             cell: ({ row }) =>
               row.original.reportMode === "production" ? (
-                <span className="block text-right">{formatCount(row.original.currentQuantity + row.original.dispatchedBags)}</span>
+                <span className="block text-right">{formatCount(row.original.totalBagsProduced)}</span>
               ) : "-",
           },
           {
