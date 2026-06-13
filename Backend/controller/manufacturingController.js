@@ -599,7 +599,7 @@ const buildPackagingItems = (data) => {
           level2: data.productCategory || "",
           level3: productItem.bagSize,
           level4: actualToken,
-          coupon: "Coupon",
+          token: "Coupon",
           quantity: qty,
           unit: "pcs",
           errorNotFound: `Coupon inventory not found for ${data.productCategory} / ${productItem.bagSize} / ${actualToken}`,
