@@ -378,7 +378,6 @@ function getTodayKey() {
 
 function SnapshotWidget({
   caption,
-  description,
   icon: Icon,
   statusClassName,
   statusLabel,
@@ -387,7 +386,6 @@ function SnapshotWidget({
   value,
 }: {
   caption: string;
-  description: string;
   icon: typeof Boxes;
   statusClassName: string;
   statusLabel: string;
@@ -417,7 +415,6 @@ function SnapshotWidget({
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{caption}</p>
           <p className="text-2xl font-bold tracking-tight text-slate-950">{value}</p>
           <p className="text-sm font-medium text-slate-800">{title}</p>
-          <p className="text-xs leading-5 text-slate-500">{description}</p>
         </div>
       </CardContent>
     </Card>
