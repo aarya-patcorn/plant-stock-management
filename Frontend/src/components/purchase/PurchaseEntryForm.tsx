@@ -86,7 +86,7 @@ type PurchaseItemState = {
 };
 
 function formatMetricTonnesFromKilograms(kilograms: number) {
-  const metricTonnes = kilograms / 1000;
+  const metricTonnes = kilograms / 1000;  
   return metricTonnes.toFixed(3).replace(/\.?0+$/, "");
 }
 
