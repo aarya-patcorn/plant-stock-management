@@ -25,11 +25,13 @@ function formatCount(value: number) {
 }
 
 export function ProductionMaterialLogsPage() {
+  const PAGE_SIZE = 7;
   const [entries, setEntries] = useState<ProductionMaterialLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [selectedProductCategory, setSelectedProductCategory] = useState("");
   const [selectedProductName, setSelectedProductName] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let isMounted = true;
@@ -107,6 +109,27 @@ export function ProductionMaterialLogsPage() {
       ),
     [filteredEntries],
   );
+
+  const totalPages = Math.max(1, Math.ceil(sortedEntries.length / PAGE_SIZE));
+
+  const paginatedEntries = useMemo(
+    () =>
+      sortedEntries.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE,
+      ),
+    [currentPage, sortedEntries],
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedProductCategory, selectedProductName]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const logColumns = useMemo<ColumnDef<ProductionMaterialLog>[]>(
     () => [
@@ -202,7 +225,7 @@ export function ProductionMaterialLogsPage() {
                   value={selectedProductCategory}
                   onChange={(event) => setSelectedProductCategory(event.target.value)}
                 >
-                  <option value="">All Categories</option>
+                  <option value="">All</option>
                   {productCategoryOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -217,7 +240,7 @@ export function ProductionMaterialLogsPage() {
                   value={selectedProductName}
                   onChange={(event) => setSelectedProductName(event.target.value)}
                 >
-                  <option value="">All Products</option>
+                  <option value="">All</option>
                   {productNameOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -236,11 +259,35 @@ export function ProductionMaterialLogsPage() {
           ) : sortedEntries.length === 0 ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">Production material logs will appear here once available.</div>
           ) : (
-            <DataTable
-              columns={logColumns}
-              data={sortedEntries}
-              emptyMessage="Production material logs will appear here once available."
-            />
+            <div className="space-y-3">
+              <DataTable
+                columns={logColumns}
+                data={paginatedEntries}
+                emptyMessage="Production material logs will appear here once available."
+              />
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  type="button"
+                  variant="outline"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  type="button"
+                  variant="outline"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -85,6 +85,7 @@ export type DashboardReportProductStock = {
   bagSize: string;
   currentQuantity: number;
   currentStock: number;
+  totalBagsProduced: number;
   availableBags: number;
   dispatchedBags: number;
   shippedQuantity: number;
@@ -480,6 +481,7 @@ function normalizeDashboardReportProductStock(entry: unknown): DashboardReportPr
     bagSize: stringifyValue(record.bagSize),
     currentQuantity: Number(record.currentQuantity ?? record.currentStock ?? 0) || 0,
     currentStock: Number(record.currentStock ?? record.currentQuantity ?? 0) || 0,
+    totalBagsProduced: Number(record.totalBagsProduced ?? record.currentQuantity ?? record.currentStock ?? 0) || 0,
     availableBags: Number(record.availableBags ?? record.currentQuantity ?? 0) || 0,
     dispatchedBags: Number(record.dispatchedBags ?? record.shippedQuantity ?? 0) || 0,
     shippedQuantity: Number(record.shippedQuantity ?? record.dispatchedBags ?? 0) || 0,
