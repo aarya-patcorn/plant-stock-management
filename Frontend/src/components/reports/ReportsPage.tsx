@@ -22,9 +22,11 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { BarChart3, Download, FileSpreadsheet, FileText, PackageSearch } from "lucide-react";
 import {
+  fetchDashboardReports,
   fetchDispatchEntries,
   fetchManufacturingEntries,
   fetchProductionMaterialLogs,
+  type DashboardReportCategory,
   type DispatchEntry,
   type ManufacturingEntry,
   type ProductionMaterialLog,
@@ -142,50 +144,6 @@ function isWithinDateRange(value: string, fromDate: string, toDate: string) {
   return normalized >= fromDate && normalized <= toDate;
 }
 
-function parseBagSizeToKg(value: string) {
-  const text = String(value || "").trim().toLowerCase();
-
-  if (!text) {
-    return 0;
-  }
-
-  const match = text.match(/(\d+(?:\.\d+)?)/);
-
-  if (!match) {
-    return 0;
-  }
-
-  const quantity = Number(match[1]);
-
-  if (!Number.isFinite(quantity)) {
-    return 0;
-  }
-
-  if (text.includes("gm") || text.includes("gram")) {
-    return quantity / 1000;
-  }
-
-  if (text.includes("mt") || text.includes("ton")) {
-    return quantity * 1000;
-  }
-
-  return quantity;
-}
-
-function resolveProductionKg(entry: ManufacturingEntry) {
-  const directQuantity = parseNumber(entry.rawMaterialQty.split(",")[0]);
-
-  if (directQuantity > 0) {
-    return directQuantity;
-  }
-
-  return entry.productItems.reduce((sum, item) => {
-    const totalBagsProduced = parseNumber(item.totalBagsProduced);
-    const bagSizeInKg = parseBagSizeToKg(item.bagSize);
-    return sum + totalBagsProduced * bagSizeInKg;
-  }, 0);
-}
-
 function buildProductLabel(productCategory: string, productName: string, color: string) {
   return [productCategory, productName, color].filter(Boolean).join(" / ");
 }
@@ -242,6 +200,8 @@ export function ReportsPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [productionSummaryByCategory, setProductionSummaryByCategory] = useState<DashboardReportCategory[]>([]);
+  const [isProductionSummaryLoading, setIsProductionSummaryLoading] = useState(true);
   const [reportType, setReportType] = useState<ReportType>("production");
   const [fromDate, setFromDate] = useState(initialRange.fromDate);
   const [toDate, setToDate] = useState(initialRange.toDate);
@@ -295,6 +255,45 @@ export function ReportsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!fromDate || !toDate || fromDate > toDate) {
+      setProductionSummaryByCategory([]);
+      setIsProductionSummaryLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setIsProductionSummaryLoading(true);
+
+    void fetchDashboardReports(fromDate, toDate)
+      .then((response) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setProductionSummaryByCategory(response.productionByCategory);
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        setProductionSummaryByCategory([]);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsProductionSummaryLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fromDate, toDate]);
+
   const categoryOptions = useMemo(
     () =>
       Array.from(
@@ -341,10 +340,6 @@ export function ReportsPage() {
   );
 
   const summary = useMemo(() => {
-    const totalProductionKg = filteredManufacturingEntries.reduce(
-      (sum, entry) => sum + resolveProductionKg(entry),
-      0,
-    );
     const totalBagsProduced = filteredManufacturingEntries.reduce(
       (sum, entry) => sum + parseNumber(entry.totalBagsProduced),
       0,
@@ -367,9 +362,16 @@ export function ReportsPage() {
       dispatchStock,
       totalBagsProduced,
       totalDispatchBags,
-      totalProductionKg,
     };
   }, [filteredDispatchEntries, filteredManufacturingEntries, filteredProductionLogs]);
+
+  const totalProductionKg = useMemo(() => {
+    if (selectedCategory) {
+      return productionSummaryByCategory.find((entry) => entry.productCategory === selectedCategory)?.totalProductionKg || 0;
+    }
+
+    return productionSummaryByCategory.reduce((sum, entry) => sum + entry.totalProductionKg, 0);
+  }, [productionSummaryByCategory, selectedCategory]);
 
   const productionBarData = useMemo(() => {
     const grouped = new Map<string, { label: string; value: number }>();
@@ -502,21 +504,21 @@ export function ReportsPage() {
             cell: ({ row }) => row.original.reportMode === "production" ? row.original.bagSize || "-" : "-",
           },
           {
+            id: "totalBagsProduced",
+            header: "Total Stock",
+            accessorFn: (row) => row.reportMode === "production" ? row.totalBagsProduced : 0,
+            cell: ({ row }) =>
+              row.original.reportMode === "production" ? (
+                <span className="block text-right">{formatCount(row.original.currentQuantity + row.original.dispatchedBags)}</span>
+              ) : "-",
+          },
+          {
             id: "currentQuantity",
             header: "Current Stock",
             accessorFn: (row) => row.reportMode === "production" ? row.currentQuantity : 0,
             cell: ({ row }) =>
               row.original.reportMode === "production" ? (
                 <span className="block text-right">{formatCount(row.original.currentQuantity)}</span>
-              ) : "-",
-          },
-          {
-            id: "availableBags",
-            header: "Available Bags",
-            accessorFn: (row) => row.reportMode === "production" ? row.availableBags : 0,
-            cell: ({ row }) =>
-              row.original.reportMode === "production" ? (
-                <span className="block text-right">{formatCount(row.original.availableBags)}</span>
               ) : "-",
           },
           {
@@ -782,32 +784,6 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-        <CardContent className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.3fr)_320px]">
-          <div>
-            <p className="text-sm font-semibold text-teal-700">Logistics Analytics</p>
-            <h2 className="mt-2 text-4xl font-bold tracking-tight text-foreground">Reports</h2>
-            <p className="mt-3 max-w-3xl text-sm text-muted-foreground">
-              Generate, filter, view, export, and analyze production, dispatch, and stock movement using live plant data.
-            </p>
-          </div>
-          <div className="flex flex-col justify-between rounded-3xl border border-sky-100 bg-sky-50/60 p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-white p-3 text-sky-600 shadow-sm">
-                <PackageSearch className="size-5" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Report engine ready</p>
-                <p className="text-sm text-muted-foreground">Live filters, charts, and product exports.</p>
-              </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Badge variant="outline">{reportType === "production" ? "Production mode" : "Dispatch mode"}</Badge>
-              <Badge variant="outline">{selectedCategory || "All categories"}</Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {loadError ? (
         <div className="rounded-lg border border-dashed border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
@@ -819,7 +795,7 @@ export function ReportsPage() {
         <StatCard
           description="Production quantity in MT for the selected filter."
           title="Total Production KG"
-          value={isLoading ? "..." : formatKgToMt(summary.totalProductionKg)}
+          value={isLoading || isProductionSummaryLoading ? "..." : formatKgToMt(totalProductionKg)}
         />
         <StatCard
           description="Total bags produced in the selected date range."

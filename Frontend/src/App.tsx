@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   Factory,
@@ -29,12 +29,25 @@ import newLogo from "@/assets/new_logo.png";
 import { AUTH_STORAGE_KEY } from "@/lib/auth";
 import ScrollToTop from "./hooks/ScrollToTop";
 
-const navItems: Array<{ icon: LucideIcon; label: string; path: string }> = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: PackagePlus, label: "Purchase Entry", path: "/purchase-entry" },
-  { icon: Factory, label: "Production", path: "/manufacturing-entry" },
-  { icon: SendToBack, label: "Dispatch", path: "/product-departure" },
-  { icon: BarChart3, label: "Reports", path: "/reports" },
+const navSections: Array<{
+  items: Array<{ icon: LucideIcon; label: string; path: string }>;
+  title: string;
+}> = [
+  {
+    title: "Overview",
+    items: [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+      { icon: BarChart3, label: "Reports", path: "/reports" },
+    ],
+  },
+  {
+    title: "Operations",
+    items: [
+      { icon: PackagePlus, label: "Purchase Entry", path: "/purchase-entry" },
+      { icon: Factory, label: "Production", path: "/manufacturing-entry" },
+      { icon: SendToBack, label: "Dispatch", path: "/product-departure" },
+    ],
+  },
 ];
 
 function PlaceholderPage({ title }: { title: string }) {
@@ -49,15 +62,15 @@ function PlaceholderPage({ title }: { title: string }) {
 function Brand({ className = "" }: { className?: string }) {
   return (
     <div className={`w-full ${className}`}>
-      <div className="border-b border-slate-200/80 px-2 pb-5">
+      <div className="border-b border-slate-200 px-1 pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
             <img alt="Kamdhenu Adhesive" className="h-full w-full object-contain" src={newLogo} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold tracking-[0.01em] text-foreground">Kamdhenu Adhesive</p>
-            <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-              Inventory Management
+            <p className="truncate text-sm font-semibold tracking-[0.01em] text-slate-950">Kamdhenu Adhesive</p>
+            <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-slate-500">
+              Plant ERP
             </p>
           </div>
         </div>
@@ -66,56 +79,66 @@ function Brand({ className = "" }: { className?: string }) {
   );
 }
 
-function SidebarNav({ onNavigate, onLogout }: { onNavigate?: () => void; onLogout: () => void }) {
+function SidebarNav({
+  onNavigate,
+  onLogout,
+  userName,
+}: {
+  onNavigate?: () => void;
+  onLogout: () => void;
+  userName: string;
+}) {
   const location = useLocation();
 
   return (
     <div className="mt-4 flex h-full min-h-0 flex-col">
-      <div className="mb-4 px-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Workspace
-        </p>
-      </div>
-      <nav className="flex h-full min-h-0 flex-col gap-1.5">
-        {navItems.map(({ icon: Icon, label, path }) => {
-          const active = location.pathname === path;
-
-          return (
-            <Link
-              className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all ${active
-                ? "bg-slate-100 text-foreground"
-                : "text-muted-foreground hover:bg-white hover:text-foreground"
-                }`}
-              key={label}
-              onClick={onNavigate}
-              to={path}
-            >
-              <span
-                className={`absolute left-0 top-2 bottom-2 w-1 rounded-full transition-opacity ${active ? "bg-primary opacity-100" : "opacity-0 group-hover:opacity-100 bg-slate-300"}`}
-              />
-              <div
-                className={`flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors ${active
-                  ? "bg-white text-primary shadow-sm"
-                  : "bg-slate-100 text-muted-foreground group-hover:bg-slate-50 group-hover:text-foreground"
-                  }`}
-              >
-                <Icon className="size-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate">{label}</p>
-              </div>
-            </Link>
-          );
-        })}
-
-
-        <div className="mt-auto pt-5">
-          <div className="border-t border-slate-200/80 px-2 pt-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Account
+      <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pr-1">
+        {navSections.map((section) => (
+          <div key={section.title}>
+            <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              {section.title}
             </p>
+            <div className="space-y-1">
+              {section.items.map(({ icon: Icon, label, path }) => {
+                const active = location.pathname === path;
+
+                return (
+                  <Link
+                    className={`group relative flex w-full items-center gap-3 border-l-2 px-3 py-2.5 text-sm transition-colors ${
+                      active
+                        ? "border-teal-600 bg-teal-50/80 font-semibold text-slate-950"
+                        : "border-transparent font-medium text-slate-600 hover:bg-slate-100/80 hover:text-slate-950"
+                    }`}
+                    key={label}
+                    onClick={onNavigate}
+                    to={path}
+                  >
+                    <div
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+                        active
+                          ? "border-teal-100 bg-white text-teal-700"
+                          : "border-transparent bg-slate-100 text-slate-500 group-hover:border-slate-200 group-hover:bg-white group-hover:text-slate-800"
+                      }`}
+                    >
+                      <Icon className="size-4" />
+                    </div>
+                    <span className="truncate">{label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="mt-4 border-t border-slate-200 pt-4">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Logged In</p>
+          <p className="mt-1 truncate text-sm font-semibold text-slate-950">{userName}</p>
+          <p className="text-xs text-slate-500">Plant operations workspace</p>
+          <div className="mt-3">
             <Button
-              className="mt-3 h-11 w-full justify-start gap-3 rounded-xl bg-white"
+              className="h-10 w-full justify-start gap-3 rounded-lg border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
               onClick={onLogout}
               type="button"
               variant="outline"
@@ -125,7 +148,7 @@ function SidebarNav({ onNavigate, onLogout }: { onNavigate?: () => void; onLogou
             </Button>
           </div>
         </div>
-      </nav>
+      </div>
     </div>
   );
 }
@@ -134,6 +157,7 @@ function AppShellLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const userName = useMemo(() => window.localStorage.getItem("userName") || window.sessionStorage.getItem("userName") || "User", []);
   const [currentTime, setCurrentTime] = useState(() =>
     new Date().toLocaleTimeString("en-IN", {
       hour: "2-digit",
@@ -196,11 +220,13 @@ function AppShellLayout() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.12),_transparent_28rem),linear-gradient(180deg,_#f8fafc_0%,_#eef4f5_100%)]">
-      <div className="flex w-full items-start gap-6 px-4 py-5 sm:px-6 lg:px-8">
-        <aside className="hidden w-[290px] shrink-0 rounded-[1.5rem] border border-white/70 bg-white/85 p-5 shadow-[0_20px_45px_rgba(15,23,42,0.08)] backdrop-blur lg:sticky lg:top-5 lg:flex lg:h-[calc(100vh-2.5rem)] lg:flex-col">
+    <main className="min-h-screen bg-[#f5f7fb] text-slate-950">
+      <div className="flex min-h-screen w-full">
+        <aside className="hidden h-screen w-[248px] shrink-0 border-r border-slate-200 bg-[#f8fafc] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:flex-col">
+          <div className="flex h-full flex-col px-4 py-4">
           <Brand />
-          <SidebarNav onLogout={handleLogout} />
+            <SidebarNav onLogout={handleLogout} userName={userName} />
+          </div>
         </aside>
 
         <div
@@ -214,7 +240,7 @@ function AppShellLayout() {
             type="button"
           />
           <aside
-            className={`relative h-full w-72 max-w-[85vw] border-r border-white/70 bg-white/95 p-5 shadow-[0_20px_45px_rgba(15,23,42,0.12)] backdrop-blur transition-transform duration-300 ease-out ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            className={`relative h-full w-64 max-w-[86vw] border-r border-slate-200 bg-[#f8fafc] px-4 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.12)] transition-transform duration-300 ease-out ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
               }`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -230,18 +256,17 @@ function AppShellLayout() {
                 <X />
               </Button>
             </div>
-
-            <hr className="mt-4 border-muted" />
-            <SidebarNav onNavigate={() => setMobileSidebarOpen(false)} onLogout={handleLogout} />
+            <SidebarNav onNavigate={() => setMobileSidebarOpen(false)} onLogout={handleLogout} userName={userName} />
           </aside>
         </div>
 
-        <section className="min-w-0 flex-1">
-          <header className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <section className="min-w-0 flex-1 lg:ml-[248px]">
+          <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#f5f7fb]/95 backdrop-blur">
+            <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <Button
                 aria-label="Open sidebar"
-                className="mt-1 lg:hidden"
+                className="mt-0.5 border-slate-200 bg-white text-slate-700 hover:bg-slate-100 lg:hidden"
                 onClick={() => setMobileSidebarOpen(true)}
                 size="icon"
                 type="button"
@@ -250,14 +275,18 @@ function AppShellLayout() {
                 <Menu />
               </Button>
               <div>
-                <h1 className="mt-1 text-3xl font-bold tracking-normal text-foreground">{pageTitle}</h1>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Operations Workspace</p>
+                  <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{pageTitle}</h1>
               </div>
             </div>
-            <div className="inline-flex items-center rounded-xl border border-white/70 bg-white/80 px-4 py-2 text-sm font-semibold text-foreground shadow-sm backdrop-blur">
+              <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
               {currentTime}
+              </div>
             </div>
           </header>
-          <Outlet />
+          <div className="px-4 py-4 sm:px-6 lg:px-8">
+            <Outlet />
+          </div>
         </section>
       </div>
     </main>
