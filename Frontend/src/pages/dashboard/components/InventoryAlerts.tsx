@@ -85,7 +85,7 @@ function InventoryAlertGaugeCard({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xs font-bold text-slate-950 sm:text-lg">{formatCount(percentage)}%</span>
+              <span className="text-xs font-bold text-slate-950 sm:text-md">{formatCount(percentage)}%</span>
               <span className="text-[8px] font-medium uppercase tracking-[0.12em] text-slate-500 sm:text-[8px] sm:tracking-[0.16em]">Stock</span>
             </div>
           </div>
