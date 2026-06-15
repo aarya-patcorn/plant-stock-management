@@ -20,21 +20,21 @@ export function ProductionTrendChart({
 }: ProductionTrendChartProps) {
   return (
     <Card className="min-w-0 border-white/70 bg-white/90 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-      <CardHeader className="gap-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <CardHeader className="gap-3 sm:gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div>
-            <CardTitle>Production Trend</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Production Trend</CardTitle>
+            <CardDescription className="hidden sm:block">
               {activeReportCategory
                 ? `${activeReportCategory} production trend for the selected date range.`
                 : "Production trend for the selected date range."}
             </CardDescription>
           </div>
-          <div className="flex flex-wrap items-center rounded-xl border border-slate-200 bg-slate-50 p-1 sm:w-auto">
+          <div className="flex flex-wrap items-center rounded-lg border border-slate-200 bg-slate-50 p-1 sm:w-auto sm:rounded-xl">
             {(["day", "month", "year"] as TrendView[]).map((view) => (
               <button
                 className={[
-                  "flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition sm:flex-none sm:px-3",
+                  "flex-1 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition sm:flex-none sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs",
                   trendView === view ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-900",
                 ].join(" ")}
                 key={view}
@@ -46,16 +46,16 @@ export function ProductionTrendChart({
             ))}
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Peak {trendView}</p>
-            <p className="mt-1 text-base font-semibold text-slate-950">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 sm:rounded-xl sm:px-4 sm:py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 sm:text-[11px] sm:tracking-[0.18em]">Peak {trendView}</p>
+            <p className="mt-1 text-sm font-semibold text-slate-950 sm:text-base">
               {peakProductionPoint ? peakProductionPoint.label : "No data"}
             </p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Peak Production</p>
-            <p className="mt-1 text-base font-semibold text-slate-950">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 sm:rounded-xl sm:px-4 sm:py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 sm:text-[11px] sm:tracking-[0.18em]">Peak Production</p>
+            <p className="mt-1 text-sm font-semibold text-slate-950 sm:text-base">
               {peakProductionPoint ? formatKgToMt(peakProductionPoint.totalProductionKg) : "0 mt"}
             </p>
           </div>
@@ -63,11 +63,11 @@ export function ProductionTrendChart({
       </CardHeader>
       <CardContent>
         {productionTrendData.length === 0 ? (
-          <div className="flex min-h-[220px] sm:min-h-[260px] lg:min-h-[320px] items-center justify-center rounded-xl border border-dashed p-4 sm:p-6 text-sm text-muted-foreground">
+          <div className="flex min-h-[160px] sm:min-h-[260px] lg:min-h-[320px] items-center justify-center rounded-xl border border-dashed p-3 text-xs text-muted-foreground sm:p-6 sm:text-sm">
             No production trend available for the selected date range.
           </div>
         ) : (
-          <div className="h-[220px] w-full sm:h-[260px] lg:h-[320px]">
+          <div className="h-[160px] w-full sm:h-[260px] lg:h-[320px]">
             <ResponsiveContainer height="100%" width="100%">
               <LineChart data={productionTrendData} margin={{ top: 8, right: 8, bottom: 4, left: -18 }}>
                 <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />

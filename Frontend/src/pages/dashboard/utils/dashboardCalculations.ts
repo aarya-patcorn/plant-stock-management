@@ -364,15 +364,6 @@ export function buildOperationsSnapshot(params: {
 
   return [
     {
-      caption: "Inventory",
-      description: "Total inventory records currently tracked across registers.",
-      icon: Warehouse,
-      statusClassName: resolveStatusTone(inventoryStatus),
-      statusLabel: inventoryStatus === "healthy" ? "Healthy" : inventoryStatus === "warning" ? "Warning" : "Critical",
-      title: "Total Inventory Raw Materials",
-      trendLabel: `${formatCount(lowStockCount)} low stock`,
-    },
-    {
       caption: "Stock on Hand",
       description: "Current raw material stock available for plant operations.",
       icon: ShoppingBag,
@@ -408,15 +399,6 @@ export function buildOperationsSnapshot(params: {
       statusLabel: dispatchStatus === "healthy" ? "Healthy" : "Warning",
       title: "Today's Dispatch",
       trendLabel: "Outbound today",
-    },
-    {
-      caption: "Attention",
-      description: "Inventory items already below defined minimum thresholds.",
-      icon: AlertTriangle,
-      statusClassName: resolveStatusTone(lowStockStatus),
-      statusLabel: lowStockStatus === "healthy" ? "Healthy" : lowStockStatus === "warning" ? "Warning" : "Critical",
-      title: "Low Stock Items",
-      trendLabel: totalInventory > 0 ? `${formatCount(lowStockRate * 100)}% flagged` : "No records",
     },
   ].map((item) => ({
     ...item,

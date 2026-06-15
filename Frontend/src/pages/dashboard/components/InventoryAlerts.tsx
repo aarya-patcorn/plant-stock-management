@@ -48,22 +48,22 @@ function InventoryAlertGaugeCard({
 
   return (
     <Card className="overflow-hidden border border-slate-200 bg-white/95 shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-950" title={label}>
+            <p className="truncate text-xs font-semibold text-slate-950 sm:text-sm" title={label}>
               {label}
             </p>
-            <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">Threshold alert</p>
+            <p className="mt-1 hidden text-xs uppercase tracking-[0.16em] text-slate-500 sm:block">Threshold alert</p>
           </div>
-          <Badge className={tone.badgeClassName} variant="outline">
+          <Badge className={`${tone.badgeClassName} shrink-0 self-start text-[10px] sm:text-xs`} variant="outline">
             {unitLabel}
           </Badge>
         </div>
 
-        <div className="mt-4 flex items-center gap-4">
-          <div className="relative flex h-24 w-24 shrink-0 items-center justify-center">
-            <svg className="-rotate-90" height="96" width="96" viewBox="0 0 96 96">
+        <div className="mt-3 flex min-w-0 items-center gap-3 sm:mt-4 sm:gap-4">
+          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center sm:h-24 sm:w-24">
+            <svg className="-rotate-90" height="56" width="56" viewBox="0 0 96 96">
               <circle
                 className={tone.trackClassName}
                 cx="48"
@@ -85,19 +85,19 @@ function InventoryAlertGaugeCard({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-bold text-slate-950">{formatCount(percentage)}%</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">Stock</span>
+              <span className="text-xs font-bold text-slate-950 sm:text-xl">{formatCount(percentage)}%</span>
+              <span className="text-[8px] font-medium uppercase tracking-[0.12em] text-slate-500 sm:text-[8px] sm:tracking-[0.16em]">Stock</span>
             </div>
           </div>
 
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Current / Threshold</p>
-              <p className="mt-1 text-sm font-semibold text-slate-950">
-                {formatCount(value)} / {thresholdLabel}
-              </p>
-            </div>
-            <p className="text-xs text-slate-500">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-slate-950 sm:text-sm">
+              {formatCount(value)} / {thresholdLabel}
+            </p>
+            <p className="mt-1 truncate text-[11px] text-slate-500 sm:hidden">
+              Current vs threshold
+            </p>
+            <p className="mt-1 hidden text-xs text-slate-500 sm:block">
               Current stock is at {formatCount(percentage)}% of the configured threshold.
             </p>
           </div>
@@ -118,43 +118,43 @@ export function InventoryAlerts({
 }: InventoryAlertsProps) {
   return (
     <Card className="border-white/70 bg-white/85 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+      <CardHeader className="gap-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <CardTitle>Inventory Alerts</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-lg sm:text-xl">Inventory Alerts</CardTitle>
+          <CardDescription className="hidden sm:block">
             Low-stock inventory items based on operational minimum stock thresholds.
           </CardDescription>
         </div>
-        <Badge variant="outline">{isLoading ? "Loading..." : `${alerts.length} alerts`}</Badge>
+        <Badge className="text-[10px] sm:text-xs" variant="outline">{isLoading ? "Loading..." : `${alerts.length} alerts`}</Badge>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex justify-center rounded-md border border-dashed p-6">
+          <div className="flex justify-center rounded-md border border-dashed p-4 sm:p-6">
             <LoadingLoader />
           </div>
         ) : alerts.length === 0 ? (
-          <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground sm:p-4 sm:text-sm">
             No low-stock inventory alerts right now.
           </div>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
               {paginatedAlerts.map((alert) => (
                 <InventoryAlertGaugeCard {...alert} key={alert.id} />
               ))}
             </div>
 
             {totalPages > 1 ? (
-              <div className="mt-4 flex items-center justify-center gap-3">
-                <Button type="button" disabled={currentPage === 1} onClick={onPreviousPage}>
+              <div className="mt-4 flex items-center justify-between gap-2 sm:justify-center sm:gap-3">
+                <Button className="h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm" type="button" disabled={currentPage === 1} onClick={onPreviousPage}>
                   Previous
                 </Button>
 
-                <span>
+                <span className="text-xs sm:text-sm">
                   Page {currentPage} of {totalPages || 1}
                 </span>
 
-                <Button type="button" disabled={currentPage >= totalPages} onClick={onNextPage}>
+                <Button className="h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm" type="button" disabled={currentPage >= totalPages} onClick={onNextPage}>
                   Next
                 </Button>
               </div>

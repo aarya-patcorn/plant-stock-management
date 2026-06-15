@@ -91,11 +91,11 @@ function SidebarNav({
   const location = useLocation();
 
   return (
-    <div className="mt-4 flex h-full min-h-0 flex-col">
-      <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pr-1">
+    <div className="mt-3 flex h-full min-h-0 flex-col sm:mt-4">
+      <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 sm:gap-5">
         {navSections.map((section) => (
           <div key={section.title}>
-            <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:mb-2">
               {section.title}
             </p>
             <div className="space-y-1">
@@ -104,7 +104,7 @@ function SidebarNav({
 
                 return (
                   <Link
-                    className={`group relative flex w-full items-center gap-3 border-l-2 px-3 py-2.5 text-sm transition-colors ${
+                    className={`group relative flex w-full items-center gap-2.5 border-l-2 px-3 py-2 text-sm transition-colors sm:gap-3 sm:py-2.5 ${
                       active
                         ? "border-teal-600 bg-teal-50/80 font-semibold text-slate-950"
                         : "border-transparent font-medium text-slate-600 hover:bg-slate-100/80 hover:text-slate-950"
@@ -114,7 +114,7 @@ function SidebarNav({
                     to={path}
                   >
                     <div
-                      className={`flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+                      className={`flex size-7 shrink-0 items-center justify-center rounded-lg border transition-colors sm:size-8 ${
                         active
                           ? "border-teal-100 bg-white text-teal-700"
                           : "border-transparent bg-slate-100 text-slate-500 group-hover:border-slate-200 group-hover:bg-white group-hover:text-slate-800"
@@ -131,14 +131,14 @@ function SidebarNav({
         ))}
       </nav>
 
-      <div className="mt-4 border-t border-slate-200 pt-4">
+      <div className="mt-3 shrink-0 border-t border-slate-200 bg-[#f8fafc] pt-3 sm:mt-4 sm:pt-4">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Logged In</p>
           <p className="mt-1 truncate text-sm font-semibold text-slate-950">{userName}</p>
-          <p className="text-xs text-slate-500">Plant operations workspace</p>
-          <div className="mt-3">
+          <p className="text-[11px] text-slate-500 sm:text-xs">Plant operations workspace</p>
+          <div className="mt-2 sm:mt-3">
             <Button
-              className="h-10 w-full justify-start gap-3 rounded-lg border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+              className="h-9 w-full justify-start gap-3 rounded-lg border-slate-200 bg-white text-slate-700 hover:bg-slate-100 sm:h-10"
               onClick={onLogout}
               type="button"
               variant="outline"
@@ -223,7 +223,7 @@ function AppShellLayout() {
     <main className="min-h-screen bg-[#f5f7fb] text-slate-950">
       <div className="flex min-h-screen w-full">
         <aside className="hidden h-screen w-[248px] shrink-0 border-r border-slate-200 bg-[#f8fafc] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:flex-col">
-          <div className="flex h-full flex-col px-4 py-4">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden px-4 py-4">
           <Brand />
             <SidebarNav onLogout={handleLogout} userName={userName} />
           </div>
@@ -240,10 +240,10 @@ function AppShellLayout() {
             type="button"
           />
           <aside
-            className={`relative h-full w-64 max-w-[86vw] border-r border-slate-200 bg-[#f8fafc] px-4 py-4 shadow-[0_18px_40px_rgba(15,23,42,0.12)] transition-transform duration-300 ease-out ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            className={`relative flex h-[100dvh] max-h-[100dvh] w-64 max-w-[86vw] flex-col overflow-hidden border-r border-slate-200 bg-[#f8fafc] px-3 py-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)] transition-transform duration-300 ease-out sm:px-4 sm:py-4 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
               }`}
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex shrink-0 items-start justify-between gap-3">
               <Brand className="min-w-0 flex-1" />
               <Button
                 aria-label="Close sidebar"
@@ -256,7 +256,9 @@ function AppShellLayout() {
                 <X />
               </Button>
             </div>
-            <SidebarNav onNavigate={() => setMobileSidebarOpen(false)} onLogout={handleLogout} userName={userName} />
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <SidebarNav onNavigate={() => setMobileSidebarOpen(false)} onLogout={handleLogout} userName={userName} />
+            </div>
           </aside>
         </div>
 

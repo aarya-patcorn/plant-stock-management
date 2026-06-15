@@ -134,7 +134,7 @@ export function Dashboard() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-4 overflow-x-hidden sm:space-y-6">
       <OperationsSnapshot
         dispatchCount={data.dispatchEntries.length}
         isLoading={isLoading}
@@ -143,7 +143,7 @@ export function Dashboard() {
       />
 
       {loadError ? (
-        <div className="rounded-lg border border-dashed border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+        <div className="rounded-lg border border-dashed border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive sm:p-4 sm:text-sm">
           {loadError}
         </div>
       ) : null}
@@ -158,7 +158,7 @@ export function Dashboard() {
         totalPages={totalPages}
       />
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.9fr)] lg:items-start">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.9fr)] lg:items-start lg:gap-5">
         <ReportsSection
           activeCategoryProductStocks={activeCategoryProductStocks}
           activeReportCategory={activeReportCategory}
@@ -190,7 +190,7 @@ export function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1.15fr)]">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1.15fr)] xl:gap-6">
         <InventoryPreview entries={sortedInventoryEntries} isLoading={isLoading} />
         <ProductionLogsPreview isLoading={isLoading} logs={sortedProductionLogs} />
       </div>
