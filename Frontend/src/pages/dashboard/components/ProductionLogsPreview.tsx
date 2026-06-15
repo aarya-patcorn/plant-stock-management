@@ -62,9 +62,9 @@ export function ProductionLogsPreview({ isLoading, logs }: ProductionLogsPreview
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 sm:gap-2 sm:text-xs">
                         <span>{entry.productColor || "Color N/A"}</span>
-                        <span className="text-slate-300">â€¢</span>
+                        <span className="text-slate-300">/</span>
                         <span>{entry.token || "Token N/A"}</span>
-                        <span className="text-slate-300">â€¢</span>
+                        <span className="text-slate-300">/</span>
                         <span>{entry.bagSize || "Bag size N/A"}</span>
                       </div>
                     </div>
