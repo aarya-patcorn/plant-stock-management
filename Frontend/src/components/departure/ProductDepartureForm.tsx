@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getCurrentLocalDateInputValue, getCurrentLocalTimeInputValue } from "@/lib/dateTimeDefaults";
 import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import {
   fetchDispatchEntries,
@@ -23,15 +24,15 @@ const DESKTOP_RECENT_DEPARTURES_PAGE_SIZE = 7;
 const OTHER_OPTION = "__other__";
 const dispatchOtherFields = ["productCategory", "productName", "token", "productColor", "bagSize"] as const;
 type DispatchOtherField = (typeof dispatchOtherFields)[number];
-const initialFormData = {
-  date: "",
-  time: "",
+const createInitialFormData = () => ({
+  date: getCurrentLocalDateInputValue(),
+  time: getCurrentLocalTimeInputValue(),
   challanNo: "",
   challanName: "",
   vehicleNo: "",
   driverName: "",
   driverContact: "",
-  dispatchTime: "",
+  dispatchTime: getCurrentLocalTimeInputValue(),
   dispatchSite: "",
   todayVehicleNo: "",
   token: "",
@@ -43,10 +44,12 @@ const initialFormData = {
   totalBags: "",
   wastageQty: "",
   remarks: "",
-};
+});
+
+type DispatchFormData = ReturnType<typeof createInitialFormData>;
 
 type DispatchProductSelection = Pick<
-  typeof initialFormData,
+  DispatchFormData,
   "token" | "productCategory" | "bagSize" | "productColor" | "productName" | "quantity" | "totalBags"
 >;
 
@@ -104,7 +107,7 @@ function isValidDriverContact(value: string) {
 }
 
 export function ProductDepartureForm() {
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState<DispatchFormData>(createInitialFormData);
   const [otherSelections, setOtherSelections] = useState(initialDispatchOtherState);
   const [selectedProducts, setSelectedProducts] = useState<DispatchProductSelection[]>([]);
   const [productionEntries, setProductionEntries] = useState<ProductionMaterialLog[]>([]);
@@ -380,7 +383,7 @@ export function ProductDepartureForm() {
     field: DispatchOtherField,
     value: string,
     fieldsToClear: DispatchOtherField[] = [],
-    extraUpdates: Partial<typeof initialFormData> = {},
+    extraUpdates: Partial<DispatchFormData> = {},
   ) => {
     const isOtherSelection = value === OTHER_OPTION;
 
@@ -610,7 +613,7 @@ export function ProductDepartureForm() {
           productColor: product.productCategory === "Tile Cleaner" ? "" : product.productColor,
         });
       }
-      setFormData(initialFormData);
+      setFormData(createInitialFormData());
       setOtherSelections(initialDispatchOtherState);
       setSelectedProducts([]);
       toast.success(
@@ -646,7 +649,7 @@ export function ProductDepartureForm() {
           <form
             className="grid gap-5"
             onReset={() => {
-              setFormData(initialFormData);
+              setFormData(createInitialFormData());
               setOtherSelections(initialDispatchOtherState);
               setSelectedProducts([]);
               setSubmitStatus("idle");

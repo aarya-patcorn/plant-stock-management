@@ -35,7 +35,7 @@ const getManufacturingFirstShiftRange = () => {
     reportDate,
     shiftName: "First Shift",
     start: createIstDateTime(reportDate, 9, 0, 0, 0),
-    end: createIstDateTime(reportDate, 19, 0, 0, 0),
+    end: createIstDateTime(reportDate, 18, 59, 59, 999)
   };
 };
 
@@ -101,6 +101,7 @@ const sendManufacturingShiftReport = async ({ reportDate, shiftName, start, end 
   console.log(`[ReportScheduler] Manufacturing ${shiftName} total entries found:`, entries.length);
 
   if (entries.length === 0) {
+    console.log(`[ReportScheduler] No entries found for ${shiftName} on ${reportDate}. Skipping email.`);
     return;
   }
 
@@ -222,6 +223,8 @@ if (!global.__plantStockReportSchedulerStarted) {
   );
 
   console.log("[ReportScheduler] Scheduled report jobs started.");
+} else {
+  console.warn("[ReportScheduler] WARNING: Scheduler already started, skipping re-registration.");
 }
 
 module.exports = {};

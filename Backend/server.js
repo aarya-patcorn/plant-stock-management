@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const path = require('path');
 const purchaseRoutes = require("./routes/purchaseRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const manufacturingRoutes = require("./routes/manufacturingRoutes");
@@ -11,7 +12,8 @@ const wastageRoutes = require("./routes/wastageRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 
 mongoose.set("strictQuery", true);
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+console.log('[server] using env file:', path.resolve(__dirname, '.env'));
 
 const app = express();
 

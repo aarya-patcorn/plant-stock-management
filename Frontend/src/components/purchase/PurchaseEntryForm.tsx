@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchPurchaseEntries, submitEntry, type PurchaseEntry } from "@/lib/api";
+import { getCurrentLocalDateInputValue, getCurrentLocalTimeInputValue } from "@/lib/dateTimeDefaults";
 import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import SubmitLoader from "../ui/SubmitLoader";
 
@@ -50,15 +51,17 @@ const purchaseOtherFields = [
 ] as const;
 type PurchaseOtherField = (typeof purchaseOtherFields)[number];
 
-const initialCommonFormData = {
-  date: "",
-  time: "",
+const createInitialCommonFormData = () => ({
+  date: getCurrentLocalDateInputValue(),
+  time: getCurrentLocalTimeInputValue(),
   supplierName: "",
   invoiceNo: "",
   unloadBy: "",
   attachFile: "",
   remarks: "",
-};
+});
+
+type CommonFormData = ReturnType<typeof createInitialCommonFormData>;
 
 const initialPurchaseItemData = {
   rawMaterialName: "",
@@ -508,7 +511,7 @@ function getUnloadByOptions(mode: string) {
 }
 
 export function PurchaseEntryForm() {
-  const [commonFormData, setCommonFormData] = useState(initialCommonFormData);
+  const [commonFormData, setCommonFormData] = useState<CommonFormData>(createInitialCommonFormData);
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItemState[]>([createPurchaseItemState()]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUnloadByOther, setIsUnloadByOther] = useState(false);
@@ -769,14 +772,14 @@ export function PurchaseEntryForm() {
     });
   }, [purchaseItems]);
 
-  const updateCommonField = (name: keyof typeof initialCommonFormData, value: string) => {
+  const updateCommonField = (name: keyof CommonFormData, value: string) => {
     setCommonFormData((current) => ({
       ...current,
       [name]: value,
     }));
   };
 
-  const updateCommonTextField = (name: keyof typeof initialCommonFormData, value: string) => {
+  const updateCommonTextField = (name: keyof CommonFormData, value: string) => {
     updateCommonField(name, sanitizeTextOnly(value));
   };
 
@@ -993,7 +996,7 @@ export function PurchaseEntryForm() {
       const latestEntries = await fetchPurchaseEntries();
       setRecentPurchases(latestEntries);
       setRecentPurchasesPage(1);
-      setCommonFormData(initialCommonFormData);
+      setCommonFormData(createInitialCommonFormData());
       setPurchaseItems([createPurchaseItemState()]);
       setIsUnloadByOther(false);
       if (fileInputRef.current) {
@@ -1012,7 +1015,7 @@ export function PurchaseEntryForm() {
   };
 
   const resetForm = () => {
-    setCommonFormData(initialCommonFormData);
+    setCommonFormData(createInitialCommonFormData());
     setPurchaseItems([createPurchaseItemState()]);
     setSelectedFile(null);
     setIsUnloadByOther(false);

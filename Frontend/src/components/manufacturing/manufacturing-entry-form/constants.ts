@@ -4,6 +4,7 @@ import type {
   ManufacturingProductItem,
   ManufacturingRawMaterial,
 } from "./types";
+import { getCurrentLocalDateInputValue } from "@/lib/dateTimeDefaults";
 
 export const PRODUCT_CATEGORIES = ["Tile Adhesive", "Bondure", "Epoxy", "Grout", "Tile Cleaner", "Other"];
 export const UNIT_OPTIONS = ["kg", "g", "ltr", "ml", "pcs", "bags"];
@@ -24,8 +25,8 @@ export const MANUFACTURING_OTHER_FIELDS = [
   "bagSize",
 ] as const satisfies readonly ManufacturingOtherField[];
 
-export const INITIAL_FORM_DATA: ManufacturingFormData = {
-  productionDate: "",
+export const createInitialFormData = (): ManufacturingFormData => ({
+  productionDate: getCurrentLocalDateInputValue(),
   tphBatch: "",
   batchNo: "",
   productCategory: "",
@@ -42,7 +43,7 @@ export const INITIAL_FORM_DATA: ManufacturingFormData = {
   sponge: "",
   wastageQty: "",
   remarks: "",
-};
+});
 
 export const INITIAL_RAW_MATERIALS: ManufacturingRawMaterial[] = [
   {

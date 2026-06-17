@@ -31,7 +31,6 @@ import { WastageSection } from "./manufacturing-entry-form/components/WastageSec
 import {
   EMPTY_PRODUCT_ITEM,
   GROUT_COLORS,
-  INITIAL_FORM_DATA,
   INITIAL_MANUFACTURING_OTHER_STATE,
   INITIAL_RAW_MATERIALS,
   OTHER_OPTION,
@@ -39,6 +38,7 @@ import {
   TILE_ADHESIVE_GREY_PRODUCTS,
   TILE_ADHESIVE_WHITE_PRODUCTS,
   TILE_CLEANER_PRODUCTS,
+  createInitialFormData,
 } from "./manufacturing-entry-form/constants";
 import { Field } from "./manufacturing-entry-form/Field";
 import { useAvailableWastage } from "./manufacturing-entry-form/hooks/useAvailableWastage";
@@ -65,7 +65,7 @@ import {
 } from "./manufacturing-entry-form/utils";
 
 export function ManufacturingEntryForm() {
-  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<ManufacturingFormData>(createInitialFormData);
   const [otherSelections, setOtherSelections] = useState(INITIAL_MANUFACTURING_OTHER_STATE);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
   const [submitMessage, setSubmitMessage] = useState("");
@@ -580,7 +580,7 @@ export function ManufacturingEntryForm() {
   }, [selectedProductCategory, totalProducedUnits]);
 
   const resetForm = () => {
-    setFormData(INITIAL_FORM_DATA);
+    setFormData(createInitialFormData());
     setOtherSelections(INITIAL_MANUFACTURING_OTHER_STATE);
     setRawMaterials(INITIAL_RAW_MATERIALS);
     setProductItems([EMPTY_PRODUCT_ITEM]);
@@ -775,7 +775,7 @@ export function ManufacturingEntryForm() {
         setAvailableWastageQty(latestWastageQty);
       }
 
-      setFormData(INITIAL_FORM_DATA);
+      setFormData(createInitialFormData());
       setOtherSelections(INITIAL_MANUFACTURING_OTHER_STATE);
       setRawMaterials(INITIAL_RAW_MATERIALS);
       setProductItems([EMPTY_PRODUCT_ITEM]);

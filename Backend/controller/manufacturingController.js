@@ -599,6 +599,7 @@ const buildPackagingItems = (data) => {
           level2: data.productCategory || "",
           level3: productItem.bagSize,
           level4: actualToken,
+          packagingBagColor: data.color || data.productColor || "",
           token: "Coupon",
           quantity: qty,
           unit: "pcs",
