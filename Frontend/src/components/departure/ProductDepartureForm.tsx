@@ -806,7 +806,7 @@ export function ProductDepartureForm() {
                     name="remarks"
                     placeholder="Add dispatch remarks"
                     value={formData.remarks}
-                    onChange={(e) => updateTextField("remarks", e.target.value)}
+                    onChange={(e) => updateField("remarks", e.target.value)}
                   />
                 </Field>
               </div>
