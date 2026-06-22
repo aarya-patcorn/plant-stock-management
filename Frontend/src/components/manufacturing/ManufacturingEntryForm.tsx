@@ -265,6 +265,10 @@ export function ManufacturingEntryForm() {
     updateRawMaterialField(index, field, sanitizeTextOnly(value));
   };
 
+  const updateRawMaterialTextNumberField = (index: number, field: string, value: string) => {
+    updateRawMaterialField(index, field, value.replace(/[^A-Za-z0-9\s()&+.,\-\/%]/g, ""));
+  };
+
   const updateRawMaterialNumberField = (index: number, field: string, value: string) => {
     updateRawMaterialField(index, field, sanitizeNumberOnly(value, { allowDecimal: true }));
   };
@@ -469,8 +473,7 @@ export function ManufacturingEntryForm() {
     );
     const canSize = String(primaryItem?.bagSize || formData.canSize || "");
     const totalCan = String(primaryItem?.totalBagsProduced || formData.totalCan || "");
-    const recipe = 
-    buildTileCleanerRecipe(tileCleanerProductName, canSize, totalCan);
+    const recipe = buildTileCleanerRecipe(tileCleanerProductName, canSize, totalCan);
 
     setRawMaterials(recipe.length > 0 ? recipe : INITIAL_RAW_MATERIALS);
   }, [
@@ -912,6 +915,7 @@ export function ManufacturingEntryForm() {
               rawMaterials={rawMaterials}
               updateRawMaterialNumberField={updateRawMaterialNumberField}
               updateRawMaterialTextField={updateRawMaterialTextField}
+              updateRawMaterialTextNumberField={updateRawMaterialTextNumberField}
             />
 
             <FinishedProductSection
@@ -1026,6 +1030,11 @@ export function ManufacturingEntryForm() {
     </div>
   );
 }
+
+
+
+
+
 
 
 
