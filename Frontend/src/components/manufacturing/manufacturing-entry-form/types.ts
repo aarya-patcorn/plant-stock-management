@@ -1,4 +1,4 @@
-export type ManufacturingOtherField =
+﻿export type ManufacturingOtherField =
   | "tphBatch"
   | "productCategory"
   | "finishedProductName"
@@ -31,7 +31,15 @@ export interface ManufacturingFormData {
 export interface ManufacturingRawMaterial {
   rawMaterialName: string;
   packagingType: string;
-  materialQuantity: string;
+  level2: string;
+  level3: string;
+  level4?: string;
+  packagingBagColor?: string;
+  bucketSize?: string;
+  bagColor?: string;
+  sandEpoxyColor?: string;
+  colorOfSandEpoxy: string;
+  materialQuantity: string | number;
   materialUnit: string;
 }
 

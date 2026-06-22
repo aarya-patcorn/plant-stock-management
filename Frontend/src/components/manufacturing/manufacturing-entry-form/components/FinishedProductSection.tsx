@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+﻿import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Field } from "../Field";
@@ -114,15 +114,17 @@ export function FinishedProductSection({
                 onChange={(e) => {
                   const bagSize = e.target.value;
                   const nextTotalBagsProduced =
-                    selectedProductCategory === "Bondure"
-                      ? getBondureTotalBagsProduced(bagSize)
-                      : isAutoCalculatedPackagingProduct
-                        ? getAutoProducedQuantity(selectedProductCategory, batchKg, bagSize)
-                        : getFinalTotalBagsProduced(
-                          formTphBatch,
-                          bagSize,
-                          wastageTotalBags,
-                        );
+                    formProductCategory === "Tile Cleaner"
+                      ? item.totalBagsProduced
+                      : selectedProductCategory === "Bondure"
+                        ? getBondureTotalBagsProduced(bagSize)
+                        : isAutoCalculatedPackagingProduct
+                          ? getAutoProducedQuantity(selectedProductCategory, batchKg, bagSize)
+                          : getFinalTotalBagsProduced(
+                            formTphBatch,
+                            bagSize,
+                            wastageTotalBags,
+                          );
 
                   updateProductItem(index, "bagSize", bagSize);
                   updateProductItem(index, "totalBagsProduced", nextTotalBagsProduced);
@@ -178,3 +180,5 @@ export function FinishedProductSection({
     </div>
   );
 }
+
+

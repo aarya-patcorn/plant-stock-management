@@ -23,55 +23,98 @@ export function RawMaterialsSection({
       {rawMaterials.map((item, index) => (
         <div
           key={index}
-          className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm md:grid-cols-2 xl:grid-cols-4"
+          className="grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm"
+          style={{
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
         >
-          <Field className="min-w-0" htmlFor={`rawMaterialName-${index}`} label="Raw Material">
-            <Input
-              className="w-full"
-              id={`rawMaterialName-${index}`}
-              placeholder="e.g. Cement"
-              value={item.rawMaterialName}
-              onChange={(e) =>
-                updateRawMaterialTextField(index, "rawMaterialName", e.target.value)
-              }
-            />
-          </Field>
+          {item.packagingType?.trim() && (
+            <Field className="min-w-0" htmlFor={`packagingType-${index}`} label="Packaging Type">
+              <Input
+                className="w-full"
+                id={`packagingType-${index}`}
+                placeholder="e.g. White, Premix"
+                value={item.packagingType}
+                onChange={(e) =>
+                  updateRawMaterialTextField(index, "packagingType", e.target.value)
+                }
+              />
+            </Field>
+          )}
 
-          <Field className="min-w-0" htmlFor={`packagingType-${index}`} label="Packaging Type">
-            <Input
-              className="w-full"
-              id={`packagingType-${index}`}
-              placeholder="e.g. White, Premix"
-              value={item.packagingType}
-              onChange={(e) =>
-                updateRawMaterialTextField(index, "packagingType", e.target.value)
-              }
-            />
-          </Field>
+          {item.level2?.trim() && (
+            <Field className="min-w-0" htmlFor={`level2-${index}`} label="Raw Material">
+              <Input
+                className="w-full"
+                id={`level2-${index}`}
+                placeholder="e.g. Cement"
+                value={item.level2}
+                onChange={(e) =>
+                  updateRawMaterialTextField(index, "level2", e.target.value)
+                }
+              />
+            </Field>
+          )}
 
-          <Field className="min-w-0" htmlFor={`materialQuantity-${index}`} label="Material Quantity">
-            <Input
-              className="w-full"
-              id={`materialQuantity-${index}`}
-              placeholder="e.g. 1000 kg"
-              value={item.materialQuantity}
-              onChange={(e) =>
-                updateRawMaterialNumberField(index, "materialQuantity", e.target.value)
-              }
-            />
-          </Field>
+          {item.level3?.trim() && (
+            <Field className="min-w-0" htmlFor={`level3-${index}`} label="Raw Material">
+              <Input
+                className="w-full"
+                id={`level3-${index}`}
+                placeholder="e.g. Cement"
+                value={item.level3}
+                onChange={(e) =>
+                  updateRawMaterialTextField(index, "level3", e.target.value)
+                }
+              />
+            </Field>
+          )}
 
-          <Field className="min-w-0" htmlFor={`materialUnit-${index}`} label="Unit">
-            <Input
-              className="w-full"
-              id={`materialUnit-${index}`}
-              placeholder="e.g. kg"
-              value={item.materialUnit}
-              onChange={(e) =>
-                updateRawMaterialTextField(index, "materialUnit", e.target.value)
-              }
-            />
-          </Field>
+          {item.colorOfSandEpoxy?.trim() && (
+            <Field
+              className="min-w-0"
+              htmlFor={`colorOfSandEpoxy-${index}`}
+              label="Color of Sand/Epoxy"
+            >
+              <Input
+                className="w-full"
+                id={`colorOfSandEpoxy-${index}`}
+                placeholder="e.g. Cement"
+                value={item.colorOfSandEpoxy}
+                onChange={(e) =>
+                  updateRawMaterialTextField(index, "colorOfSandEpoxy", e.target.value)
+                }
+              />
+            </Field>
+          )}
+
+          {String(item.materialQuantity ?? "").trim() && (
+            <Field className="min-w-0" htmlFor={`materialQuantity-${index}`} label="Material Quantity">
+              <Input
+                className="w-full"
+                id={`materialQuantity-${index}`}
+                placeholder="e.g. 1000 kg"
+                value={item.materialQuantity}
+                onChange={(e) =>
+                  updateRawMaterialNumberField(index, "materialQuantity", e.target.value)
+                }
+              />
+            </Field>
+          )}
+
+          {item.materialUnit?.trim() && (
+            <Field className="min-w-0" htmlFor={`materialUnit-${index}`} label="Unit">
+              <Input
+                className="w-full"
+                id={`materialUnit-${index}`}
+                placeholder="e.g. kg"
+                value={item.materialUnit}
+                onChange={(e) =>
+                  updateRawMaterialTextField(index, "materialUnit", e.target.value)
+                }
+              />
+            </Field>
+          )}
         </div>
       ))}
     </div>

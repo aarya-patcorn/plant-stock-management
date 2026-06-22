@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   ManufacturingFormData,
   ManufacturingOtherField,
   ManufacturingProductItem,
@@ -49,6 +49,14 @@ export const INITIAL_RAW_MATERIALS: ManufacturingRawMaterial[] = [
   {
     rawMaterialName: "",
     packagingType: "",
+    level2: "",
+    level3: "",
+    level4: "",
+    packagingBagColor: "",
+    bucketSize: "",
+    bagColor: "",
+    sandEpoxyColor: "",
+    colorOfSandEpoxy: "",
     materialQuantity: "",
     materialUnit: "",
   },

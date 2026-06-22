@@ -1,4 +1,4 @@
-import type { BatchDefaults, ManufacturingProductItem } from "./types";
+﻿import type { BatchDefaults, ManufacturingProductItem } from "./types";
 
 export const getTotalBagsProduced = (tphBatch: string, bagSize: string) => {
   if (tphBatch === "2TPH" && bagSize === "20kg") return "50";
@@ -90,13 +90,13 @@ export const getBatchDefaults = (tphBatch: string): BatchDefaults => {
   }
 };
 
-export function isPositiveNumber(value: string) {
+export function isPositiveNumber(value: string | number) {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) && parsedValue > 0;
 }
 
-export function isNonNegativeNumber(value: string) {
-  if (!value.trim()) {
+export function isNonNegativeNumber(value: string | number) {
+  if (!String(value ?? "").trim()) {
     return true;
   }
 
@@ -151,3 +151,4 @@ export const getWastageSizeOptions = (productCategory: string) =>
           : productCategory === "Epoxy"
             ? ["1KG", "5KG"]
             : [];
+

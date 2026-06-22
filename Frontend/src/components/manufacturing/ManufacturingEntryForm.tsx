@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+﻿import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Eye, RotateCcw, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -10,7 +10,6 @@ import { fetchWastageQty, reduceWastageQty, submitEntry } from "@/lib/api";
 import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import {
   bondureRecipes,
-  buildTileCleanerRecipe,
   epoxyColors,
   epoxyProductColorMap,
   epoxyProducts,
@@ -18,9 +17,9 @@ import {
   groutProductColorMap,
   groutProducts,
   groutRecipes,
-  normalizeTileCleanerProductName,
   tileAdhesiveRecipes,
 } from "@/components/manufacturing/manufacturingData";
+import { buildTileCleanerRecipe, normalizeTileCleanerProductName } from "@/components/manufacturing/tileCleanerRecipes";
 import SubmitLoader from "../ui/SubmitLoader";
 import { BatchDetailsSection } from "./manufacturing-entry-form/components/BatchDetailsSection";
 import { FinishedProductSection } from "./manufacturing-entry-form/components/FinishedProductSection";
@@ -465,13 +464,23 @@ export function ManufacturingEntryForm() {
     }
 
     const primaryItem = productItems[0];
-    const tileCleanerProductName = normalizeTileCleanerProductName(formData.finishedProductName);
-    const canSize = primaryItem?.bagSize || formData.canSize;
-    const totalCan = primaryItem?.totalBagsProduced || formData.totalCan;
-    const recipe = buildTileCleanerRecipe(tileCleanerProductName, canSize, totalCan);
+    const tileCleanerProductName = normalizeTileCleanerProductName(
+      formData.finishedProductName,
+    );
+    const canSize = String(primaryItem?.bagSize || formData.canSize || "");
+    const totalCan = String(primaryItem?.totalBagsProduced || formData.totalCan || "");
+    const recipe = 
+    buildTileCleanerRecipe(tileCleanerProductName, canSize, totalCan);
 
     setRawMaterials(recipe.length > 0 ? recipe : INITIAL_RAW_MATERIALS);
-  }, [selectedProductCategory, formData.finishedProductName, formData.canSize, formData.totalCan, productItems]);
+  }, [
+    selectedProductCategory,
+    formData.finishedProductName,
+    formData.canSize,
+    formData.totalCan,
+    productItems[0]?.bagSize,
+    productItems[0]?.totalBagsProduced,
+  ]);
 
   useEffect(() => {
     setFormData((current) => {
@@ -1017,3 +1026,6 @@ export function ManufacturingEntryForm() {
     </div>
   );
 }
+
+
+
