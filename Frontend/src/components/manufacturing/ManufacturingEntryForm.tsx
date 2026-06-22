@@ -163,11 +163,6 @@ export function ManufacturingEntryForm() {
         : formData.productCategory === "Grout"
           ? "Pouch Size"
           : "Bag Size";
-  const isRecipeLocked =
-    isTileAdhesiveProduct ||
-    selectedProductCategory === "Bondure" ||
-    selectedProductCategory === "Grout" ||
-    isTileCleanerProduct;
 
   useEffect(() => {
     const hasUsedWastage =
@@ -905,7 +900,6 @@ export function ManufacturingEntryForm() {
             />
 
             <RawMaterialsSection
-              isRecipeLocked={isRecipeLocked}
               rawMaterials={rawMaterials}
               updateRawMaterialNumberField={updateRawMaterialNumberField}
               updateRawMaterialTextField={updateRawMaterialTextField}
