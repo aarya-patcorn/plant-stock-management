@@ -3,14 +3,12 @@ import { Field } from "../Field";
 import type { ManufacturingRawMaterial } from "../types";
 
 interface RawMaterialsSectionProps {
-  isRecipeLocked: boolean;
   rawMaterials: ManufacturingRawMaterial[];
   updateRawMaterialNumberField: (index: number, field: string, value: string) => void;
   updateRawMaterialTextField: (index: number, field: string, value: string) => void;
 }
 
 export function RawMaterialsSection({
-  isRecipeLocked,
   rawMaterials,
   updateRawMaterialNumberField,
   updateRawMaterialTextField,
@@ -32,8 +30,7 @@ export function RawMaterialsSection({
               className="w-full"
               id={`rawMaterialName-${index}`}
               placeholder="e.g. Cement"
-              readOnly={isRecipeLocked}
-              value={item.packagingType}
+              value={item.rawMaterialName}
               onChange={(e) =>
                 updateRawMaterialTextField(index, "rawMaterialName", e.target.value)
               }
@@ -45,8 +42,7 @@ export function RawMaterialsSection({
               className="w-full"
               id={`packagingType-${index}`}
               placeholder="e.g. White, Premix"
-              readOnly={isRecipeLocked}
-              value={item.rawMaterialName}
+              value={item.packagingType}
               onChange={(e) =>
                 updateRawMaterialTextField(index, "packagingType", e.target.value)
               }
@@ -58,7 +54,6 @@ export function RawMaterialsSection({
               className="w-full"
               id={`materialQuantity-${index}`}
               placeholder="e.g. 1000 kg"
-              readOnly={isRecipeLocked}
               value={item.materialQuantity}
               onChange={(e) =>
                 updateRawMaterialNumberField(index, "materialQuantity", e.target.value)
@@ -71,7 +66,6 @@ export function RawMaterialsSection({
               className="w-full"
               id={`materialUnit-${index}`}
               placeholder="e.g. kg"
-              readOnly={isRecipeLocked}
               value={item.materialUnit}
               onChange={(e) =>
                 updateRawMaterialTextField(index, "materialUnit", e.target.value)
