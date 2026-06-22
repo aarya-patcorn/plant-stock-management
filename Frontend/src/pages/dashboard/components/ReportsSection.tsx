@@ -78,17 +78,17 @@ export function ReportsSection({
         cell: ({ row }) => row.original.bagSize || "-",
       },
       {
+        accessorKey: "totalBagsProduced",
+        header: "Total Stock",
+        cell: ({ row }) => (
+          <span className="block text-right">{formatCount(parseNumber(row.original.totalBagsProduced) + (row.original.dispatchedBags))}</span>
+        ),
+      },
+      {
         accessorKey: "currentQuantity",
         header: "Current Stock",
         cell: ({ row }) => (
           <span className="block text-right">{formatCount(parseNumber(row.original.currentQuantity))}</span>
-        ),
-      },
-      {
-        accessorKey: "totalBagsProduced",
-        header: "Total Stock",
-        cell: ({ row }) => (
-          <span className="block text-right">{formatCount(parseNumber(row.original.totalBagsProduced))}</span>
         ),
       },
       {

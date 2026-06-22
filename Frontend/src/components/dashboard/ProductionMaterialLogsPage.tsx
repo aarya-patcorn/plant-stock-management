@@ -160,30 +160,20 @@ export function ProductionMaterialLogsPage() {
         cell: ({ row }) => row.original.bagSize || "-",
       },
       {
-        accessorKey: "currentQuantity",
-        header: "Current Stock",
-        cell: ({ row }) => formatCount(toNumber(row.original.currentQuantity)),
+        id: "totalBagsProduced",
+        header: "Total Stock",
+        cell: ({ row }) => formatCount(toNumber(row.original.currentQuantity) + toNumber(row.original.shippedQuantity)),
       },
       {
-        id: "availableBags",
-        accessorFn: (row) => row.currentQuantity,
-        header: "Available Bags",
+        accessorKey: "currentQuantity",
+        header: "Current Stock",
         cell: ({ row }) => formatCount(toNumber(row.original.currentQuantity)),
       },
       {
         accessorKey: "shippedQuantity",
         header: "Dispatched Bags",
         cell: ({ row }) => formatCount(toNumber(row.original.shippedQuantity)),
-      },
-      {
-        accessorKey: "remarks",
-        header: "Remarks",
-        cell: ({ row }) => (
-          <span className="block max-w-[220px] truncate" title={row.original.remarks || "-"}>
-            {row.original.remarks || "-"}
-          </span>
-        ),
-      },
+      }
     ],
     [],
   );
@@ -294,3 +284,6 @@ export function ProductionMaterialLogsPage() {
     </div>
   );
 }
+
+
+

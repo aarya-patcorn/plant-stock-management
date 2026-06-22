@@ -38,6 +38,18 @@ import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import LoadingLoader from "@/components/ui/LoadingLoader";
+import { formatDateDDMMYYYY } from "@/pages/dashboard/utils/formatDateDDMMYYYY";
+import {
+  TableFiltersBar,
+  type Filter,
+  type FilterFieldConfig,
+  createDateFilterField,
+  createNumberFilterField,
+  createSelectFilterField,
+  createSelectOptions,
+  createTextFilterField,
+} from "@/components/ui/table-filters";
+import { applyTableFilters } from "@/lib/tableFilters";
 
 type ReportType = "production" | "dispatch";
 
@@ -207,6 +219,7 @@ export function ReportsPage() {
   const [fromDate, setFromDate] = useState(initialRange.fromDate);
   const [toDate, setToDate] = useState(initialRange.toDate);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [tableFilters, setTableFilters] = useState<Filter[]>([]);
   const [sorting, setSorting] = useState<SortingState>(() => getDefaultSorting("production"));
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -454,9 +467,80 @@ export function ReportsPage() {
     [dispatchTableRows, productionTableRows, reportType],
   );
 
+  const tableFilterFields = useMemo<FilterFieldConfig[]>(
+    () =>
+      reportType === "production"
+        ? [
+          createSelectFilterField("productCategory", "Product Category", createSelectOptions(productionTableRows.map((row) => row.productCategory))),
+          createTextFilterField("productName", "Product Name"),
+          createSelectFilterField("color", "Color", createSelectOptions(productionTableRows.map((row) => row.color))),
+          createSelectFilterField("token", "Token", createSelectOptions(productionTableRows.map((row) => row.token))),
+          createSelectFilterField("bagSize", "Bag Size", createSelectOptions(productionTableRows.map((row) => row.bagSize))),
+          createNumberFilterField("totalBagsProduced", "Total Stock"),
+          createNumberFilterField("currentQuantity", "Current Stock"),
+          createNumberFilterField("dispatchedBags", "Dispatched Bags"),
+          createDateFilterField("stockDate", "Updated On"),
+        ]
+        : [
+          createDateFilterField("date", "Date"),
+          createSelectFilterField("productCategory", "Product Category", createSelectOptions(dispatchTableRows.map((row) => row.productCategory))),
+          createTextFilterField("productName", "Product Name"),
+          createSelectFilterField("color", "Color", createSelectOptions(dispatchTableRows.map((row) => row.color))),
+          createSelectFilterField("token", "Token", createSelectOptions(dispatchTableRows.map((row) => row.token))),
+          createSelectFilterField("bagSize", "Bag Size", createSelectOptions(dispatchTableRows.map((row) => row.bagSize))),
+          createTextFilterField("dispatchSite", "Dispatch Site"),
+          createTextFilterField("vehicleNo", "Vehicle No"),
+          createNumberFilterField("totalBags", "Departed Bags"),
+        ],
+    [dispatchTableRows, productionTableRows, reportType],
+  );
+
+  const filteredTableData = useMemo(
+    () =>
+      applyTableFilters(
+        tableData,
+        tableFilters,
+        reportType === "production"
+          ? {
+            productCategory: (row) => row.reportMode === "production" ? row.productCategory : "",
+            productName: (row) => row.reportMode === "production" ? row.productName : "",
+            color: (row) => row.reportMode === "production" ? row.color : "",
+            token: (row) => row.reportMode === "production" ? row.token : "",
+            bagSize: (row) => row.reportMode === "production" ? row.bagSize : "",
+            totalBagsProduced: (row) => row.reportMode === "production" ? row.totalBagsProduced : "",
+            currentQuantity: (row) => row.reportMode === "production" ? row.currentQuantity : "",
+            dispatchedBags: (row) => row.reportMode === "production" ? row.dispatchedBags : "",
+            stockDate: (row) => row.reportMode === "production" ? row.stockDate : "",
+          }
+          : {
+            date: (row) => row.reportMode === "dispatch" ? row.date : "",
+            productCategory: (row) => row.reportMode === "dispatch" ? row.productCategory : "",
+            productName: (row) => row.reportMode === "dispatch" ? row.productName : "",
+            color: (row) => row.reportMode === "dispatch" ? row.color : "",
+            token: (row) => row.reportMode === "dispatch" ? row.token : "",
+            bagSize: (row) => row.reportMode === "dispatch" ? row.bagSize : "",
+            dispatchSite: (row) => row.reportMode === "dispatch" ? row.dispatchSite : "",
+            vehicleNo: (row) => row.reportMode === "dispatch" ? row.vehicleNo : "",
+            totalBags: (row) => row.reportMode === "dispatch" ? row.totalBags : "",
+          },
+        reportType === "production"
+          ? {
+            totalBagsProduced: "number",
+            currentQuantity: "number",
+            dispatchedBags: "number",
+            stockDate: "date",
+          }
+          : {
+            date: "date",
+            totalBags: "number",
+          },
+      ),
+    [reportType, tableData, tableFilters],
+  );
+
   useEffect(() => {
     setPagination((current) => ({ ...current, pageIndex: 0 }));
-  }, [fromDate, toDate, selectedCategory, reportType, tableData.length]);
+  }, [fromDate, toDate, selectedCategory, reportType, tableData.length, tableFilters]);
 
   const columns = useMemo<ColumnDef<ReportTableRow>[]>(
     () =>
@@ -536,7 +620,7 @@ export function ReportsPage() {
             id: "stockDate",
             header: "Updated On",
             accessorFn: (row) => row.reportMode === "production" ? row.stockDate : "",
-            cell: ({ row }) => row.original.reportMode === "production" ? row.original.stockDate || "-" : "-",
+            cell: ({ row }) => row.original.reportMode === "production" ? formatDateDDMMYYYY(row.original.stockDate) || "-" : "-",
           },
         ]
         : [
@@ -623,12 +707,13 @@ export function ReportsPage() {
   );
 
   useEffect(() => {
+    setTableFilters([]);
     setSorting(getDefaultSorting(reportType));
   }, [reportType]);
 
   const sortingTable = useReactTable({
     columns,
-    data: tableData,
+    data: filteredTableData,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
@@ -639,7 +724,7 @@ export function ReportsPage() {
 
   const sortedExportRows = useMemo(
     () => sortingTable.getSortedRowModel().rows.map((row) => row.original),
-    [columns, sorting, sortingTable, tableData],
+    [columns, filteredTableData, sorting, sortingTable],
   );
 
   const totalPages = Math.max(1, Math.ceil(sortedExportRows.length / pagination.pageSize));
@@ -967,7 +1052,7 @@ export function ReportsPage() {
             <CardDescription>
               {tableData.length === 0
                 ? "No rows available for the selected filter."
-                : `${tableData.length} rows available for the selected filter.`}
+                : `${filteredTableData.length} rows available for the selected filter.`}
             </CardDescription>
           </div>
           <Badge variant="outline">{selectedCategory || "All Categories"}</Badge>
@@ -977,7 +1062,7 @@ export function ReportsPage() {
             <div className="flex justify-center rounded-md border border-dashed p-6">
               <LoadingLoader />
             </div>
-          ) : tableData.length === 0 ? (
+          ) : filteredTableData.length === 0 ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
               No report rows found for the selected filter.
             </div>
@@ -995,7 +1080,7 @@ export function ReportsPage() {
               <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   Showing {pagination.pageIndex * pagination.pageSize + 1}-
-                  {Math.min((pagination.pageIndex + 1) * pagination.pageSize, tableData.length)} of {tableData.length}
+                  {Math.min((pagination.pageIndex + 1) * pagination.pageSize, filteredTableData.length)} of {filteredTableData.length}
                 </p>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-muted-foreground">
@@ -1038,3 +1123,13 @@ export function ReportsPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

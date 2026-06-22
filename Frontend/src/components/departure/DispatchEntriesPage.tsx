@@ -18,6 +18,17 @@ import {
   updateDispatchEntry,
 } from "@/lib/api";
 import LoadingLoader from "@/components/ui/LoadingLoader";
+import {
+  TableFiltersBar,
+  type Filter,
+  type FilterFieldConfig,
+  createDateFilterField,
+  createNumberFilterField,
+  createSelectFilterField,
+  createSelectOptions,
+  createTextFilterField,
+} from "@/components/ui/table-filters";
+import { applyTableFilters } from "@/lib/tableFilters";
 
 const ENTRIES_PER_PAGE = 10;
 
@@ -70,6 +81,7 @@ export function DispatchEntriesPage() {
   const [editingEntry, setEditingEntry] = useState<DispatchEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [filters, setFilters] = useState<Filter[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isUpdating, setIsUpdating] = useState(false);
   const [productionEntries, setProductionEntries] = useState<ProductionMaterialLog[]>([]);
@@ -132,11 +144,56 @@ export function DispatchEntriesPage() {
     [entries],
   );
 
-  const totalPages = Math.max(1, Math.ceil(sortedEntries.length / ENTRIES_PER_PAGE));
-  const paginatedEntries = useMemo(
-    () => sortedEntries.slice((currentPage - 1) * ENTRIES_PER_PAGE, currentPage * ENTRIES_PER_PAGE),
-    [currentPage, sortedEntries],
+  const filterFields = useMemo<FilterFieldConfig[]>(
+    () => [
+      createDateFilterField("date", "Date"),
+      createTextFilterField("challan", "Challan"),
+      createSelectFilterField("productCategory", "Category", createSelectOptions(entries.map((entry) => entry.productCategory))),
+      createTextFilterField("productName", "Product"),
+      createSelectFilterField("token", "Token", createSelectOptions(entries.map((entry) => entry.token))),
+      createSelectFilterField("bagSize", "Bag Size", createSelectOptions(entries.map((entry) => entry.bagSize))),
+      createNumberFilterField("totalBags", "Departed Bags"),
+      createTextFilterField("dispatchSite", "Dispatch Site"),
+      createTextFilterField("vehicleNo", "Vehicle No"),
+      createSelectFilterField("user", "Entry By", createSelectOptions(entries.map((entry) => entry.user))),
+    ],
+    [entries],
   );
+
+  const filteredEntries = useMemo(
+    () =>
+      applyTableFilters(
+        sortedEntries,
+        filters,
+        {
+          date: (entry) => entry.date,
+          challan: (entry) => entry.challanNo || entry.challanName,
+          productCategory: (entry) => entry.productCategory,
+          productName: (entry) => entry.productName,
+          token: (entry) => entry.token,
+          bagSize: (entry) => entry.bagSize,
+          totalBags: (entry) => entry.totalBags,
+          dispatchSite: (entry) => entry.dispatchSite,
+          vehicleNo: (entry) => entry.vehicleNo,
+          user: (entry) => entry.user,
+        },
+        {
+          date: "date",
+          totalBags: "number",
+        },
+      ),
+    [filters, sortedEntries],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / ENTRIES_PER_PAGE));
+  const paginatedEntries = useMemo(
+    () => filteredEntries.slice((currentPage - 1) * ENTRIES_PER_PAGE, currentPage * ENTRIES_PER_PAGE),
+    [currentPage, filteredEntries],
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -766,10 +823,16 @@ export function DispatchEntriesPage() {
             </CardDescription>
           </div>
           <div className="rounded-xl border border-slate-200 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
-            {isLoading ? "Loading..." : `${sortedEntries.length} total`}
+            {isLoading ? "Loading..." : `${filteredEntries.length} total`}
           </div>
         </CardHeader>
         <CardContent className="p-5">
+          {!isLoading && !loadError && sortedEntries.length > 0 ? (
+            <div className="mb-5">
+              <TableFiltersBar fields={filterFields} filters={filters} onChange={setFilters} />
+            </div>
+          ) : null}
+
           {loadError ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-destructive">
               {loadError}
@@ -874,7 +937,7 @@ export function DispatchEntriesPage() {
           {!isLoading && !loadError && sortedEntries.length > 0 ? (
             <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing {(currentPage - 1) * ENTRIES_PER_PAGE + 1}-{Math.min(currentPage * ENTRIES_PER_PAGE, sortedEntries.length)} of {sortedEntries.length}
+                Showing {(currentPage - 1) * ENTRIES_PER_PAGE + 1}-{Math.min(currentPage * ENTRIES_PER_PAGE, filteredEntries.length)} of {filteredEntries.length}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -902,3 +965,9 @@ export function DispatchEntriesPage() {
     </div>
   );
 }
+
+
+
+
+
+
