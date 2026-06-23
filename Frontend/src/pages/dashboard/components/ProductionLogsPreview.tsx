@@ -84,7 +84,7 @@ export function ProductionLogsPreview({ isLoading, logs }: ProductionLogsPreview
                   <div className="mt-2.5 grid grid-cols-3 gap-1.5 sm:mt-3 sm:gap-2">
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 sm:px-2.5 sm:py-2">
                       <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500 sm:text-[11px]">Total Stock</p>
-                      <p className="mt-1 text-xs font-semibold text-slate-900 sm:text-sm">{formatCount(currentStock) + formatCount(dispatchedBags)}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-900 sm:text-sm">{Number(currentStock) + Number(dispatchedBags)}</p>
                     </div>
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 sm:px-2.5 sm:py-2">
                       <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500 sm:text-[11px]">Current Stock</p>

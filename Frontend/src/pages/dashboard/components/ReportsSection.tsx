@@ -114,52 +114,6 @@ export function ReportsSection({
             {reportsLoading ? "Loading..." : `${reportCategoryOptions.length} categories`}
           </Badge>
         </div>
-        <div className="grid min-w-0 grid-cols-2 gap-2 lg:max-w-4xl lg:grid-cols-3">
-          <div className="min-w-0 space-y-1">
-            <label className="text-xs font-medium text-foreground sm:text-sm" htmlFor="report-from-date">
-              From Date
-            </label>
-            <Input
-              className="h-9 min-w-0 px-2 text-xs sm:h-11 sm:px-3.5 sm:text-sm"
-              id="report-from-date"
-              max={reportToDate || undefined}
-              onChange={(event) => onFromDateChange(event.target.value)}
-              type="date"
-              value={reportFromDate}
-            />
-          </div>
-          <div className="min-w-0 space-y-1">
-            <label className="text-xs font-medium text-foreground sm:text-sm" htmlFor="report-to-date">
-              To Date
-            </label>
-            <Input
-              className="h-9 min-w-0 px-2 text-xs sm:h-11 sm:px-3.5 sm:text-sm"
-              id="report-to-date"
-              min={reportFromDate || undefined}
-              onChange={(event) => onToDateChange(event.target.value)}
-              type="date"
-              value={reportToDate}
-            />
-          </div>
-          <div className="col-span-2 min-w-0 space-y-1 lg:col-span-1">
-            <label className="text-xs font-medium text-foreground sm:text-sm" htmlFor="report-category">
-              Product Category
-            </label>
-            <Select
-              className="h-9 min-w-0 px-2 text-xs sm:h-11 sm:px-3.5 sm:text-sm"
-              id="report-category"
-              onChange={(event) => onCategoryChange(event.target.value)}
-              value={activeReportCategory}
-            >
-              <option value="">All</option>
-              {reportCategoryOptions.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
       </CardHeader>
       <CardContent className="space-y-4 sm:space-y-5">
         {reportsLoading ? (

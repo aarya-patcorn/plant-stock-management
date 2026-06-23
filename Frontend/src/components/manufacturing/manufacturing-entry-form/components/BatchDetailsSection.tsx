@@ -1,5 +1,6 @@
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { OTHER_OPTION, TPH_BATCH_OPTIONS } from "../constants";
 import { Field } from "../Field";
 import type { ManufacturingFormData, ManufacturingOtherField } from "../types";
@@ -29,17 +30,16 @@ export function BatchDetailsSection({
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Field htmlFor="productionDate" label="Production Date">
-          <Input
+          <DatePickerInput
             id="productionDate"
             name="productionDate"
-            type="date"
             value={formData.productionDate}
-            onChange={(e) => onProductionDateChange(e.target.value)}
+            onChange={onProductionDateChange}
           />
         </Field>
 
         <Field htmlFor="tphBatch" label="TPH / Batch">
-          <Select
+          <Combobox
             id="tphBatch"
             name="tphBatch"
             value={getSelectValue("tphBatch", formData.tphBatch)}
@@ -54,7 +54,7 @@ export function BatchDetailsSection({
                 {option}
               </option>
             ))}
-          </Select>
+          </Combobox>
         </Field>
         {renderOtherInput("tphBatch", "TPH / Batch", "Enter batch type")}
 
@@ -71,3 +71,5 @@ export function BatchDetailsSection({
     </div>
   );
 }
+
+

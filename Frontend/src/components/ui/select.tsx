@@ -6,6 +6,8 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+const EMPTY_VALUE = "__SHADCN_EMPTY_OPTION__"
+
 type NativeSelectProps = React.SelectHTMLAttributes<HTMLSelectElement>
 type RootSelectProps = React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root> & {
   className?: string
@@ -13,6 +15,12 @@ type RootSelectProps = React.ComponentPropsWithoutRef<typeof SelectPrimitive.Roo
 }
 
 type SelectSharedProps = NativeSelectProps | RootSelectProps
+
+type ParsedOption = {
+  disabled?: boolean
+  label: React.ReactNode
+  value: string
+}
 
 function isNativeSelectProps(props: SelectSharedProps) {
   if ("onChange" in props || "id" in props || "name" in props) {
@@ -23,21 +31,106 @@ function isNativeSelectProps(props: SelectSharedProps) {
   return children.some((child) => React.isValidElement(child) && child.type === "option")
 }
 
-const Select = React.forwardRef<HTMLSelectElement, SelectSharedProps>((props, ref) => {
+function normalizeOptionValue(value: string) {
+  return value === "" ? EMPTY_VALUE : value
+}
+
+function denormalizeOptionValue(value: string) {
+  return value === EMPTY_VALUE ? "" : value
+}
+
+function parseNativeOptions(children: React.ReactNode) {
+  const parsedOptions: ParsedOption[] = []
+  let placeholder: React.ReactNode = "Select option"
+
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) {
+      return
+    }
+
+    if (child.type === React.Fragment) {
+      const fragmentProps = child.props as { children?: React.ReactNode }
+      const nested = parseNativeOptions(fragmentProps.children)
+      parsedOptions.push(...nested.options)
+      if (nested.placeholder !== "Select option") {
+        placeholder = nested.placeholder
+      }
+      return
+    }
+
+    if (child.type === "option") {
+      const optionProps = child.props as React.OptionHTMLAttributes<HTMLOptionElement> & {
+        children?: React.ReactNode
+      }
+      const optionValue = String(optionProps.value ?? "")
+      const optionLabel = optionProps.children
+      const isPlaceholder = optionValue === "" && optionProps.disabled
+
+      if (isPlaceholder) {
+        placeholder = optionLabel
+        return
+      }
+
+      parsedOptions.push({
+        disabled: Boolean(optionProps.disabled),
+        label: optionLabel,
+        value: optionValue,
+      })
+    }
+  })
+
+  return { options: parsedOptions, placeholder }
+}
+
+const Select = React.forwardRef<HTMLButtonElement, SelectSharedProps>((props, ref) => {
   if (isNativeSelectProps(props)) {
-    const { className, children, ...nativeProps } = props as NativeSelectProps
+    const {
+      children,
+      className,
+      defaultValue,
+      disabled,
+      id,
+      name,
+      onChange,
+      required,
+      value,
+    } = props as NativeSelectProps
+
+    const { options, placeholder } = parseNativeOptions(children)
+    const controlledValue = typeof value === "string" ? normalizeOptionValue(value) : undefined
+    const defaultSelectValue = typeof defaultValue === "string" ? normalizeOptionValue(defaultValue) : undefined
 
     return (
-      <select
-        ref={ref}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-          className,
-        )}
-        {...nativeProps}
-      >
-        {children}
-      </select>
+      <>
+        {name ? <input name={name} type="hidden" value={typeof value === "string" ? value : ""} /> : null}
+        <SelectPrimitive.Root
+          defaultValue={defaultSelectValue}
+          disabled={disabled}
+          onValueChange={(nextValue) => {
+            const resolvedValue = denormalizeOptionValue(nextValue)
+            onChange?.({
+              target: {
+                id,
+                name,
+                value: resolvedValue,
+              },
+            } as React.ChangeEvent<HTMLSelectElement>)
+          }}
+          required={required}
+          value={controlledValue}
+        >
+          <SelectTrigger className={className} id={id} ref={ref}>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem disabled={option.disabled} key={`${option.value}-${String(option.label)}`} value={normalizeOptionValue(option.value)}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </SelectPrimitive.Root>
+      </>
     )
   }
 
@@ -105,7 +198,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]",
+        "isolate z-[70] relative max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl ring-1 ring-black/5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className,
@@ -188,3 +281,4 @@ export {
   SelectScrollUpButton,
   SelectScrollDownButton,
 }
+

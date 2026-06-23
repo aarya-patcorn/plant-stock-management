@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Field } from "../Field";
 
 interface WastageSectionProps {
@@ -53,7 +53,7 @@ export function WastageSection({
             </div>
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
               <Field className="md:col-span-1" htmlFor="wastageBagSize" label={wastageSizeLabel}>
-                <Select
+                <Combobox
                   id="wastageBagSize"
                   value={wastageBagSize}
                   onChange={(e) => setWastageBagSize(e.target.value)}
@@ -62,7 +62,7 @@ export function WastageSection({
                   {wastageSizeOptions.map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
-                </Select>
+                </Combobox>
               </Field>
               <Field className="md:col-span-1" htmlFor="wastageTotalBags" label="Wastage Total Bags">
                 <Input
@@ -88,3 +88,4 @@ export function WastageSection({
     </div>
   );
 }
+

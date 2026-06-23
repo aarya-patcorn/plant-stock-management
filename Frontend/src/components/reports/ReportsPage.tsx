@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataBadge, DataTable } from "@/components/ui/DataTable";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import LoadingLoader from "@/components/ui/LoadingLoader";
@@ -910,11 +911,11 @@ export function ReportsPage() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">From Date</p>
-              <Input max={toDate || undefined} type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+              <DatePickerInput name="fromDate" id="fromDate" value={fromDate} onChange={(value) => setFromDate(value)} />
             </div>
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">To Date</p>
-              <Input min={fromDate || undefined} type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+              <DatePickerInput name="toDate" id="toDate" value={toDate} onChange={(value) => setToDate(value)} />
             </div>
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">Product Category</p>
@@ -1123,6 +1124,7 @@ export function ReportsPage() {
     </div>
   );
 }
+
 
 
 

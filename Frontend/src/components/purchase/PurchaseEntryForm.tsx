@@ -4,9 +4,10 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchPurchaseEntries, submitEntry, type PurchaseEntry } from "@/lib/api";
 import { getCurrentLocalDateInputValue, getCurrentLocalTimeInputValue } from "@/lib/dateTimeDefaults";
@@ -1055,12 +1056,11 @@ export function PurchaseEntryForm() {
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="date" label="Date">
-                <Input
+                <DatePickerInput
                   id="date"
                   name="date"
-                  type="date"
                   value={commonFormData.date}
-                  onChange={(e) => updateCommonField("date", e.target.value)}
+                  onChange={(value) => updateCommonField("date", value)}
                 />
               </Field>
               <Field htmlFor="time" label="Time">
@@ -1107,7 +1107,7 @@ export function PurchaseEntryForm() {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                       <Field htmlFor={`raw-material-name-${item.id}`} label="Raw Material Name">
-                        <Select
+                        <Combobox
                           id={`raw-material-name-${item.id}`}
                           name="rawMaterialName"
                           value={getItemSelectValue(item, "rawMaterialName", item.data.rawMaterialName)}
@@ -1138,13 +1138,13 @@ export function PurchaseEntryForm() {
                               {option}
                             </option>
                           ))}
-                        </Select>
+                        </Combobox>
                       </Field>
                       {renderItemOtherInput(item, index, "rawMaterialName", "Raw Material Name", "Enter raw material name")}
 
                       {config ? (
                         <Field htmlFor={`level1-${item.id}`} label={config.label}>
-                          <Select
+                          <Combobox
                             id={`level1-${item.id}`}
                             name="packagingType"
                             value={getItemSelectValue(item, "packagingType", item.data.packagingType)}
@@ -1166,14 +1166,14 @@ export function PurchaseEntryForm() {
                                 {option}
                               </option>
                             ))}
-                          </Select>
+                          </Combobox>
                         </Field>
                       ) : null}
                       {renderItemOtherInput(item, index, "packagingType", config?.label ?? "Packaging Type", "Enter value")}
 
                       {level2Config ? (
                         <Field htmlFor={`level2-${item.id}`} label={level2Config.label}>
-                          <Select
+                          <Combobox
                             id={`level2-${item.id}`}
                             name="level2"
                             value={getItemSelectValue(item, "level2", item.data.level2)}
@@ -1204,7 +1204,7 @@ export function PurchaseEntryForm() {
                                 {option}
                               </option>
                             ))}
-                          </Select>
+                          </Combobox>
                         </Field>
                       ) : null}
                       {renderItemOtherInput(item, index, "level2", level2Config?.label ?? "Level 2", "Enter value")}
@@ -1227,7 +1227,7 @@ export function PurchaseEntryForm() {
 
                       {shouldShowPackagingBagField(item) ? (
                         <Field htmlFor={`packagingBag-${item.id}`} label="Packaging Bag">
-                          <Select
+                          <Combobox
                             id={`packagingBag-${item.id}`}
                             name="packagingBag"
                             value={getItemSelectValue(item, "packagingBag", item.data.packagingBag)}
@@ -1243,14 +1243,14 @@ export function PurchaseEntryForm() {
                                 {option}
                               </option>
                             ))}
-                          </Select>
+                          </Combobox>
                         </Field>
                       ) : null}
                       {renderItemOtherInput(item, index, "packagingBag", "Packaging Bag", "Enter packaging bag")}
 
                       {shouldShowPackagingBagColorField(item) ? (
                         <Field htmlFor={`packagingBagColor-${item.id}`} label="Packaging Bag Color">
-                          <Select
+                          <Combobox
                             id={`packagingBagColor-${item.id}`}
                             name="packagingBagColor"
                             value={item.data.packagingBagColor}
@@ -1264,13 +1264,13 @@ export function PurchaseEntryForm() {
                                 {option}
                               </option>
                             ))}
-                          </Select>
+                          </Combobox>
                         </Field>
                       ) : null}
 
                       {showPackagingItemTypeField(item) ? (
                         <Field htmlFor={`packagingItemType-${item.id}`} label="Packaging Item Type">
-                          <Select
+                          <Combobox
                             id={`packagingItemType-${item.id}`}
                             name="packagingItemType"
                             value={item.packagingItemType}
@@ -1292,13 +1292,13 @@ export function PurchaseEntryForm() {
                                 {option}
                               </option>
                             ))}
-                          </Select>
+                          </Combobox>
                         </Field>
                       ) : null}
 
                       {level3Config && (!shouldShowPackagingBagField(item) || item.data.packagingBag) && (!showPackagingItemTypeField(item) || Boolean(item.packagingItemType)) ? (
                         <Field htmlFor={`level3-${item.id}`} label={level3Config.label}>
-                          <Select
+                          <Combobox
                             id={`level3-${item.id}`}
                             name="level3"
                             value={getItemSelectValue(item, "level3", item.data.level3)}
@@ -1314,7 +1314,7 @@ export function PurchaseEntryForm() {
                                 {option}
                               </option>
                             ))}
-                          </Select>
+                          </Combobox>
                         </Field>
                       ) : null}
                       {renderItemOtherInput(item, index, "level3", level3Config?.label ?? "Level 3", "Enter value")}
@@ -1333,7 +1333,7 @@ export function PurchaseEntryForm() {
 
                       {shouldShowTileCleanerBucketSizeField(item) ? (
                         <Field htmlFor={`bucketSize-${item.id}`} label="Can Size">
-                          <Select
+                          <Combobox
                             id={`bucketSize-${item.id}`}
                             name="bucketSize"
                             value={getItemSelectValue(item, "bucketSize", item.data.bucketSize)}
@@ -1347,14 +1347,14 @@ export function PurchaseEntryForm() {
                                 {option}
                               </option>
                             ))}
-                          </Select>
+                          </Combobox>
                         </Field>
                       ) : null}
                       {renderItemOtherInput(item, index, "bucketSize", "Can Size", "Enter can size")}
 
                       {shouldShowEpoxySandColorField(item) ? (
                         <Field htmlFor={`color-of-sand-epoxy-${item.id}`} label="Color Of Sand (Epoxy)">
-                          <Select
+                          <Combobox
                             id={`color-of-sand-epoxy-${item.id}`}
                             name="colorOfSandEpoxy"
                             value={getItemSelectValue(item, "colorOfSandEpoxy", item.data.colorOfSandEpoxy)}
@@ -1368,7 +1368,7 @@ export function PurchaseEntryForm() {
                                 {option}
                               </option>
                             ))}
-                          </Select>
+                          </Combobox>
                         </Field>
                       ) : null}
                       {renderItemOtherInput(item, index, "colorOfSandEpoxy", "Color Of Sand (Epoxy)", "Enter sand color")}
@@ -1392,7 +1392,7 @@ export function PurchaseEntryForm() {
                       </Field>
 
                       <Field htmlFor={`unit-${item.id}`} label="Unit">
-                        <Select
+                        <Combobox
                           id={`unit-${item.id}`}
                           name="unit"
                           value={getItemSelectValue(item, "unit", item.data.unit)}
@@ -1405,7 +1405,7 @@ export function PurchaseEntryForm() {
                           {unitOptions.map((option) => (
                             <option key={option} value={option}>{option}</option>
                           ))}
-                        </Select>
+                        </Combobox>
                       </Field>
                       {renderItemOtherInput(item, index, "unit", "Unit", "Enter unit")}
                     </div>
@@ -1458,7 +1458,7 @@ export function PurchaseEntryForm() {
                   />
                 ) : (
                   <div className="space-y-2">
-                    <Select
+                    <Combobox
                       id="unload-by"
                       name="unloadBy"
                       value={isUnloadByOther ? OTHER_OPTION : commonFormData.unloadBy}
@@ -1480,7 +1480,7 @@ export function PurchaseEntryForm() {
                         </option>
                       ))}
                       <option value={OTHER_OPTION}>Other</option>
-                    </Select>
+                    </Combobox>
                     {isUnloadByOther ? (
                       <Input
                         id="unload-by-other"
@@ -1639,3 +1639,5 @@ export function PurchaseEntryForm() {
     </div>
   );
 }
+
+

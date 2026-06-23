@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Field } from "../Field";
 import type { ManufacturingOtherField, ManufacturingFormData } from "../types";
 
@@ -44,7 +44,7 @@ export function ProductDetailsSection({
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Field htmlFor="productCategory" label="Product Category">
-          <Select
+          <Combobox
             id="productCategory"
             name="productCategory"
             value={getSelectValue("productCategory", formData.productCategory)}
@@ -60,13 +60,13 @@ export function ProductDetailsSection({
                 {option}
               </option>
             ))}
-          </Select>
+          </Combobox>
         </Field>
         {renderOtherInput("productCategory", "Product Category", "Enter product category")}
 
         <Field htmlFor="finishedProductName" label="Finished Product Name">
           {finishedProductOptions.length > 0 ? (
-            <Select
+            <Combobox
               id="finishedProductName"
               name="finishedProductName"
               value={getSelectValue("finishedProductName", formData.finishedProductName)}
@@ -78,7 +78,7 @@ export function ProductDetailsSection({
                   {option}
                 </option>
               ))}
-            </Select>
+            </Combobox>
           ) : (
             <Input
               id="finishedProductName"
@@ -95,7 +95,7 @@ export function ProductDetailsSection({
 
         <Field htmlFor="color" label="Color (auto-filled for TPH batches)">
           {colorOptions.length > 0 || isColorDisabled ? (
-            <Select
+            <Combobox
               id="color"
               name="color"
               value={getSelectValue("color", selectedColor || "")}
@@ -113,7 +113,7 @@ export function ProductDetailsSection({
                   {option}
                 </option>
               ))}
-            </Select>
+            </Combobox>
           ) : (
             <Input
               id="color"
@@ -129,3 +129,4 @@ export function ProductDetailsSection({
     </div>
   );
 }
+

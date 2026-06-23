@@ -4,9 +4,10 @@ import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { getCurrentLocalDateInputValue, getCurrentLocalTimeInputValue } from "@/lib/dateTimeDefaults";
 import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
@@ -664,12 +665,11 @@ export function ProductDepartureForm() {
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="date" label="Date">
-                <Input
+                <DatePickerInput
                   id="date"
                   name="date"
-                  type="date"
                   value={formData.date}
-                  onChange={(e) => updateField("date", e.target.value)}
+                  onChange={(value) => updateField("date", value)}
                 />
               </Field>
               <Field htmlFor="time" label="Time">
@@ -820,7 +820,7 @@ export function ProductDepartureForm() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 
               <Field htmlFor="product-category" label="Product Category">
-                <Select
+                <Combobox
                   id="product-category"
                   name="productCategory"
                   value={getSelectValue("productCategory", formData.productCategory)}
@@ -840,11 +840,11 @@ export function ProductDepartureForm() {
                   {(productCategories).map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
-                </Select>
+                </Combobox>
               </Field>
 
               <Field htmlFor="product-name" label="Product Name">
-                <Select
+                <Combobox
                   id="product-name"
                   name="productName"
                   value={getSelectValue("productName", formData.productName)}
@@ -864,12 +864,12 @@ export function ProductDepartureForm() {
                   {(productNames).map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
-                </Select>
+                </Combobox>
               </Field>
 
               {formData.productCategory === "Tile Adhesive" && (
                 <Field htmlFor="token" label="Token">
-                  <Select
+                  <Combobox
                     id="token"
                     name="token"
                     value={getSelectValue("token", formData.token)}
@@ -884,13 +884,13 @@ export function ProductDepartureForm() {
                         {option}
                       </option>
                     ))}
-                  </Select>
+                  </Combobox>
                 </Field>
               )}
 
 
               <Field htmlFor="product-color" label="Product Color">
-                <Select
+                <Combobox
                   id="product-color"
                   name="productColor"
                   value={isTileCleanerSelected ? "" : getSelectValue("productColor", formData.productColor)}
@@ -905,11 +905,11 @@ export function ProductDepartureForm() {
                   {(productColors).map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
-                </Select>
+                </Combobox>
               </Field>
 
               <Field htmlFor="bag-size" label="Bag Size">
-                <Select
+                <Combobox
                   id="bag-size"
                   name="bagSize"
                   value={getSelectValue("bagSize", formData.bagSize)}
@@ -922,7 +922,7 @@ export function ProductDepartureForm() {
                   {(bagSizes).map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
-                </Select>
+                </Combobox>
               </Field>
               </div>
 
@@ -1107,3 +1107,5 @@ export function ProductDepartureForm() {
     </div>
   );
 }
+
+

@@ -57,10 +57,10 @@ export function Calendar({
   const days = React.useMemo(() => buildCalendarDays(month), [month]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 p-1 sm:space-y-3">
       <div className="flex items-center justify-between px-1">
         <Button
-          className="h-9 w-9 rounded-xl"
+          className="h-7 w-7 rounded-lg sm:h-9 sm:w-9 sm:rounded-xl"
           onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
           size="icon"
           type="button"
@@ -68,14 +68,14 @@ export function Calendar({
         >
           <ChevronLeft className="size-4" />
         </Button>
-        <div className="text-sm font-semibold text-slate-800">
+        <div className="text-xs font-semibold text-slate-800 sm:text-sm">
           {month.toLocaleDateString("en-IN", {
             month: "long",
             year: "numeric",
           })}
         </div>
         <Button
-          className="h-9 w-9 rounded-xl"
+          className="h-7 w-7 rounded-lg sm:h-9 sm:w-9 sm:rounded-xl"
           onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
           size="icon"
           type="button"
@@ -85,7 +85,7 @@ export function Calendar({
         </Button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:gap-1 sm:text-xs">
         {WEEKDAYS.map((weekday) => (
           <div key={weekday}>{weekday}</div>
         ))}
@@ -100,9 +100,9 @@ export function Calendar({
           return (
             <button
               className={cn(
-                "flex h-10 items-center justify-center rounded-xl text-sm transition",
+                "flex h-7 items-center justify-center rounded-lg text-xs transition sm:h-10 sm:rounded-xl sm:text-sm",
                 isSelected
-                  ? "bg-teal-600 font-semibold text-white shadow-sm hover:bg-teal-600"
+                  ? "bg-teal-900 font-semibold text-white shadow-sm hover:bg-teal-600"
                   : "text-slate-700 hover:bg-slate-100",
                 isOutsideMonth && !isSelected && "text-slate-300",
                 isDisabled && "cursor-not-allowed bg-transparent text-slate-300 hover:bg-transparent",

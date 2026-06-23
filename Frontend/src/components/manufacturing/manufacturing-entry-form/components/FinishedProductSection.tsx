@@ -1,6 +1,6 @@
-﻿import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Field } from "../Field";
 import type { ManufacturingProductItem } from "../types";
 
@@ -89,7 +89,7 @@ export function FinishedProductSection({
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Field label="Token" htmlFor={`token-${index}`}>
-              <Select
+              <Combobox
                 id={`token-${index}`}
                 value={item.token}
                 onChange={(e) => updateProductItem(index, "token", e.target.value)}
@@ -104,11 +104,11 @@ export function FinishedProductSection({
                 ) : (
                   <option value="N/A">N/A</option>
                 )}
-              </Select>
+              </Combobox>
             </Field>
 
             <Field label={bagSizeLabel} htmlFor={`bagSize-${index}`}>
-              <Select
+              <Combobox
                 id={`bagSize-${index}`}
                 value={item.bagSize}
                 onChange={(e) => {
@@ -160,7 +160,7 @@ export function FinishedProductSection({
                     <option value="50kg">50KG</option>
                   </>
                 )}
-              </Select>
+              </Combobox>
             </Field>
 
             <Field label={totalProducedLabel} htmlFor={`totalBagsProduced-${index}`}>
@@ -180,5 +180,6 @@ export function FinishedProductSection({
     </div>
   );
 }
+
 
 
