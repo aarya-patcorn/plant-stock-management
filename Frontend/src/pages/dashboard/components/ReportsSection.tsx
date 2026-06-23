@@ -4,6 +4,7 @@ import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TooltipText } from "@/components/ui/tooltip-text";
 import { Input } from "@/components/ui/input";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { Select } from "@/components/ui/select";
@@ -57,9 +58,9 @@ export function ReportsSection({
         accessorKey: "productName",
         header: "Product Name",
         cell: ({ row }) => (
-          <span className="block max-w-[220px] truncate font-medium text-slate-900" title={row.original.productName || "-"}>
+          <TooltipText as="span" className="block max-w-[220px] truncate font-medium text-slate-900" content={row.original.productName || "-"}>
             {row.original.productName || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {

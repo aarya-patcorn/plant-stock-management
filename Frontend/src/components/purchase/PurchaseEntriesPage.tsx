@@ -5,11 +5,14 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { Textarea } from "@/components/ui/textarea";
+import { TooltipText } from "@/components/ui/tooltip-text";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   fetchPurchaseEntries,
   type PurchaseEntry,
@@ -35,6 +38,7 @@ const packagingBagOptions = ["K50", "K60", "K70", "K80", "K90", "Kamdhenu X"];
 const bucketSizeOptions = ["1L", "5L"];
 const unloadByOptions = ["Sujeet", "Thailesh", "Vashu"];
 const ENTRIES_PER_PAGE = 10;
+const EDIT_SHEET_ANIMATION_MS = 300;
 
 type MaterialConfig = {
   label: string;
@@ -299,6 +303,7 @@ function renderAttachmentActions(
 export function PurchaseEntriesPage() {
   const [entries, setEntries] = useState<PurchaseEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<PurchaseEntry | null>(null);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [filters, setFilters] = useState<Filter[]>([]);
@@ -306,6 +311,20 @@ export function PurchaseEntriesPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedEditFile, setSelectedEditFile] = useState<File | null>(null);
   const editFileInputRef = useRef<HTMLInputElement | null>(null);
+  const editSheetCloseTimeoutRef = useRef<number | null>(null);
+
+  const clearEditSheetCloseTimeout = () => {
+    if (editSheetCloseTimeoutRef.current !== null) {
+      window.clearTimeout(editSheetCloseTimeoutRef.current);
+      editSheetCloseTimeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearEditSheetCloseTimeout();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -402,6 +421,7 @@ export function PurchaseEntriesPage() {
   }, [currentPage, totalPages]);
 
   const startEditing = (entry: PurchaseEntry) => {
+    clearEditSheetCloseTimeout();
     setSelectedEditFile(null);
     if (editFileInputRef.current) {
       editFileInputRef.current.value = "";
@@ -411,10 +431,24 @@ export function PurchaseEntriesPage() {
       time: normalizeTimeForInput(entry.time),
       unit: normalizeUnitForEdit(entry.unit),
     });
+    setIsEditSheetOpen(true);
   };
 
   const updateEditingEntry = (updates: Partial<PurchaseEntry>) => {
     setEditingEntry((current) => (current ? { ...current, ...updates } : current));
+  };
+
+  const closeEditSheet = () => {
+    setIsEditSheetOpen(false);
+    clearEditSheetCloseTimeout();
+    editSheetCloseTimeoutRef.current = window.setTimeout(() => {
+      setEditingEntry(null);
+      setSelectedEditFile(null);
+      if (editFileInputRef.current) {
+        editFileInputRef.current.value = "";
+      }
+      editSheetCloseTimeoutRef.current = null;
+    }, EDIT_SHEET_ANIMATION_MS);
   };
 
   const handleUpdate = async () => {
@@ -437,11 +471,7 @@ export function PurchaseEntriesPage() {
       setEntries((current) =>
         current.map((entry) => (entry.id === editingEntry.id ? updatedEntry : entry)),
       );
-      setEditingEntry(null);
-      setSelectedEditFile(null);
-      if (editFileInputRef.current) {
-        editFileInputRef.current.value = "";
-      }
+      closeEditSheet();
       toast.success("Purchase entry updated successfully.");
 
       void fetchPurchaseEntries()
@@ -537,9 +567,9 @@ export function PurchaseEntriesPage() {
         header: "Material",
         cell: ({ row }) => (
           <div className="min-w-[220px] max-w-[260px] space-y-1">
-            <p className="truncate font-medium text-slate-900" title={buildMaterialLabel(row.original) || "-"}>
+            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildMaterialLabel(row.original) || "-"}>
               {buildMaterialLabel(row.original) || "-"}
-            </p>
+            </TooltipText>
             {row.original.rawMaterialName ? (
               <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge>
             ) : null}
@@ -561,27 +591,27 @@ export function PurchaseEntriesPage() {
         accessorKey: "supplierName",
         header: "Supplier",
         cell: ({ row }) => (
-          <span className="block max-w-[180px] truncate" title={row.original.supplierName || "-"}>
+          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.supplierName || "-"}>
             {row.original.supplierName || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
         accessorKey: "invoiceNo",
         header: "Invoice",
         cell: ({ row }) => (
-          <span className="block max-w-[140px] truncate" title={row.original.invoiceNo || "-"}>
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.invoiceNo || "-"}>
             {row.original.invoiceNo || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
         accessorKey: "unloadBy",
         header: "Unload By",
         cell: ({ row }) => (
-          <span className="block max-w-[140px] truncate" title={row.original.unloadBy || "-"}>
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.unloadBy || "-"}>
             {row.original.unloadBy || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
@@ -594,18 +624,18 @@ export function PurchaseEntriesPage() {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <span className="block max-w-[180px] truncate" title={row.original.user || "-"}>
+          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.user || "-"}>
             {row.original.user || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <span className="block max-w-[220px] truncate" title={row.original.remarks || "-"}>
+          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.remarks || "-"}>
             {row.original.remarks || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
@@ -646,396 +676,413 @@ export function PurchaseEntriesPage() {
         </CardHeader>
       </Card>
 
-      {editingEntry && (
-        <Card className="overflow-hidden border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-          <CardHeader className="border-b border-slate-200/80 pb-5">
-            <CardTitle>Edit purchase entry</CardTitle>
-            <CardDescription>Update the selected record and save your changes.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 p-5">
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Record details</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Basic identifiers, date, time, and unit information.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <Field htmlFor="edit-date" label="Date">
-                  <Input
-                    id="edit-date"
-                    type="date"
-                    value={editingEntry.date}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, date: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-time" label="Time">
-                  <Input
-                    id="edit-time"
-                    type="time"
-                    value={editingEntry.time}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, time: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-unit" label="Unit">
-                  <Select
-                    id="edit-unit"
-                    disabled
-                    value={editingEntry.unit}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, unit: event.target.value } : current)
-                    }
-                  >
-                    <option value="">Select unit</option>
-                    {unitOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-            </div>
+      <Sheet open={isEditSheetOpen} onOpenChange={(open) => {
+        if (open) {
+          setIsEditSheetOpen(true);
+          return;
+        }
 
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Material details</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Material type, packaging path, and item hierarchy.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field htmlFor="edit-rawMaterialName" label="Raw Material Name">
-                  <Select
-                    id="edit-rawMaterialName"
-                    disabled
-                    value={editingEntry.rawMaterialName}
-                    onChange={(event) =>
-                      updateEditingEntry({
-                        rawMaterialName: event.target.value,
-                        packagingType: "",
-                        level2: "",
-                        level3: "",
-                        level4: "",
-                        packagingBag: "",
-                        packagingBagColor: "",
-                        coupon: "",
-                        bucketSize: "",
-                      })
-                    }
-                  >
-                    <option value="">Select raw material</option>
-                    {rawMaterialOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+        closeEditSheet();
+      }}>
+        <SheetContent
+          side="right"
+          className="h-full w-full max-w-full overflow-hidden border-l border-slate-200 bg-white p-0 sm:w-[760px] sm:max-w-[760px] lg:w-[860px] lg:max-w-[860px]"
+        >
+          {editingEntry ? (
+            <div className="flex h-full flex-col">
+              <SheetHeader className="shrink-0 border-b border-slate-200/80 px-5 py-4 pr-12">
+                <SheetTitle>Update Entry</SheetTitle>
+                <SheetDescription>Update the selected purchase record and save your changes.</SheetDescription>
+              </SheetHeader>
 
-                <Field htmlFor="edit-packagingType" label={editConfig?.label ?? "Packaging Type"}>
-                  {editConfig ? (
-                    <Select
-                      id="edit-packagingType"
-                      disabled
-                      value={editingEntry.packagingType}
-                      onChange={(event) =>
-                        updateEditingEntry({
-                          packagingType: event.target.value,
-                          level2: "",
-                          level3: "",
-                          level4: "",
-                          packagingBag: "",
-                          packagingBagColor: "",
-                          coupon: "",
-                          bucketSize: "",
-                        })
-                      }
-                    >
-                      <option value="">Select {editConfig.label.toLowerCase()}</option>
-                      {editConfig.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Input
-                      id="edit-packagingType"
-                      value={editingEntry.packagingType}
-                      onChange={(event) => updateEditingEntry({ packagingType: event.target.value })}
-                    />
-                  )}
-                </Field>
-
-                <Field htmlFor="edit-level2" label={editLevel2Config?.label ?? "Level 2"}>
-                  {editLevel2Config ? (
-                    <Select
-                      id="edit-level2"
-                      disabled
-                      value={editingEntry.level2}
-                      onChange={(event) =>
-                        updateEditingEntry({
-                          level2: event.target.value,
-                          level3: "",
-                          level4: "",
-                          packagingBag: event.target.value === "Bondure" ? "Bondure" : "",
-                          packagingBagColor: "",
-                          coupon: "",
-                          bucketSize: "",
-                        })
-                      }
-                    >
-                      <option value="">Select {editLevel2Config.label.toLowerCase()}</option>
-                      {editLevel2Config.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Input
-                      id="edit-level2"
-                      value={editingEntry.level2}
-                      onChange={(event) => updateEditingEntry({ level2: event.target.value })}
-                    />
-                  )}
-                </Field>
-
-                {shouldShowEditPackagingBagField && (
-                  <Field htmlFor="edit-packagingBag" label="Packaging Bag">
-                    <Select
-                      id="edit-packagingBag"
-                      disabled
-                      value={editingEntry.packagingBag || editingEntry.level4}
-                      onChange={(event) =>
-                        updateEditingEntry({
-                          packagingBag: event.target.value,
-                          level4: event.target.value,
-                          level3: editingEntry.level2 === "Bondure" ? "40 KG" : "",
-                        })
-                      }
-                    >
-                      <option value="">Select packaging bag</option>
-                      {(editingEntry.level2 === "Bondure" ? ["Bondure"] : packagingBagOptions).map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                )}
-
-                {shouldShowEditCouponField && (
-                  <Field htmlFor="edit-coupon" label="Coupon">
-                    <Input
-                      id="edit-coupon"
-                      disabled
-                      value={editingEntry.coupon ?? ""}
-                      onChange={(event) => updateEditingEntry({ coupon: event.target.value })}
-                    />
-                  </Field>
-                )}
-
-                {shouldShowEditPackagingBagColorField && (
-                  <Field htmlFor="edit-packagingBagColor" label="Bag Color">
-                    <Select
-                      id="edit-packagingBagColor"
-                      disabled
-                      value={editingEntry.packagingBagColor}
-                      onChange={(event) => updateEditingEntry({ packagingBagColor: event.target.value })}
-                    >
-                      <option value="">Select bag color</option>
-                      {packagingBagColorOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                )}
-
-                <Field htmlFor="edit-level3" label={editLevel3Config?.label ?? "Level 3"}>
-                  {editLevel3Config ? (
-                    <Select
-                      id="edit-level3"
-                      disabled
-                      value={editingEntry.level3}
-                      onChange={(event) =>
-                        updateEditingEntry({
-                          level3: event.target.value,
-                          bucketSize: event.target.value === "Bucket" ? editingEntry.bucketSize : "",
-                        })
-                      }
-                    >
-                      <option value="">Select {editLevel3Config.label.toLowerCase()}</option>
-                      {editLevel3Config.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Input
-                      id="edit-level3"
-                      value={editingEntry.level3}
-                      onChange={(event) => updateEditingEntry({ level3: event.target.value })}
-                    />
-                  )}
-                </Field>
-
-                {shouldShowEditBucketSizeField && (
-                  <Field htmlFor="edit-bucketSize" label="Bucket Size">
-                    <Select
-                      id="edit-bucketSize"
-                      disabled
-                      value={editingEntry.bucketSize || editingEntry.level4}
-                      onChange={(event) =>
-                        updateEditingEntry({
-                          bucketSize: event.target.value,
-                          level4: event.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Select bucket size</option>
-                      {bucketSizeOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                )}
-
-                {!shouldShowEditPackagingBagField && !shouldShowEditBucketSizeField && (
-                  <Field htmlFor="edit-level4" label="Level 4">
-                    <Input
-                      id="edit-level4"
-                      disabled
-                      value={editingEntry.level4}
-                      onChange={(event) => updateEditingEntry({ level4: event.target.value })}
-                    />
-                  </Field>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Purchase details</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Quantity, supplier, invoice, and unloading information.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field htmlFor="edit-quantityPurchased" label="Quantity Purchased">
-                  <Input
-                    id="edit-quantityPurchased"
-                    disabled
-                    type="number"
-                    value={editingEntry.quantityPurchased}
-                    onChange={(event) =>
-                      setEditingEntry((current) =>
-                        current ? { ...current, quantityPurchased: event.target.value } : current,
-                      )
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-supplierName" label="Supplier Name">
-                  <Input
-                    id="edit-supplierName"
-                    value={editingEntry.supplierName}
-                    onChange={(event) =>
-                      setEditingEntry((current) =>
-                        current ? { ...current, supplierName: event.target.value } : current,
-                      )
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-invoiceNo" label="Invoice No">
-                  <Input
-                    id="edit-invoiceNo"
-                    value={editingEntry.invoiceNo}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, invoiceNo: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-unloadBy" label="Unload By">
-                  {editingEntry.rawMaterialName === "Cement" || editingEntry.rawMaterialName === "Sand" ? (
-                    <Select
-                      id="edit-unloadBy"
-                      value={editingEntry.unloadBy}
-                      onChange={(event) => updateEditingEntry({ unloadBy: event.target.value })}
-                    >
-                      <option value="">Select person</option>
-                      {unloadByOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Input
-                      id="edit-unloadBy"
-                      value={editingEntry.unloadBy}
-                      onChange={(event) => updateEditingEntry({ unloadBy: event.target.value })}
-                    />
-                  )}
-                </Field>
-              </div>
-            </div>
-
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Additional notes</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Attachment and remarks for this purchase record.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field htmlFor="edit-attachFile" label="Attach File">
-                  <div className="space-y-2">
-                    <Input
-                      ref={editFileInputRef}
-                      id="edit-attachFile"
-                      accept=".jpg,.jpeg,.png,.webp,.pdf"
-                      type="file"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0] ?? null;
-                        setSelectedEditFile(file);
-                        updateEditingEntry({
-                          attachFileName: file?.name || editingEntry.attachFileName,
-                        });
-                      }}
-                    />
-                    {editingEntry.attachFileName ? (
-                      <p className="break-all text-xs text-muted-foreground">
-                        Current file: {editingEntry.attachFileName}
-                      </p>
-                    ) : null}
+              <div className="flex-1 overflow-y-auto px-5 py-5">
+                <div className="space-y-6">
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Record details</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Basic identifiers, date, time, and unit information.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <Field htmlFor="edit-date" label="Date">
+                        <DatePickerInput
+                          id="edit-date"
+                          name="date"
+                          value={editingEntry.date}
+                          onChange={(value) =>
+                            setEditingEntry((current) => current ? { ...current, date: value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-time" label="Time">
+                        <Input
+                          id="edit-time"
+                          type="time"
+                          value={editingEntry.time}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, time: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-unit" label="Unit">
+                        <Select
+                          id="edit-unit"
+                          disabled
+                          value={editingEntry.unit}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, unit: event.target.value } : current)
+                          }
+                        >
+                          <option value="">Select unit</option>
+                          {unitOptions.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </div>
                   </div>
-                </Field>
-                <Field htmlFor="edit-remarks" label="Remarks">
-                  <Textarea
-                    id="edit-remarks"
-                    value={editingEntry.remarks}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, remarks: event.target.value } : current)
-                    }
-                  />
-                </Field>
-              </div>
-            </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-200/80 pt-5 sm:flex-row sm:justify-end">
-              <Button onClick={() => setEditingEntry(null)} type="button" variant="outline">
-                Cancel
-              </Button>
-              <Button disabled={isUpdating} onClick={handleUpdate} type="button">
-                <Save />
-                {isUpdating ? "Updating..." : "Update entry"}
-              </Button>
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Material details</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Material type, packaging path, and item hierarchy.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <Field htmlFor="edit-rawMaterialName" label="Raw Material Name">
+                        <Select
+                          id="edit-rawMaterialName"
+                          disabled
+                          value={editingEntry.rawMaterialName}
+                          onChange={(event) =>
+                            updateEditingEntry({
+                              rawMaterialName: event.target.value,
+                              packagingType: "",
+                              level2: "",
+                              level3: "",
+                              level4: "",
+                              packagingBag: "",
+                              packagingBagColor: "",
+                              coupon: "",
+                              bucketSize: "",
+                            })
+                          }
+                        >
+                          <option value="">Select raw material</option>
+                          {rawMaterialOptions.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+
+                      <Field htmlFor="edit-packagingType" label={editConfig?.label ?? "Packaging Type"}>
+                        {editConfig ? (
+                          <Select
+                            id="edit-packagingType"
+                            disabled
+                            value={editingEntry.packagingType}
+                            onChange={(event) =>
+                              updateEditingEntry({
+                                packagingType: event.target.value,
+                                level2: "",
+                                level3: "",
+                                level4: "",
+                                packagingBag: "",
+                                packagingBagColor: "",
+                                coupon: "",
+                                bucketSize: "",
+                              })
+                            }
+                          >
+                            <option value="">Select {editConfig.label.toLowerCase()}</option>
+                            {editConfig.options.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        ) : (
+                          <Input
+                            id="edit-packagingType"
+                            value={editingEntry.packagingType}
+                            onChange={(event) => updateEditingEntry({ packagingType: event.target.value })}
+                          />
+                        )}
+                      </Field>
+
+                      <Field htmlFor="edit-level2" label={editLevel2Config?.label ?? "Level 2"}>
+                        {editLevel2Config ? (
+                          <Select
+                            id="edit-level2"
+                            disabled
+                            value={editingEntry.level2}
+                            onChange={(event) =>
+                              updateEditingEntry({
+                                level2: event.target.value,
+                                level3: "",
+                                level4: "",
+                                packagingBag: event.target.value === "Bondure" ? "Bondure" : "",
+                                packagingBagColor: "",
+                                coupon: "",
+                                bucketSize: "",
+                              })
+                            }
+                          >
+                            <option value="">Select {editLevel2Config.label.toLowerCase()}</option>
+                            {editLevel2Config.options.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        ) : (
+                          <Input
+                            id="edit-level2"
+                            value={editingEntry.level2}
+                            onChange={(event) => updateEditingEntry({ level2: event.target.value })}
+                          />
+                        )}
+                      </Field>
+
+                      {shouldShowEditPackagingBagField && (
+                        <Field htmlFor="edit-packagingBag" label="Packaging Bag">
+                          <Select
+                            id="edit-packagingBag"
+                            disabled
+                            value={editingEntry.packagingBag || editingEntry.level4}
+                            onChange={(event) =>
+                              updateEditingEntry({
+                                packagingBag: event.target.value,
+                                level4: event.target.value,
+                                level3: editingEntry.level2 === "Bondure" ? "40 KG" : "",
+                              })
+                            }
+                          >
+                            <option value="">Select packaging bag</option>
+                            {(editingEntry.level2 === "Bondure" ? ["Bondure"] : packagingBagOptions).map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      )}
+
+                      {shouldShowEditCouponField && (
+                        <Field htmlFor="edit-coupon" label="Coupon">
+                          <Input
+                            id="edit-coupon"
+                            disabled
+                            value={editingEntry.coupon ?? ""}
+                            onChange={(event) => updateEditingEntry({ coupon: event.target.value })}
+                          />
+                        </Field>
+                      )}
+
+                      {shouldShowEditPackagingBagColorField && (
+                        <Field htmlFor="edit-packagingBagColor" label="Bag Color">
+                          <Select
+                            id="edit-packagingBagColor"
+                            disabled
+                            value={editingEntry.packagingBagColor}
+                            onChange={(event) => updateEditingEntry({ packagingBagColor: event.target.value })}
+                          >
+                            <option value="">Select bag color</option>
+                            {packagingBagColorOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      )}
+
+                      <Field htmlFor="edit-level3" label={editLevel3Config?.label ?? "Level 3"}>
+                        {editLevel3Config ? (
+                          <Select
+                            id="edit-level3"
+                            disabled
+                            value={editingEntry.level3}
+                            onChange={(event) =>
+                              updateEditingEntry({
+                                level3: event.target.value,
+                                bucketSize: event.target.value === "Bucket" ? editingEntry.bucketSize : "",
+                              })
+                            }
+                          >
+                            <option value="">Select {editLevel3Config.label.toLowerCase()}</option>
+                            {editLevel3Config.options.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        ) : (
+                          <Input
+                            id="edit-level3"
+                            value={editingEntry.level3}
+                            onChange={(event) => updateEditingEntry({ level3: event.target.value })}
+                          />
+                        )}
+                      </Field>
+
+                      {shouldShowEditBucketSizeField && (
+                        <Field htmlFor="edit-bucketSize" label="Bucket Size">
+                          <Select
+                            id="edit-bucketSize"
+                            disabled
+                            value={editingEntry.bucketSize || editingEntry.level4}
+                            onChange={(event) =>
+                              updateEditingEntry({
+                                bucketSize: event.target.value,
+                                level4: event.target.value,
+                              })
+                            }
+                          >
+                            <option value="">Select bucket size</option>
+                            {bucketSizeOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                      )}
+
+                      {!shouldShowEditPackagingBagField && !shouldShowEditBucketSizeField && (
+                        <Field htmlFor="edit-level4" label="Level 4">
+                          <Input
+                            id="edit-level4"
+                            disabled
+                            value={editingEntry.level4}
+                            onChange={(event) => updateEditingEntry({ level4: event.target.value })}
+                          />
+                        </Field>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Purchase details</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Quantity, supplier, invoice, and unloading information.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <Field htmlFor="edit-quantityPurchased" label="Quantity Purchased">
+                        <Input
+                          id="edit-quantityPurchased"
+                          disabled
+                          type="number"
+                          value={editingEntry.quantityPurchased}
+                          onChange={(event) =>
+                            setEditingEntry((current) =>
+                              current ? { ...current, quantityPurchased: event.target.value } : current,
+                            )
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-supplierName" label="Supplier Name">
+                        <Input
+                          id="edit-supplierName"
+                          value={editingEntry.supplierName}
+                          onChange={(event) =>
+                            setEditingEntry((current) =>
+                              current ? { ...current, supplierName: event.target.value } : current,
+                            )
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-invoiceNo" label="Invoice No">
+                        <Input
+                          id="edit-invoiceNo"
+                          value={editingEntry.invoiceNo}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, invoiceNo: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-unloadBy" label="Unload By">
+                        {editingEntry.rawMaterialName === "Cement" || editingEntry.rawMaterialName === "Sand" ? (
+                          <Select
+                            id="edit-unloadBy"
+                            value={editingEntry.unloadBy}
+                            onChange={(event) => updateEditingEntry({ unloadBy: event.target.value })}
+                          >
+                            <option value="">Select person</option>
+                            {unloadByOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </Select>
+                        ) : (
+                          <Input
+                            id="edit-unloadBy"
+                            value={editingEntry.unloadBy}
+                            onChange={(event) => updateEditingEntry({ unloadBy: event.target.value })}
+                          />
+                        )}
+                      </Field>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Additional notes</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Attachment and remarks for this purchase record.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field htmlFor="edit-attachFile" label="Attach File">
+                        <div className="space-y-2">
+                          <Input
+                            ref={editFileInputRef}
+                            id="edit-attachFile"
+                            accept=".jpg,.jpeg,.png,.webp,.pdf"
+                            type="file"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] ?? null;
+                              setSelectedEditFile(file);
+                              updateEditingEntry({
+                                attachFileName: file?.name || editingEntry.attachFileName,
+                              });
+                            }}
+                          />
+                          {editingEntry.attachFileName ? (
+                            <p className="break-all text-xs text-muted-foreground">
+                              Current file: {editingEntry.attachFileName}
+                            </p>
+                          ) : null}
+                        </div>
+                      </Field>
+                      <Field htmlFor="edit-remarks" label="Remarks">
+                        <Textarea
+                          id="edit-remarks"
+                          value={editingEntry.remarks}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, remarks: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-5 py-4">
+                <Button onClick={closeEditSheet} type="button" variant="outline">
+                  Cancel
+                </Button>
+                <Button disabled={isUpdating} onClick={handleUpdate} type="button">
+                  <Save />
+                  {isUpdating ? "Saving Changes..." : "Save Changes"}
+                </Button>
+              </SheetFooter>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : null}
+        </SheetContent>
+      </Sheet>
 
       <Card className="overflow-hidden border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         <CardHeader className="gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between sm:space-y-0">

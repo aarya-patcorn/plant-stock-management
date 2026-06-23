@@ -6,6 +6,7 @@ import { fetchProductionMaterialLogs, type ProductionMaterialLog } from "@/lib/a
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataBadge, DataTable } from "@/components/ui/DataTable";
+import { TooltipText } from "@/components/ui/tooltip-text";
 import { Select } from "@/components/ui/select";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 
@@ -139,9 +140,9 @@ export function ProductionMaterialLogsPage() {
         header: "Product",
         cell: ({ row }) => (
           <div className="min-w-[240px] max-w-[300px] space-y-1">
-            <p className="truncate font-medium text-slate-900" title={buildProductLabel(row.original) || "-"}>
+            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildProductLabel(row.original) || "-"}>
               {buildProductLabel(row.original) || "Production log"}
-            </p>
+            </TooltipText>
             {row.original.productCategory ? (
               <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
             ) : null}

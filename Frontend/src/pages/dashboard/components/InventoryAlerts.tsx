@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingLoader from "@/components/ui/LoadingLoader";
+import { TooltipText } from "@/components/ui/tooltip-text";
 import type { InventoryAlert } from "@/pages/dashboard/types";
 import { clampPercentage } from "@/pages/dashboard/utils/dashboardCalculations";
 import { formatCount } from "@/pages/dashboard/utils/dashboardFormatters";
@@ -51,9 +52,9 @@ function InventoryAlertGaugeCard({
       <CardContent className="p-3 sm:p-4">
         <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-slate-950 sm:text-sm" title={label}>
+            <TooltipText as="p" className="truncate text-xs font-semibold text-slate-950 sm:text-sm" content={label}>
               {label}
-            </p>
+            </TooltipText>
             <p className="mt-1 hidden text-xs uppercase tracking-[0.16em] text-slate-500 sm:block">Threshold alert</p>
           </div>
           <Badge className={`${tone.badgeClassName} shrink-0 self-start text-[10px] sm:text-xs`} variant="outline">

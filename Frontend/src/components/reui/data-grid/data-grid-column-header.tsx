@@ -7,6 +7,7 @@ import { Column } from "@tanstack/react-table"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -294,16 +295,20 @@ function DataGridColumnHeaderInner<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
         {props.tableLayout?.columnsPinnable && canPin && isPinned && (
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            className="-me-1 size-7 rounded-md"
-            onClick={() => column.pin(false)}
-            aria-label={`Unpin ${resolvedTitle} column`}
-            title={`Unpin ${resolvedTitle} column`}
-          >
-            <PinOffIcon className="size-3.5! opacity-50!" aria-hidden="true" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="-me-1 size-7 rounded-md"
+                onClick={() => column.pin(false)}
+                aria-label={`Unpin ${resolvedTitle} column`}
+              >
+                <PinOffIcon className="size-3.5! opacity-50!" aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Unpin {resolvedTitle} column</TooltipContent>
+          </Tooltip>
         )}
       </div>
     )

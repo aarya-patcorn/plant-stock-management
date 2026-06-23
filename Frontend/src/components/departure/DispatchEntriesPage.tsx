@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Pencil, Save } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
@@ -6,10 +6,13 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataBadge, DataTable } from "@/components/ui/DataTable";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { TooltipText } from "@/components/ui/tooltip-text";
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   fetchDispatchEntries,
   fetchProductionMaterialLogs,
@@ -31,6 +34,7 @@ import {
 import { applyTableFilters } from "@/lib/tableFilters";
 
 const ENTRIES_PER_PAGE = 10;
+const EDIT_SHEET_ANIMATION_MS = 300;
 
 function Field({
   children,
@@ -79,12 +83,27 @@ function normalizeTimeForInput(value: string) {
 export function DispatchEntriesPage() {
   const [entries, setEntries] = useState<DispatchEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<DispatchEntry | null>(null);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [filters, setFilters] = useState<Filter[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isUpdating, setIsUpdating] = useState(false);
   const [productionEntries, setProductionEntries] = useState<ProductionMaterialLog[]>([]);
+  const editSheetCloseTimeoutRef = useRef<number | null>(null);
+
+  const clearEditSheetCloseTimeout = () => {
+    if (editSheetCloseTimeoutRef.current !== null) {
+      window.clearTimeout(editSheetCloseTimeoutRef.current);
+      editSheetCloseTimeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearEditSheetCloseTimeout();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -202,15 +221,26 @@ export function DispatchEntriesPage() {
   }, [currentPage, totalPages]);
 
   const startEditing = (entry: DispatchEntry) => {
+    clearEditSheetCloseTimeout();
     setEditingEntry({
       ...entry,
       time: normalizeTimeForInput(entry.time),
       dispatchTime: normalizeTimeForInput(entry.dispatchTime),
     });
+    setIsEditSheetOpen(true);
   };
 
   const updateEditingEntry = (updates: Partial<DispatchEntry>) => {
     setEditingEntry((current) => (current ? { ...current, ...updates } : current));
+  };
+
+  const closeEditSheet = () => {
+    setIsEditSheetOpen(false);
+    clearEditSheetCloseTimeout();
+    editSheetCloseTimeoutRef.current = window.setTimeout(() => {
+      setEditingEntry(null);
+      editSheetCloseTimeoutRef.current = null;
+    }, EDIT_SHEET_ANIMATION_MS);
   };
 
   const handleUpdate = async () => {
@@ -228,7 +258,7 @@ export function DispatchEntriesPage() {
       setEntries((current) =>
         current.map((entry) => (entry.id === editingEntry.id ? editingEntry : entry)),
       );
-      setEditingEntry(null);
+      closeEditSheet();
       toast.success("Dispatch entry updated successfully.");
 
       void fetchDispatchEntries()
@@ -374,9 +404,9 @@ export function DispatchEntriesPage() {
         accessorFn: (row) => row.challanNo || row.challanName || "",
         header: "Challan",
         cell: ({ row }) => (
-          <span className="block max-w-[160px] truncate" title={row.original.challanNo || row.original.challanName || "-"}>
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.challanNo || row.original.challanName || "-"}>
             {row.original.challanNo || row.original.challanName || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
@@ -385,9 +415,9 @@ export function DispatchEntriesPage() {
         header: "Product",
         cell: ({ row }) => (
           <div className="min-w-[220px] max-w-[260px] space-y-1">
-            <p className="truncate font-medium text-slate-900" title={buildDispatchLabel(row.original) || "-"}>
+            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildDispatchLabel(row.original) || "-"}>
               {buildDispatchLabel(row.original) || "-"}
-            </p>
+            </TooltipText>
             {row.original.productCategory ? (
               <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
             ) : null}
@@ -419,45 +449,45 @@ export function DispatchEntriesPage() {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <span className="block max-w-[180px] truncate" title={row.original.remarks || "-"}>
+          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.remarks || "-"}>
             {row.original.remarks || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
         accessorKey: "vehicleNo",
         header: "Vehicle",
         cell: ({ row }) => (
-          <span className="block max-w-[140px] truncate" title={row.original.vehicleNo || "-"}>
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.vehicleNo || "-"}>
             {row.original.vehicleNo || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
         accessorKey: "driverName",
         header: "Driver",
         cell: ({ row }) => (
-          <span className="block max-w-[140px] truncate" title={row.original.driverName || "-"}>
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.driverName || "-"}>
             {row.original.driverName || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
         accessorKey: "dispatchSite",
         header: "Dispatch Site",
         cell: ({ row }) => (
-          <span className="block max-w-[160px] truncate" title={row.original.dispatchSite || "-"}>
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.dispatchSite || "-"}>
             {row.original.dispatchSite || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <span className="block max-w-[160px] truncate" title={row.original.user || "-"}>
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.user || "-"}>
             {row.original.user || "-"}
-          </span>
+          </TooltipText>
         ),
       },
       {
@@ -496,316 +526,333 @@ export function DispatchEntriesPage() {
         </CardHeader>
       </Card>
 
-      {editingEntry && (
-        <Card className="overflow-hidden border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-          <CardHeader className="border-b border-slate-200/80 pb-5">
-            <CardTitle>Edit dispatch entry</CardTitle>
-            <CardDescription>Update the selected record and save your changes.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 p-5">
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Dispatch details</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Core dispatch identity, date, time, and token information.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <Field htmlFor="edit-date" label="Date">
-                  <Input
-                    id="edit-date"
-                    type="date"
-                    value={editingEntry.date}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, date: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-time" label="Time">
-                  <Input
-                    id="edit-time"
-                    type="time"
-                    value={editingEntry.time}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, time: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-token" label="Token">
-                  <Select
-                    id="edit-token"
-                    disabled
-                    value={editingEntry.token}
-                    onChange={(event) =>
-                      updateEditingEntry({
-                        token: event.target.value,
-                        bagSize: "",
-                        quantity: "",
-                      })
-                    }
-                  >
-                    <option value="">Select token type</option>
-                    {tokenOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-            </div>
+      <Sheet open={isEditSheetOpen} onOpenChange={(open) => {
+        if (open) {
+          setIsEditSheetOpen(true);
+          return;
+        }
 
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Product details</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Challan and product information for the dispatch record.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field htmlFor="edit-challanNo" label="Challan No">
-                  <Input
-                    id="edit-challanNo"
-                    value={editingEntry.challanNo}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, challanNo: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-productCategory" label="Product Category">
-                  <Select
-                    id="edit-productCategory"
-                    disabled
-                    value={editingEntry.productCategory}
-                    onChange={(event) =>
-                      updateEditingEntry({
-                        productCategory: event.target.value,
-                        productName: "",
-                        token: "",
-                        productColor: "",
-                        bagSize: "",
-                        quantity: "",
-                      })
-                    }
-                  >
-                    <option value="">Select category</option>
-                    {productCategories.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field htmlFor="edit-productName" label="Product Name">
-                  <Select
-                    id="edit-productName"
-                    disabled
-                    value={editingEntry.productName}
-                    onChange={(event) =>
-                      updateEditingEntry({
-                        productName: event.target.value,
-                        token: "",
-                        productColor: "",
-                        bagSize: "",
-                        quantity: "",
-                      })
-                    }
-                  >
-                    <option value="">Select product</option>
-                    {productNames.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field htmlFor="edit-productColor" label="Product Color">
-                  <Select
-                    id="edit-productColor"
-                    disabled
-                    value={isTileCleanerSelected ? "" : editingEntry.productColor}
-                    onChange={(event) =>
-                      updateEditingEntry({
-                        productColor: event.target.value,
-                        bagSize: "",
-                        quantity: "",
-                      })
-                    }
-                  >
-                    <option value="">
-                      {isTileCleanerSelected ? "Not applicable for Tile Cleaner" : "Select color"}
-                    </option>
-                    {productColors.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-            </div>
+        closeEditSheet();
+      }}>
+        <SheetContent
+          side="right"
+          className="h-full w-full max-w-full overflow-hidden border-l border-slate-200 bg-white p-0 sm:w-[760px] sm:max-w-[760px] lg:w-[860px] lg:max-w-[860px]"
+        >
+          {editingEntry ? (
+            <div className="flex h-full flex-col">
+              <SheetHeader className="shrink-0 border-b border-slate-200/80 px-5 py-4 pr-12">
+                <SheetTitle>Update Entry</SheetTitle>
+                <SheetDescription>Update the selected dispatch record and save your changes.</SheetDescription>
+              </SheetHeader>
 
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Quantity details</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Bag size, stock values, and dispatch destination details.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field htmlFor="edit-bagSize" label="Bag Size">
-                  <Select
-                    id="edit-bagSize"
-                    disabled
-                    value={editingEntry.bagSize}
-                    onChange={(event) =>
-                      updateEditingEntry({
-                        bagSize: event.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Select bag size</option>
-                    {bagSizes.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field htmlFor="edit-quantity" label="Stock">
-                  <Input
-                    id="edit-quantity"
-                    disabled
-                    value={editingEntry.quantity}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, quantity: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-totalBags" label="Departed Bags">
-                  <Input
-                    id="edit-totalBags"
-                    disabled
-                    value={editingEntry.totalBags}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, totalBags: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-wastageQty" label="Wastage Quantity">
-                  <Input
-                    id="edit-wastageQty"
-                    inputMode="decimal"
-                    step="any"
-                    type="number"
-                    value={editingEntry.wastageQty}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, wastageQty: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-dispatchSite" label="Dispatch Site">
-                  <Input
-                    id="edit-dispatchSite"
-                    value={editingEntry.dispatchSite}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, dispatchSite: event.target.value } : current)
-                    }
-                  />
-                </Field>
-              </div>
-            </div>
+              <div className="flex-1 overflow-y-auto px-5 py-5">
+                <div className="space-y-6">
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Dispatch details</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Core dispatch identity, date, time, and token information.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <Field htmlFor="edit-date" label="Date">
+                        <DatePickerInput
+                          id="edit-date"
+                          name="date"
+                          value={editingEntry.date}
+                          onChange={(value) =>
+                            setEditingEntry((current) => current ? { ...current, date: value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-time" label="Time">
+                        <Input
+                          id="edit-time"
+                          type="time"
+                          value={editingEntry.time}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, time: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-token" label="Token">
+                        <Select
+                          id="edit-token"
+                          disabled
+                          value={editingEntry.token}
+                          onChange={(event) =>
+                            updateEditingEntry({
+                              token: event.target.value,
+                              bagSize: "",
+                              quantity: "",
+                            })
+                          }
+                        >
+                          <option value="">Select token type</option>
+                          {tokenOptions.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </div>
+                  </div>
 
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Transport details</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Vehicle, driver, challan, and dispatch execution details.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field htmlFor="edit-vehicleNo" label="Vehicle No">
-                  <Input
-                    id="edit-vehicleNo"
-                    value={editingEntry.vehicleNo}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, vehicleNo: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-driverName" label="Driver Name">
-                  <Input
-                    id="edit-driverName"
-                    value={editingEntry.driverName}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, driverName: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-driverContact" label="Driver Contact">
-                  <Input
-                    id="edit-driverContact"
-                    value={editingEntry.driverContact}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, driverContact: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-challanName" label="Challan Name">
-                  <Input
-                    id="edit-challanName"
-                    value={editingEntry.challanName}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, challanName: event.target.value } : current)
-                    }
-                  />
-                </Field>
-              </div>
-            </div>
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Product details</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Challan and product information for the dispatch record.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <Field htmlFor="edit-challanNo" label="Challan No">
+                        <Input
+                          id="edit-challanNo"
+                          value={editingEntry.challanNo}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, challanNo: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-productCategory" label="Product Category">
+                        <Select
+                          id="edit-productCategory"
+                          disabled
+                          value={editingEntry.productCategory}
+                          onChange={(event) =>
+                            updateEditingEntry({
+                              productCategory: event.target.value,
+                              productName: "",
+                              token: "",
+                              productColor: "",
+                              bagSize: "",
+                              quantity: "",
+                            })
+                          }
+                        >
+                          <option value="">Select category</option>
+                          {productCategories.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field htmlFor="edit-productName" label="Product Name">
+                        <Select
+                          id="edit-productName"
+                          disabled
+                          value={editingEntry.productName}
+                          onChange={(event) =>
+                            updateEditingEntry({
+                              productName: event.target.value,
+                              token: "",
+                              productColor: "",
+                              bagSize: "",
+                              quantity: "",
+                            })
+                          }
+                        >
+                          <option value="">Select product</option>
+                          {productNames.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field htmlFor="edit-productColor" label="Product Color">
+                        <Select
+                          id="edit-productColor"
+                          disabled
+                          value={isTileCleanerSelected ? "" : editingEntry.productColor}
+                          onChange={(event) =>
+                            updateEditingEntry({
+                              productColor: event.target.value,
+                              bagSize: "",
+                              quantity: "",
+                            })
+                          }
+                        >
+                          <option value="">
+                            {isTileCleanerSelected ? "Not applicable for Tile Cleaner" : "Select color"}
+                          </option>
+                          {productColors.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </div>
+                  </div>
 
-            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Schedule notes</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Dispatch timing and local notes for update support.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field htmlFor="edit-dispatchTime" label="Dispatch Time">
-                  <Input
-                    id="edit-dispatchTime"
-                    type="time"
-                    value={editingEntry.dispatchTime}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, dispatchTime: event.target.value } : current)
-                    }
-                  />
-                </Field>
-                <Field htmlFor="edit-todayVehicleNo" label="Today Vehicle No">
-                  <Input
-                    id="edit-todayVehicleNo"
-                    value={editingEntry.todayVehicleNo}
-                    onChange={(event) =>
-                      setEditingEntry((current) => current ? { ...current, todayVehicleNo: event.target.value } : current)
-                    }
-                  />
-                </Field>
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Quantity details</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Bag size, stock values, and dispatch destination details.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <Field htmlFor="edit-bagSize" label="Bag Size">
+                        <Select
+                          id="edit-bagSize"
+                          disabled
+                          value={editingEntry.bagSize}
+                          onChange={(event) =>
+                            updateEditingEntry({
+                              bagSize: event.target.value,
+                            })
+                          }
+                        >
+                          <option value="">Select bag size</option>
+                          {bagSizes.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field htmlFor="edit-quantity" label="Stock">
+                        <Input
+                          id="edit-quantity"
+                          disabled
+                          value={editingEntry.quantity}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, quantity: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-totalBags" label="Departed Bags">
+                        <Input
+                          id="edit-totalBags"
+                          disabled
+                          value={editingEntry.totalBags}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, totalBags: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-wastageQty" label="Wastage Quantity">
+                        <Input
+                          id="edit-wastageQty"
+                          inputMode="decimal"
+                          step="any"
+                          type="number"
+                          value={editingEntry.wastageQty}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, wastageQty: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-dispatchSite" label="Dispatch Site">
+                        <Input
+                          id="edit-dispatchSite"
+                          value={editingEntry.dispatchSite}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, dispatchSite: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Transport details</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Vehicle, driver, challan, and dispatch execution details.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <Field htmlFor="edit-vehicleNo" label="Vehicle No">
+                        <Input
+                          id="edit-vehicleNo"
+                          value={editingEntry.vehicleNo}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, vehicleNo: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-driverName" label="Driver Name">
+                        <Input
+                          id="edit-driverName"
+                          value={editingEntry.driverName}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, driverName: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-driverContact" label="Driver Contact">
+                        <Input
+                          id="edit-driverContact"
+                          value={editingEntry.driverContact}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, driverContact: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-challanName" label="Challan Name">
+                        <Input
+                          id="edit-challanName"
+                          value={editingEntry.challanName}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, challanName: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-background/60 p-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Schedule notes</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">Dispatch timing and local notes for update support.</p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field htmlFor="edit-dispatchTime" label="Dispatch Time">
+                        <Input
+                          id="edit-dispatchTime"
+                          type="time"
+                          value={editingEntry.dispatchTime}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, dispatchTime: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                      <Field htmlFor="edit-todayVehicleNo" label="Today Vehicle No">
+                        <Input
+                          id="edit-todayVehicleNo"
+                          value={editingEntry.todayVehicleNo}
+                          onChange={(event) =>
+                            setEditingEntry((current) => current ? { ...current, todayVehicleNo: event.target.value } : current)
+                          }
+                        />
+                      </Field>
+                    </div>
+
+                    <Field htmlFor="edit-remarks" label="Remarks">
+                      <Textarea
+                        id="edit-remarks"
+                        value={editingEntry.remarks}
+                        placeholder="Add dispatch remarks"
+                        onChange={(event) =>
+                          setEditingEntry((current) => current ? { ...current, remarks: event.target.value } : current)
+                        }
+                      />
+                    </Field>
+                  </div>
+                </div>
               </div>
 
-              <Field htmlFor="edit-remarks" label="Remarks">
-                <Textarea
-                  id="edit-remarks"
-                  value={editingEntry.remarks}
-                  placeholder="Add dispatch remarks"
-                  onChange={(event) =>
-                    setEditingEntry((current) => current ? { ...current, remarks: event.target.value } : current)
-                  }
-                />
-              </Field>
+              <SheetFooter className="shrink-0 border-t border-slate-200/80 bg-white px-5 py-4">
+                <Button onClick={closeEditSheet} type="button" variant="outline">
+                  Cancel
+                </Button>
+                <Button disabled={isUpdating} onClick={handleUpdate} type="button">
+                  <Save />
+                  {isUpdating ? "Saving Changes..." : "Save Changes"}
+                </Button>
+              </SheetFooter>
             </div>
-
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-200/80 pt-5 sm:flex-row sm:justify-end">
-              <Button onClick={() => setEditingEntry(null)} type="button" variant="outline">
-                Cancel
-              </Button>
-              <Button disabled={isUpdating} onClick={handleUpdate} type="button">
-                <Save />
-                {isUpdating ? "Updating..." : "Update entry"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : null}
+        </SheetContent>
+      </Sheet>
 
       <Card className="overflow-hidden border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         <CardHeader className="gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between sm:space-y-0">

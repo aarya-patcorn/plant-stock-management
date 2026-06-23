@@ -6,6 +6,7 @@ import { fetchInventory, type PurchaseEntry } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataBadge, DataTable } from "@/components/ui/DataTable";
+import { TooltipText } from "@/components/ui/tooltip-text";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { Select } from "@/components/ui/select";
 
@@ -112,9 +113,9 @@ export function InventoryEntriesPage() {
         header: "Material",
         cell: ({ row }) => (
           <div className="min-w-[260px] max-w-[320px] space-y-1">
-            <p className="truncate font-medium text-slate-900" title={buildInventoryLabel(row.original) || "-"}>
+            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildInventoryLabel(row.original) || "-"}>
               {buildInventoryLabel(row.original) || "Inventory item"}
-            </p>
+            </TooltipText>
             <div className="flex flex-wrap gap-2">
               {row.original.rawMaterialName ? (
                 <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge>

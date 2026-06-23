@@ -25,6 +25,7 @@ import { PurchaseEntryForm } from "@/components/purchase/PurchaseEntryForm";
 import { PurchaseEntriesPage } from "@/components/purchase/PurchaseEntriesPage";
 import { ReportsPage } from "@/components/reports/ReportsPage";
 import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import newLogo from "@/assets/new_logo.png";
 import { AUTH_STORAGE_KEY } from "@/lib/auth";
 import ScrollToTop from "./hooks/ScrollToTop";
@@ -297,9 +298,10 @@ function AppShellLayout() {
 
 function App() {
   return (
-    <BrowserRouter>
-    <ScrollToTop />
-      <Routes>
+    <TooltipProvider delayDuration={250}>
+      <BrowserRouter>
+      <ScrollToTop />
+        <Routes>
         <Route element={<PublicRoute />}>
           <Route element={<LoginPage />} path="/login" />
         </Route>
@@ -321,8 +323,9 @@ function App() {
             <Route path="/sheets" element={<PlaceholderPage title="Sheets" />} />
           </Route>
         </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
   );
 }
 

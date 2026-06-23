@@ -38,6 +38,7 @@ import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { TooltipText } from "@/components/ui/tooltip-text";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { formatDateDDMMYYYY } from "@/pages/dashboard/utils/formatDateDDMMYYYY";
 import {
@@ -561,9 +562,9 @@ export function ReportsPage() {
             header: "Product Name",
             accessorFn: (row) => row.reportMode === "production" ? row.productName : "",
             cell: ({ row }) => (
-              <span className="block max-w-[220px] truncate" title={row.original.reportMode === "production" ? row.original.productName || "-" : "-"}>
+              <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.reportMode === "production" ? row.original.productName || "-" : "-"}>
                 {row.original.reportMode === "production" ? row.original.productName || "-" : "-"}
-              </span>
+              </TooltipText>
             ),
           },
           {
@@ -645,9 +646,9 @@ export function ReportsPage() {
             header: "Product Name",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.productName : "",
             cell: ({ row }) => (
-              <span className="block max-w-[220px] truncate" title={row.original.reportMode === "dispatch" ? row.original.productName || "-" : "-"}>
+              <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.reportMode === "dispatch" ? row.original.productName || "-" : "-"}>
                 {row.original.reportMode === "dispatch" ? row.original.productName || "-" : "-"}
-              </span>
+              </TooltipText>
             ),
           },
           {
@@ -679,9 +680,9 @@ export function ReportsPage() {
             header: "Dispatch Site",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.dispatchSite : "",
             cell: ({ row }) => (
-              <span className="block max-w-[180px] truncate" title={row.original.reportMode === "dispatch" ? row.original.dispatchSite || "-" : "-"}>
+              <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.reportMode === "dispatch" ? row.original.dispatchSite || "-" : "-"}>
                 {row.original.reportMode === "dispatch" ? row.original.dispatchSite || "-" : "-"}
-              </span>
+              </TooltipText>
             ),
           },
           {
@@ -689,9 +690,9 @@ export function ReportsPage() {
             header: "Vehicle No",
             accessorFn: (row) => row.reportMode === "dispatch" ? row.vehicleNo : "",
             cell: ({ row }) => (
-              <span className="block max-w-[160px] truncate" title={row.original.reportMode === "dispatch" ? row.original.vehicleNo || "-" : "-"}>
+              <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.reportMode === "dispatch" ? row.original.vehicleNo || "-" : "-"}>
                 {row.original.reportMode === "dispatch" ? row.original.vehicleNo || "-" : "-"}
-              </span>
+              </TooltipText>
             ),
           },
           {

@@ -4,6 +4,7 @@ import type { PurchaseEntry } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TooltipText } from "@/components/ui/tooltip-text";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { StockProgress } from "@/pages/dashboard/components/StockProgress";
 import {
@@ -61,16 +62,17 @@ export function InventoryPreview({ entries, isLoading }: InventoryPreviewProps) 
                         <span className="rounded-lg bg-slate-100 p-1.5 text-slate-600">
                           {percentage < 20 ? <AlertTriangle className="size-3 sm:size-3.5" /> : <TrendingUp className="size-3 sm:size-3.5" />}
                         </span>
-                        <p
+                        <TooltipText
+                          as="p"
                           className="truncate text-xs font-semibold text-slate-900 sm:text-sm"
-                          title={buildInventoryLabel(entry) || "Inventory item"}
+                          content={buildInventoryLabel(entry) || "Inventory item"}
                         >
                           {entry.rawMaterialName || "Inventory item"}
-                        </p>
+                        </TooltipText>
                       </div>
-                      <p className="mt-1 truncate text-[11px] text-slate-500 sm:text-xs" title={categoryPath}>
+                      <TooltipText as="p" className="mt-1 truncate text-[11px] text-slate-500 sm:text-xs" content={categoryPath}>
                         {categoryPath}
-                      </p>
+                      </TooltipText>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                       <Badge className="text-[10px] sm:text-xs" variant={stockTone.badgeVariant}>{stockTone.label}</Badge>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TooltipText } from "@/components/ui/tooltip-text";
 import type { UnifiedActivity } from "@/pages/dashboard/types";
 
 type UnifiedActivityFeedProps = {
@@ -76,9 +77,9 @@ export function UnifiedActivityFeed({ activities, href }: UnifiedActivityFeedPro
                             <Icon className="mr-1 size-3 sm:size-3.5" />
                             {activity.type}
                           </Badge>
-                          <p className="truncate text-xs font-semibold text-foreground sm:text-sm" title={activity.itemName}>
+                          <TooltipText as="p" className="truncate text-xs font-semibold text-foreground sm:text-sm" content={activity.itemName}>
                             {activity.itemName}
-                          </p>
+                          </TooltipText>
                         </div>
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:mt-2 sm:gap-2">
                           <Badge className="border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-600 hover:bg-slate-50 sm:text-xs" variant="outline">
@@ -101,9 +102,9 @@ export function UnifiedActivityFeed({ activities, href }: UnifiedActivityFeedPro
                     </div>
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-2 sm:mt-3 sm:gap-3">
                       <p className="text-sm font-bold tracking-tight text-slate-950 sm:text-base">{activity.quantity}</p>
-                      <p className="hidden truncate text-xs text-slate-500 sm:block" title={activity.secondaryInfo}>
+                      <TooltipText as="p" className="hidden truncate text-xs text-slate-500 sm:block" content={activity.secondaryInfo}>
                         {activity.secondaryInfo}
-                      </p>
+                      </TooltipText>
                     </div>
                   </div>
                 </div>

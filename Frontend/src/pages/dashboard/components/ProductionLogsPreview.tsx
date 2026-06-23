@@ -4,6 +4,7 @@ import type { ProductionMaterialLog } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TooltipText } from "@/components/ui/tooltip-text";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { StockProgress } from "@/pages/dashboard/components/StockProgress";
 import {
@@ -56,9 +57,9 @@ export function ProductionLogsPreview({ isLoading, logs }: ProductionLogsPreview
                         <span className="rounded-lg bg-slate-100 p-1.5 text-slate-600">
                           {percentage < 20 ? <AlertTriangle className="size-3 sm:size-3.5" /> : <Package className="size-3 sm:size-3.5" />}
                         </span>
-                        <p className="truncate text-xs font-semibold text-slate-900 sm:text-sm" title={entry.productName || "Production log"}>
+                        <TooltipText as="p" className="truncate text-xs font-semibold text-slate-900 sm:text-sm" content={entry.productName || "Production log"}>
                           {entry.productName || "Production log"}
-                        </p>
+                        </TooltipText>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 sm:gap-2 sm:text-xs">
                         <span>{entry.productColor || "Color N/A"}</span>
