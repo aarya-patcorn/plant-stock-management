@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Eye, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
@@ -460,6 +460,10 @@ export function ProductDepartureForm() {
 
     if (!product.productName) {
       return `${prefix}Product name is required.`;
+    }
+
+    if (product.productCategory === "Tile Adhesive" && !product.token) {
+      return `${prefix}Token is required for Tile Adhesive.`;
     }
 
     if (!isTileCleanerProduct && !product.productColor) {
@@ -1107,5 +1111,6 @@ export function ProductDepartureForm() {
     </div>
   );
 }
+
 
 
