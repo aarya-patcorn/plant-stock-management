@@ -1,6 +1,6 @@
 const escapeHtml = require("./escapeHtml")
 
-export default buildDispatchReportHtml = (entries, title) => {
+const buildDispatchReportHtml = (entries, title) => {
   const rows = entries
     .map((entry, index) => {
       return `
@@ -64,4 +64,9 @@ export default buildDispatchReportHtml = (entries, title) => {
       </div>
     </div>
   `;
+};
+
+
+module.exports = {
+  buildDispatchReportHtml,
 };

@@ -7,8 +7,9 @@ const {
   generateManufacturingShiftPdf,
   generateDispatchDailyPdf,
 } = require("../utils/pdfGenerator");
-const { default: buildManufacturingReportHtml } = require("../utils/buildManufacturingReportHtml");
-const { default: buildDispatchReportHtml } = require("../utils/buildDispatchReportHtml");
+const { buildManufacturingReportHtml } = require("../utils/buildManufacturingReportHtml")
+const { buildDispatchReportHtml } = require("../utils/buildDispatchReportHtml")
+
 
 const TIMEZONE = "Asia/Kolkata";
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;

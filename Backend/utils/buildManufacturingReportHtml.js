@@ -1,6 +1,6 @@
 const escapeHtml = require("./escapeHtml")
 
-export default buildManufacturingReportHtml = (entries, title) => {
+const buildManufacturingReportHtml = (entries, title) => {
   const rows = entries
     .map((entry, index) => {
       return `
@@ -58,4 +58,8 @@ export default buildManufacturingReportHtml = (entries, title) => {
       </div>
     </div>
   `;
+};
+
+module.exports = {
+  buildManufacturingReportHtml,
 };
