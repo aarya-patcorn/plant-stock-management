@@ -7,6 +7,8 @@ const {
   generateManufacturingShiftPdf,
   generateDispatchDailyPdf,
 } = require("../utils/pdfGenerator");
+const { default: buildManufacturingReportHtml } = require("../utils/buildManufacturingReportHtml");
+const { default: buildDispatchReportHtml } = require("../utils/buildDispatchReportHtml");
 
 const TIMEZONE = "Asia/Kolkata";
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -105,17 +107,15 @@ const sendManufacturingShiftReport = async ({ reportDate, shiftName, start, end 
     return;
   }
 
-  const pdfBuffer = await generateManufacturingShiftPdf(entries, `${shiftName} - ${reportDate}`);
+  const reportHtml = buildManufacturingReportHtml(
+    entries,
+    `Manufacturing Report - ${shiftName} - ${reportDate}`
+  );
 
   await sendEmailWithAttachment({
     subject: `Manufacturing Report - ${shiftName} - ${reportDate}`,
-    html: `<p>Please find attached the manufacturing ${shiftName.toLowerCase()} report for ${reportDate}.</p>`,
-    attachments: [
-      {
-        filename: `manufacturing-${shiftName.toLowerCase().replace(/\s+/g, "-")}-${reportDate}.pdf`,
-        content: pdfBuffer,
-      },
-    ],
+    html: reportHtml,
+    attachments: [],
   });
 
   await markReportSent({
@@ -165,17 +165,15 @@ const sendDispatchDailyReport = async ({ reportDate, start, end }) => {
     return;
   }
 
-  const pdfBuffer = await generateDispatchDailyPdf(entries);
+  const reportHtml = buildDispatchReportHtml(
+    entries,
+    `Dispatch Daily Report - ${reportDate}`
+  );
 
   await sendEmailWithAttachment({
     subject: `Dispatch Daily Report - ${reportDate}`,
-    html: `<p>Please find attached the dispatch daily report for ${reportDate}.</p>`,
-    attachments: [
-      {
-        filename: `dispatch-daily-${reportDate}.pdf`,
-        content: pdfBuffer,
-      },
-    ],
+    html: reportHtml,
+    attachments: [],
   });
 
   await markReportSent({
