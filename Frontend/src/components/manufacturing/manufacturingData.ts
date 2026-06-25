@@ -26,14 +26,14 @@ export const epoxyColors = [
 export const groutProducts = [
   "White cement grout",
   "Ivory",
-  "Black cement grout",
-  "coffee brown grout",
-  "light grey grout",
-  "grey grout",
-  "RED grout",
-  "BLUE grout",
-  "GREEN grout",
-  "YELLOW grout",
+  "Black grout",
+  "Coffee brown grout",
+  "Light grey grout",
+  "Grey grout",
+  "Red grout",
+  "Blue grout",
+  "Green grout",
+  "Yellow grout",
 ];
 
 export const epoxyProducts = [
@@ -41,13 +41,14 @@ export const epoxyProducts = [
   "Black epoxy",
   "Ivory epoxy",
   "Deep safayar epoxy",
-  "Slate greyepoxy",
+  "Slate grey epoxy",
+  "Sand stone epoxy",
   "Light grey epoxy",
   "Dark grey epoxy",
   "Coffee brown epoxy",
   "Harvest Gold epoxy",
   "English walnut epoxy",
-  "Dhaulpur pink epoxy",
+  "Dholpur pink epoxy",
   "Redwood epoxy",
 ];
 
@@ -55,28 +56,29 @@ export const epoxyProductColorMap: Record<string, string> = {
   "White epoxy": "White",
   "Black epoxy": "Black",
   "Ivory epoxy": "Ivory",
-  "Deep safayar epoxy": "Deep Safayar",
-  "Slate greyepoxy": "Slate Grey",
-  "Light grey epoxy": "Light Grey",
-  "Dark grey epoxy": "Dark Grey",
-  "Coffee brown epoxy": "Coffee Brown",
-  "Harvest Gold epoxy": "Harvest Gold",
-  "English walnut epoxy": "English Walnut",
-  "Dhaulpur pink epoxy": "Dhaulpur Pink",
+  "Deep safayar epoxy": "Deep safayar",
+  "Slate grey epoxy": "Slate grey",
+  "Sand stone epoxy": "Sand stone",
+  "Light grey epoxy": "Light grey",
+  "Dark grey epoxy": "Dark grey",
+  "Coffee brown epoxy": "Coffee brown",
+  "Harvest gold epoxy": "Harvest gold",
+  "English walnut epoxy": "English walnut",
+  "Dholpur pink epoxy": "Dholpur pink",
   "Redwood epoxy": "Redwood",
 };
 
 export const groutProductColorMap: Record<string, string> = {
   "White cement grout": "White",
   "Ivory": "Ivory",
-  "Black cement grout": "Black",
-  "coffee brown grout": "Coffee Brown",
-  "light grey grout": "Light Grey",
-  "grey grout": "Grey",
-  "RED grout": "Red",
-  "BLUE grout": "Blue",
-  "GREEN grout": "Green",
-  "YELLOW grout": "Yellow",
+  "Black grout": "Black",
+  "Coffee brown grout": "Coffee Brown",
+  "Light grey grout": "Light Grey",
+  "Grey grout": "Grey",
+  "Red grout": "Red",
+  "Blue grout": "Blue",
+  "Green grout": "Green",
+  "Yellow grout": "Yellow",
 };
 
 export const groutRecipes: Record<string, RawMaterialRecipeItem[]> = {
@@ -85,19 +87,19 @@ export const groutRecipes: Record<string, RawMaterialRecipeItem[]> = {
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "120", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "4", materialUnit: "kg" },
   ],
-  "Ivory": [
+  "Ivory grout": [
     { rawMaterialName: "Cement", packagingType: "White Cement", level2: "", level3: "", colorOfSandEpoxy: "", materialQuantity: "180", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "120", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "4", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Yellow Pigment", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "gm" },
   ],
-  "Black cement grout": [
+  "Black grout": [
     { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "180", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "120", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "4", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Black Pigment", level3: "", colorOfSandEpoxy: "", materialQuantity: "3500", materialUnit: "gm" },
   ],
-  "coffee brown grout": [
+  "Coffee brown grout": [
     { rawMaterialName: "Cement", packagingType: "White Cement", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "70", materialUnit: "kg" },
     { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "kg" },
@@ -105,38 +107,38 @@ export const groutRecipes: Record<string, RawMaterialRecipeItem[]> = {
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Red Pigment", level3: "", colorOfSandEpoxy: "", materialQuantity: "650", materialUnit: "gm" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Black Pigment", level3: "", colorOfSandEpoxy: "", materialQuantity: "700", materialUnit: "gm" },
   ],
-  "light grey grout": [
+  "Light grey grout": [
     { rawMaterialName: "Cement", packagingType: "White Cement", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "90", materialUnit: "kg" },
     { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "2", materialUnit: "kg" },
   ],
-  "grey grout": [
+  "Grey grout": [
     { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "50", materialUnit: "kg" },
     { rawMaterialName: "Cement", packagingType: "White Cement", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "70", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "2", materialUnit: "kg" },
   ],
-  "RED grout": [
+  "Red grout": [
     { rawMaterialName: "Cement", packagingType: "White Cement", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "50", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "1.5", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Red Pigment", level3: "", colorOfSandEpoxy: "", materialQuantity: "900", materialUnit: "gm" },
   ],
-  "BLUE grout": [
+  "Blue grout": [
     { rawMaterialName: "Cement", packagingType: "White Cement", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "50", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "1.5", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Blue Pigment", level3: "", colorOfSandEpoxy: "", materialQuantity: "2000", materialUnit: "gm" },
   ],
-  "GREEN grout": [
+  "Green grout": [
     { rawMaterialName: "Cement", packagingType: "White Cement", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "50", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "1.5", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Blue Pigment", level3: "", colorOfSandEpoxy: "", materialQuantity: "1550", materialUnit: "gm" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "450", materialUnit: "gm" },
   ],
-  "YELLOW grout": [
+  "Yellow grout": [
     { rawMaterialName: "Cement", packagingType: "White Cement", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "100", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Grout", level2: "Calcium Carbonate", level3: "", colorOfSandEpoxy: "", materialQuantity: "50", materialUnit: "kg" },
     { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "1.5", materialUnit: "kg" },
