@@ -1,4 +1,4 @@
-import escapeHtml from "./escapeHtml";
+const escapeHtml = require("./escapeHtml")
 
 export default buildManufacturingReportHtml = (entries, title) => {
   const rows = entries
