@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
@@ -70,8 +70,16 @@ export function InventoryEntriesPage() {
   );
 
   const packagingTypeOptions = useMemo(
-    () => Array.from(new Set(entries.map((entry) => entry.packagingType).filter(Boolean))),
-    [entries],
+    () =>
+      Array.from(
+        new Set(
+          entries
+            .filter((entry) => !rawMaterialFilter || entry.rawMaterialName === rawMaterialFilter)
+            .map((entry) => entry.packagingType)
+            .filter(Boolean),
+        ),
+      ),
+    [entries, rawMaterialFilter],
   );
 
   const filteredEntries = useMemo(
@@ -94,6 +102,10 @@ export function InventoryEntriesPage() {
       ),
     [currentPage, filteredEntries],
   );
+
+  useEffect(() => {
+    setPackagingTypeFilter("");
+  }, [rawMaterialFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -261,6 +273,7 @@ export function InventoryEntriesPage() {
     </div>
   );
 }
+
 
 
 
