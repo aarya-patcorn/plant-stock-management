@@ -184,17 +184,17 @@ export function getInventoryAlertThreshold(entry: PurchaseEntry) {
     }
 
     if (packagingType === "white cement" && level2 === "bag") {
-      return { threshold: 5, thresholdLabel: "5 mt" };
+      return { threshold: 30, thresholdLabel: "30 mt" };
     }
   }
 
   if (rawMaterialName === "sand") {
     if (packagingType === "grey" && level2.includes("600 micron")) {
-      return { threshold: 15, thresholdLabel: "15 mt" };
+      return { threshold: 30, thresholdLabel: "30 mt" };
     }
 
     if (packagingType === "grey" && level2.includes("1200 micron")) {
-      return { threshold: 10, thresholdLabel: "10 mt" };
+      return { threshold: 30, thresholdLabel: "30 mt" };
     }
 
     if (packagingType === "white") {
@@ -208,11 +208,11 @@ export function getInventoryAlertThreshold(entry: PurchaseEntry) {
 
   if (rawMaterialName === "packaging") {
     if (unit === "bags") {
-      return { threshold: 2000, thresholdLabel: "2000 bags" };
+      return { threshold: 3000, thresholdLabel: "3000 bags" };
     }
 
     if (level3 === "coupon") {
-      return { threshold: 2000, thresholdLabel: "2000 pcs" };
+      return { threshold: 3000, thresholdLabel: "3000 pcs" };
     }
 
     if (level2 === "tile grout" && level3.includes("pouch")) {
@@ -225,7 +225,7 @@ export function getInventoryAlertThreshold(entry: PurchaseEntry) {
   }
 
   if (packagingBag && packagingBag.includes("coupon")) {
-    return { threshold: 2000, thresholdLabel: "200 pcs" };
+    return { threshold: 3000, thresholdLabel: "3000 pcs" };
   }
 
   return null;

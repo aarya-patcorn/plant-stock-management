@@ -224,7 +224,7 @@ export const epoxyRecipes: Record<string, RawMaterialRecipeItem[]> = {
 export const bondureRecipes: RawMaterialRecipeItem[] = [
   { rawMaterialName: "Cement", packagingType: "PPC", level2: "Silo", level3: "", colorOfSandEpoxy: "", materialQuantity: "400", materialUnit: "kg" },
   { rawMaterialName: "Sand", packagingType: "Grey", level2: "Big (1200 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "600", materialUnit: "kg" },
-  { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "4", materialUnit: "kg" },
+  { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "3", materialUnit: "kg" },
 ];
 
 export const tileAdhesiveRecipes: Record<string, Record<string, RawMaterialRecipeItem[]>> = {
