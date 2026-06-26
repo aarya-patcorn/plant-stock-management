@@ -38,6 +38,23 @@ export type PurchaseEntry = {
   remarks: string;
 };
 
+export type InventoryEntry = {
+  _id: string;
+  rawMaterialName: string;
+  packagingType: string;
+  level2: string;
+  level3: string;
+  level4: string;
+  coupon: string;
+  sandEpoxyColor: string;
+  packagingBagColor: string;
+  bagColor: string;
+  purchaseStock: number;
+  usedInProduction: number;
+  currentStock: number;
+  unit: string;
+};
+
 export type ManufacturingProductItem = {
   token: string;
   bagSize: string;
@@ -269,7 +286,7 @@ export async function loginUser(payload: LoginPayload) {
 }
 
 export async function fetchPurchaseEntries() {
-  const responseData = await requestApi("/api/purchases", {}, "Unable to fetch purchase entries.");
+  const responseData = await requestApi("/api/inventory", {}, "Unable to fetch purchase entries.");
   const entries = Array.isArray(responseData?.data) ? responseData.data : [];
   return entries.map(normalizePurchaseEntry);
 }
@@ -277,7 +294,7 @@ export async function fetchPurchaseEntries() {
 export async function fetchInventory() {
   const responseData = await requestApi("/api/inventory", {}, "Unable to fetch inventory.");
   const entries = Array.isArray(responseData?.data) ? responseData.data : [];
-  return entries.map(normalizePurchaseEntry);
+  return entries.map(normalizeInventoryEntry);
 }
 
 export async function fetchManufacturingEntries() {
@@ -398,6 +415,38 @@ function normalizePurchaseEntry(entry: unknown): PurchaseEntry {
     attachFileName: attachFileName || undefined,
     attachFileId: attachFileId || undefined,
     remarks: stringifyValue(record.remarks),
+  };
+}
+
+function normalizeInventoryEntry(entry: unknown): InventoryEntry {
+  const record =
+    typeof entry === "object" && entry !== null
+      ? (entry as Record<string, unknown>)
+      : {};
+
+  return {
+    _id: stringifyValue(record._id ?? record.id),
+    rawMaterialName: stringifyValue(record.rawMaterialName),
+    packagingType: stringifyValue(record.packagingType),
+    level2: stringifyValue(record.level2),
+    level3: stringifyValue(record.level3),
+    level4: stringifyValue(record.level4),
+    coupon: stringifyValue(record.coupon),
+    sandEpoxyColor: stringifyValue(
+      record.sandEpoxyColor ?? record.colorOfSandEpoxy
+    ),
+    packagingBagColor: stringifyValue(record.packagingBagColor),
+    bagColor: stringifyValue(record.bagColor),
+    purchaseStock: parseNumber(
+      record.purchaseStock ?? record.quantityPurchased
+    ),
+    usedInProduction: parseNumber(
+      record.usedInProduction ?? record.used_stock
+    ),
+    currentStock: parseNumber(
+      record.currentStock ?? record.availableStock ?? record.current_quantity
+    ),
+    unit: stringifyValue(record.unit),
   };
 }
 
@@ -534,6 +583,19 @@ function normalizeDispatchEntry(entry: unknown): DispatchEntry {
 
 function stringifyValue(value: unknown) {
   return value == null ? "" : String(value);
+}
+
+export function parseNumber(value: unknown): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
 }
 
 function normalizeDate(value: unknown) {

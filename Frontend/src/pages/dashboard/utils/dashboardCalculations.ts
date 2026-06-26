@@ -1,5 +1,5 @@
 import { AlertTriangle, Boxes, Package, ShoppingBag, Truck, Warehouse } from "lucide-react";
-import type { DispatchEntry, ManufacturingEntry, ProductionMaterialLog, PurchaseEntry } from "@/lib/api";
+import type { DispatchEntry, InventoryEntry, ManufacturingEntry, ProductionMaterialLog, PurchaseEntry } from "@/lib/api";
 import type {
   DashboardStats,
   InventoryAlert,
@@ -175,56 +175,89 @@ export function getInventoryAlertThreshold(entry: PurchaseEntry) {
   const packagingType = normalizeLabel(entry.packagingType);
   const level2 = normalizeLabel(entry.level2);
   const level3 = normalizeLabel(entry.level3);
+  const level4 = normalizeLabel(entry.level4);
   const packagingBag = normalizeLabel(entry.packagingBag);
+  const packagingBagColor = normalizeLabel(entry.packagingBagColor);
+  const bagColor = normalizeLabel(entry.packagingBagColor);
+  const coupon = normalizeLabel(entry.coupon ?? "");
   const unit = normalizeLabel(entry.unit);
+
+  const combined = [
+    rawMaterialName,
+    packagingType,
+    level2,
+    level3,
+    level4,
+    packagingBag,
+    packagingBagColor,
+    bagColor,
+    coupon,
+    unit,
+  ].join(" ");
 
   if (rawMaterialName === "cement") {
     if ((packagingType === "ppc" || packagingType === "opc") && level2 === "silo") {
-      return { threshold: 30, thresholdLabel: "30 mt" };
+      return { threshold: 30000, thresholdLabel: "30000 kg" };
     }
 
-    if (packagingType === "white cement" && level2 === "bag") {
-      return { threshold: 30, thresholdLabel: "30 mt" };
+    if (packagingType === "white cement" || level2 === "white cement") {
+      return { threshold: 3000, thresholdLabel: "3000 kg" };
     }
   }
 
   if (rawMaterialName === "sand") {
-    if (packagingType === "grey" && level2.includes("600 micron")) {
-      return { threshold: 30, thresholdLabel: "30 mt" };
+    if (packagingType === "white" || combined.includes("white sand")) {
+      return { threshold: 10000, thresholdLabel: "10000 kg" };
     }
 
-    if (packagingType === "grey" && level2.includes("1200 micron")) {
-      return { threshold: 30, thresholdLabel: "30 mt" };
+    if (combined.includes("600") || combined.includes("600mic") || combined.includes("600 micron")) {
+      return { threshold: 30000, thresholdLabel: "30000 kg" };
     }
 
-    if (packagingType === "white") {
-      return { threshold: 10, thresholdLabel: "10 mt" };
+    if (combined.includes("1200") || combined.includes("1200mic") || combined.includes("1200 micron")) {
+      return { threshold: 30000, thresholdLabel: "30000 kg" };
     }
   }
 
   if (rawMaterialName === "chemical") {
-    return { threshold: 30, thresholdLabel: "100 kg" };
+    if (combined.includes("Pigments")) {
+      return { threshold: 20, thresholdLabel: "20 kg" };
+    }
+
+    if (combined.includes("Resin")) {
+      return { threshold: 100, thresholdLabel: "100 kg" };
+    }
+
+    if (combined.includes("Hardener")) {
+      return { threshold: 100, thresholdLabel: "100 kg" };
+    }
+
+    if (combined.includes("Benton")) {
+      return { threshold: 20, thresholdLabel: "20 kg" };
+    }
+
+    if (combined.includes("Byk")) {
+      return { threshold: 20, thresholdLabel: "20 kg" };
+    }
+
+    return null;
   }
 
   if (rawMaterialName === "packaging") {
-    if (unit === "bags") {
+    if (combined.includes("coloured sand") || combined.includes("colored sand")) {
+      return { threshold: 400, thresholdLabel: "400 kg" };
+    }
+
+    if (unit === "bags" || combined.includes("empty bag") || combined.includes("bag")) {
       return { threshold: 3000, thresholdLabel: "3000 bags" };
     }
 
-    if (level3 === "coupon") {
+    if (unit === "pcs" && (combined.includes("coupon") || coupon)) {
       return { threshold: 3000, thresholdLabel: "3000 pcs" };
-    }
-
-    if (level2 === "tile grout" && level3.includes("pouch")) {
-      return { threshold: 2000, thresholdLabel: "2000 nos" };
-    }
-
-    if (level2 === "epoxy" && level3.includes("bucket")) {
-      return { threshold: 500, thresholdLabel: "500 bucket" };
     }
   }
 
-  if (packagingBag && packagingBag.includes("coupon")) {
+  if (combined.includes("coupon")) {
     return { threshold: 3000, thresholdLabel: "3000 pcs" };
   }
 
@@ -410,9 +443,9 @@ export function buildOperationsSnapshot(params: {
           : item.caption === "Warehouse"
             ? `${formatCount(finishedGoods)} mt`
             : item.caption === "Production Today"
-              ? formatCount(dashboardStats.todaysManufacturedItems)
+              ? `${formatCount(dashboardStats.todaysManufacturedItems)} batches`
               : item.caption === "Dispatch Today"
-                ? formatCount(dashboardStats.todaysDispatchBags)
+                ? `${formatCount(dashboardStats.todaysDispatchBags)} bags`
                 : formatCount(lowStockCount),
   }));
 }

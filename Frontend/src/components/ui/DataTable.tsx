@@ -39,7 +39,7 @@ export function DataBadge({
   type,
 }: {
   children: ReactNode;
-  type: "color" | "productCategory" | "rawMaterialName" | "token" | "unit" | "packagingBagColor";
+  type: "color" | "productCategory" | "rawMaterialName" | "token" | "unit" | "packagingBagColor" | "sandEpoxyColor";
 }) {
   return (
     <span

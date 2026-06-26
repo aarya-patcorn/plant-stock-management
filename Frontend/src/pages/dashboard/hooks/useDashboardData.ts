@@ -36,7 +36,7 @@ export function useDashboardData() {
     let isMounted = true;
 
     void Promise.all([
-      fetchInventory(),
+      fetchPurchaseEntries(),
       fetchProductionMaterialLogs(),
       fetchPurchaseEntries(),
       fetchManufacturingEntries(),

@@ -1,4 +1,4 @@
-import type { ProductionMaterialLog, PurchaseEntry } from "@/lib/api";
+import type { InventoryEntry, ProductionMaterialLog, PurchaseEntry } from "@/lib/api";
 import type { TrendView } from "@/pages/dashboard/types";
 
 export function formatCount(value: number) {
@@ -29,13 +29,13 @@ export function formatTrendLabel(value: string, view: TrendView) {
   return value;
 }
 
-export function buildInventoryLabel(entry: PurchaseEntry) {
+export function buildInventoryLabel(entry: Pick<InventoryEntry, "rawMaterialName" | "packagingType" | "level2" | "level3" | "level4">) {
   return [entry.rawMaterialName, entry.packagingType, entry.level2, entry.level3, entry.level4]
     .filter(Boolean)
     .join(" / ");
 }
 
-export function buildInventoryCategoryPath(entry: PurchaseEntry) {
+export function buildInventoryCategoryPath(entry: Pick<InventoryEntry, "packagingType" | "level2" | "level3" | "level4">) {
   return [entry.packagingType, entry.level2, entry.level3, entry.level4].filter(Boolean).join(" / ");
 }
 
@@ -43,7 +43,9 @@ export function buildProductLabel(entry: ProductionMaterialLog) {
   return [entry.productCategory, entry.productName, entry.productColor].filter(Boolean).join(" / ");
 }
 
-export function buildInventoryAlertLabel(entry: PurchaseEntry) {
+export function buildInventoryAlertLabel(
+  entry: Pick<InventoryEntry, "rawMaterialName" | "packagingType" | "level2" | "level3"> & Partial<Pick<PurchaseEntry, "packagingBag" | "bucketSize">>,
+) {
   return [
     entry.rawMaterialName,
     entry.packagingType,

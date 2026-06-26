@@ -2,27 +2,29 @@
 import { ArrowLeft } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
-import { fetchInventory, type PurchaseEntry } from "@/lib/api";
+import { fetchInventory, InventoryEntry } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { TooltipText } from "@/components/ui/tooltip-text";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
-function buildInventoryLabel(entry: PurchaseEntry) {
-  return [entry.rawMaterialName, entry.packagingType, entry.level2, entry.level3, entry.level4]
+function buildInventoryLabel(entry: InventoryEntry) {
+  return [entry.level2, entry.level3, entry.level4, entry.sandEpoxyColor]
     .filter(Boolean)
     .join(" / ");
 }
 
 export function InventoryEntriesPage() {
   const PAGE_SIZE = 7;
-  const [entries, setEntries] = useState<PurchaseEntry[]>([]);
+  const [entries, setEntries] = useState<InventoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [rawMaterialFilter, setRawMaterialFilter] = useState("");
   const [packagingTypeFilter, setPackagingTypeFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -56,13 +58,7 @@ export function InventoryEntriesPage() {
     };
   }, []);
 
-  const sortedEntries = useMemo(
-    () =>
-      [...entries].sort((left, right) =>
-        `${right.date} ${right.time}`.localeCompare(`${left.date} ${left.time}`),
-      ),
-    [entries],
-  );
+  const sortedEntries = useMemo(() => [...entries], [entries]);
 
   const rawMaterialOptions = useMemo(
     () => Array.from(new Set(entries.map((entry) => entry.rawMaterialName).filter(Boolean))),
@@ -92,15 +88,44 @@ export function InventoryEntriesPage() {
     [packagingTypeFilter, rawMaterialFilter, sortedEntries],
   );
 
-  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
+  const searchedEntries = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return filteredEntries;
+    }
+
+    return filteredEntries.filter((entry) => {
+      const searchableValues = [
+        buildInventoryLabel(entry),
+        entry.rawMaterialName,
+        entry.packagingType,
+        entry.level2,
+        entry.level3,
+        entry.level4,
+        entry.packagingBagColor,
+        entry.bagColor,
+        entry.sandEpoxyColor,
+        entry.coupon,
+        entry.unit,
+        entry.purchaseStock,
+        entry.usedInProduction,
+        entry.currentStock,
+      ];
+
+      return searchableValues.some((value) => String(value ?? "").toLowerCase().includes(normalizedQuery));
+    });
+  }, [filteredEntries, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(searchedEntries.length / PAGE_SIZE));
 
   const paginatedEntries = useMemo(
     () =>
-      filteredEntries.slice(
+      searchedEntries.slice(
         (currentPage - 1) * PAGE_SIZE,
         currentPage * PAGE_SIZE,
       ),
-    [currentPage, filteredEntries],
+    [currentPage, searchedEntries],
   );
 
   useEffect(() => {
@@ -109,7 +134,7 @@ export function InventoryEntriesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [packagingTypeFilter, rawMaterialFilter]);
+  }, [packagingTypeFilter, rawMaterialFilter, searchQuery]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -117,7 +142,7 @@ export function InventoryEntriesPage() {
     }
   }, [currentPage, totalPages]);
 
-  const inventoryColumns = useMemo<ColumnDef<PurchaseEntry>[]>(
+  const inventoryColumns = useMemo<ColumnDef<InventoryEntry>[]>(
     () => [
       {
         id: "material",
@@ -144,20 +169,14 @@ export function InventoryEntriesPage() {
       },
       {
         id: "quantity",
-        accessorFn: (row) => [row.purchaseStock || row.quantityPurchased, row.unit].filter(Boolean).join(" "),
-        header: "Quantity",
+        accessorFn: (row) => [row.purchaseStock || row.purchaseStock, row.unit].filter(Boolean).join(" "),
+        header: "Purchase Stock",
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span>{[row.original.purchaseStock || row.original.quantityPurchased, row.original.unit].filter(Boolean).join(" ") || "-"}</span>
+            <span>{[row.original.purchaseStock || row.original.purchaseStock].filter(Boolean).join(" ") || "0"}</span>
             {row.original.unit ? <DataBadge type="unit">{row.original.unit}</DataBadge> : null}
           </div>
         ),
-      },
-      {
-        id: "purchaseStock",
-        accessorFn: (row) => row.purchaseStock || row.quantityPurchased || "0",
-        header: "Purchase Stock",
-        cell: ({ row }) => row.original.purchaseStock || row.original.quantityPurchased || "0",
       },
       {
         accessorKey: "usedInProduction",
@@ -196,9 +215,9 @@ export function InventoryEntriesPage() {
           <CardDescription>
             {isLoading
               ? "Loading inventory from sheet..."
-              : filteredEntries.length === 0
-                ? "No inventory entries found yet."
-                : `${filteredEntries.length} inventory entries available.`}
+              : searchedEntries.length === 0
+                ? "No inventory entries found."
+                : `${searchedEntries.length} inventory entries available.`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -212,7 +231,15 @@ export function InventoryEntriesPage() {
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">Inventory entries will appear here once available.</div>
           ) : (
             <div className="space-y-3">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                <div>
+                  <p className="mb-2 text-sm font-medium text-foreground">Search</p>
+                  <Input
+                    placeholder="Search inventory..."
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                  />
+                </div>
                 <div>
                   <p className="mb-2 text-sm font-medium text-foreground">Raw Material Name</p>
                   <Select value={rawMaterialFilter} onChange={(event) => setRawMaterialFilter(event.target.value)}>
@@ -240,10 +267,10 @@ export function InventoryEntriesPage() {
               <DataTable
                 columns={inventoryColumns}
                 data={paginatedEntries}
-                emptyMessage="No inventory entries match the selected filters."
+                emptyMessage="No inventory entries found."
               />
 
-              {filteredEntries.length > 0 ? (
+              {searchedEntries.length > 0 ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <Button
                     disabled={currentPage === 1}
