@@ -446,15 +446,6 @@ export function DispatchEntriesPage() {
         cell: ({ row }) => row.original.wastageQty || "-",
       },
       {
-        accessorKey: "remarks",
-        header: "Remarks",
-        cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.remarks || "-"}>
-            {row.original.remarks || "-"}
-          </TooltipText>
-        ),
-      },
-      {
         accessorKey: "vehicleNo",
         header: "Vehicle",
         cell: ({ row }) => (
@@ -487,6 +478,15 @@ export function DispatchEntriesPage() {
         cell: ({ row }) => (
           <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.user || "-"}>
             {row.original.user || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "remarks",
+        header: "Remarks",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.remarks || "-"}>
+            {row.original.remarks || "-"}
           </TooltipText>
         ),
       },

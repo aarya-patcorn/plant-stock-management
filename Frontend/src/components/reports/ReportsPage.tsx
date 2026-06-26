@@ -883,7 +883,7 @@ export function ReportsPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           description="Production quantity in MT for the selected filter."
-          title="Total Production KG"
+          title="Total Production MT"
           value={isLoading || isProductionSummaryLoading ? "..." : formatKgToMt(totalProductionKg)}
         />
         <StatCard
