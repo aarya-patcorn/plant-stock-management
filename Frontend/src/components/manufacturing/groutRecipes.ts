@@ -207,7 +207,7 @@ export function buildGroutRecipeFromTotalKg(
       materialQuantity: canCalculateQuantity
         ? formatGroutQuantity((Number(perKgGramValue) * safeTotalGroutKg) / 1000)
         : "",
-      materialUnit: "gm",
+      materialUnit: "kg",
     };
   });
 }
