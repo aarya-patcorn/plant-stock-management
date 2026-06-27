@@ -5,6 +5,7 @@ import type {
   DashboardReportProductStock,
   DashboardReports,
   DispatchEntry,
+  InventoryEntry,
   ManufacturingEntry,
   ProductionMaterialLog,
   PurchaseEntry,
@@ -14,7 +15,7 @@ export type { DashboardReportCategory, DashboardReportProductStock, DashboardRep
 
 export type DashboardData = {
   dispatchEntries: DispatchEntry[];
-  inventoryEntries: PurchaseEntry[];
+  inventoryEntries: InventoryEntry[];
   manufacturingEntries: ManufacturingEntry[];
   productionMaterialLogs: ProductionMaterialLog[];
   purchaseEntries: PurchaseEntry[];
@@ -61,7 +62,7 @@ export type ProductionTrendPoint = {
 
 export type DashboardStats = {
   todaysDispatchBags: number;
-  todaysManufacturedItems: number;
+  todaysProductionKg: number;
 };
 
 export type DashboardReportsState = DashboardReports;

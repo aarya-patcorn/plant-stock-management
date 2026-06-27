@@ -12,6 +12,7 @@ import {
   buildInventoryAlertLabel,
   buildInventoryLabel,
   formatCount,
+  formatKgToMt,
   formatTrendLabel,
 } from "@/pages/dashboard/utils/dashboardFormatters";
 
@@ -83,8 +84,8 @@ export function getCurrentMonthDateRange() {
   };
 }
 
-export function getInventoryStockMetrics(entry: PurchaseEntry) {
-  const purchaseStock = parseNumber(entry.purchaseStock || entry.quantityPurchased);
+export function getInventoryStockMetrics(entry: InventoryEntry) {
+  const purchaseStock = parseNumber(entry.purchaseStock);
   const currentStock = parseNumber(entry.currentStock);
   const usedInProduction = parseNumber(entry.usedInProduction);
   const percentage = purchaseStock > 0 ? clampPercentage((currentStock / purchaseStock) * 100) : 0;
@@ -170,16 +171,16 @@ export function getProductionStockTone(percentage: number) {
   };
 }
 
-export function getInventoryAlertThreshold(entry: PurchaseEntry) {
+export function getInventoryAlertThreshold(entry: InventoryEntry) {
   const rawMaterialName = normalizeLabel(entry.rawMaterialName);
   const packagingType = normalizeLabel(entry.packagingType);
   const level2 = normalizeLabel(entry.level2);
   const level3 = normalizeLabel(entry.level3);
   const level4 = normalizeLabel(entry.level4);
-  const packagingBag = normalizeLabel(entry.packagingBag);
+  const packagingBag = normalizeLabel(entry.level4);
   const packagingBagColor = normalizeLabel(entry.packagingBagColor);
-  const bagColor = normalizeLabel(entry.packagingBagColor);
-  const coupon = normalizeLabel(entry.coupon ?? "");
+  const bagColor = normalizeLabel(entry.bagColor);
+  const coupon = normalizeLabel(entry.coupon);
   const unit = normalizeLabel(entry.unit);
 
   const combined = [
@@ -269,19 +270,21 @@ export function calculateDashboardStats(
   dispatchEntries: DispatchEntry[],
 ): DashboardStats {
   const todayKey = getTodayKey();
-  const todaysManufacturedItems = manufacturingEntries.filter((entry) => entry.productionDate === todayKey).length;
+  const todaysProductionKg = manufacturingEntries
+    .filter((entry) => entry.productionDate === todayKey)
+    .reduce((sum, entry) => sum + resolveProductionKg(entry), 0);
   const todaysDispatchBags = dispatchEntries
     .filter((entry) => entry.date === todayKey)
     .reduce((sum, entry) => sum + parseNumber(entry.totalBags), 0);
 
   return {
     todaysDispatchBags,
-    todaysManufacturedItems,
+    todaysProductionKg,
   };
 }
 
-export function sortInventoryEntries(entries: PurchaseEntry[]) {
-  return [...entries].sort((left, right) => `${right.date} ${right.time}`.localeCompare(`${left.date} ${left.time}`));
+export function sortInventoryEntries(entries: InventoryEntry[]) {
+  return [...entries].sort((left, right) => right.id.localeCompare(left.id));
 }
 
 export function sortProductionLogs(entries: ProductionMaterialLog[]) {
@@ -333,7 +336,7 @@ export function buildUnifiedActivities(
     .slice(0, 5);
 }
 
-export function buildLowStockAlerts(entries: PurchaseEntry[]): InventoryAlert[] {
+export function buildLowStockAlerts(entries: InventoryEntry[]): InventoryAlert[] {
   return entries
     .filter((entry) => {
       const thresholdRule = getInventoryAlertThreshold(entry);
@@ -361,19 +364,33 @@ export function buildLowStockAlerts(entries: PurchaseEntry[]): InventoryAlert[] 
 
 export function buildOperationsSnapshot(params: {
   dashboardStats: DashboardStats;
-  inventoryEntries: PurchaseEntry[];
+  inventoryEntries: InventoryEntry[];
   lowStockCount: number;
   productionMaterialLogs: ProductionMaterialLog[];
   purchaseEntries: PurchaseEntry[];
 }): OperationSnapshotItem[] {
+  const today = new Date();
   const { dashboardStats, inventoryEntries, lowStockCount, productionMaterialLogs, purchaseEntries } = params;
   const totalInventory = inventoryEntries.length;
   const rawMaterialStock = inventoryEntries.reduce((sum, entry) => sum + parseNumber(entry.currentStock), 0) / 1000;
-  const finishedGoods = productionMaterialLogs.reduce((sum, entry) => sum + parseNumber(entry.currentQuantity), 0) / 1000;
+  const finishedGoods =
+    productionMaterialLogs
+      .filter((entry) => {
+        const createdAt = new Date(entry.createdAt);
+
+        return (
+          createdAt.getFullYear() === today.getFullYear() &&
+          createdAt.getMonth() === today.getMonth() &&
+          createdAt.getDate() === today.getDate()
+        );
+      })
+      .reduce((sum, entry) => sum + parseNumber(entry.currentQuantity), 0) / 1000;
   const totalFinishedGoodsDispatched = productionMaterialLogs.reduce(
     (sum, entry) => sum + parseNumber(entry.shippedQuantity),
     0,
   );
+
+  console.log(productionMaterialLogs)
   const lowStockRate = totalInventory > 0 ? lowStockCount / totalInventory : 0;
   const finishedGoodsAvailability =
     finishedGoods + totalFinishedGoodsDispatched > 0
@@ -391,7 +408,7 @@ export function buildOperationsSnapshot(params: {
   const rawMaterialStatus = lowStockCount <= 2 ? "healthy" : lowStockCount <= 5 ? "warning" : "critical";
   const finishedGoodsStatus =
     finishedGoodsAvailability > 0.55 ? "healthy" : finishedGoodsAvailability > 0.3 ? "warning" : "critical";
-  const productionStatus = dashboardStats.todaysManufacturedItems > 0 ? "healthy" : "warning";
+  const productionStatus = dashboardStats.todaysProductionKg > 0 ? "healthy" : "warning";
   const dispatchStatus = dashboardStats.todaysDispatchBags > 0 ? "healthy" : "warning";
   const lowStockStatus = lowStockCount === 0 ? "healthy" : lowStockCount <= 5 ? "warning" : "critical";
 
@@ -417,7 +434,7 @@ export function buildOperationsSnapshot(params: {
     },
     {
       caption: "Production Today",
-      description: "Manufacturing entries created for the current day.",
+      description: "Total production recorded today using the same MT calculation as reports.",
       icon: Package,
       statusClassName: resolveStatusTone(productionStatus),
       statusLabel: productionStatus === "healthy" ? "Healthy" : "Warning",
@@ -443,7 +460,7 @@ export function buildOperationsSnapshot(params: {
           : item.caption === "Warehouse"
             ? `${formatCount(finishedGoods)} mt`
             : item.caption === "Production Today"
-              ? `${formatCount(dashboardStats.todaysManufacturedItems)} batches`
+              ? formatKgToMt(dashboardStats.todaysProductionKg)
               : item.caption === "Dispatch Today"
                 ? `${formatCount(dashboardStats.todaysDispatchBags)} bags`
                 : formatCount(lowStockCount),

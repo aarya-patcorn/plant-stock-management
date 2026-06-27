@@ -16,9 +16,9 @@ import {
   epoxyRecipes,
   groutProductColorMap,
   groutProducts,
-  groutRecipes,
   tileAdhesiveRecipes,
 } from "@/components/manufacturing/manufacturingData";
+import { buildGroutRecipeFromTotalKg, parseGroutPouchSizeToKg } from "@/components/manufacturing/groutRecipes";
 import { buildTileCleanerRecipe, normalizeTileCleanerProductName } from "@/components/manufacturing/tileCleanerRecipes";
 import SubmitLoader from "../ui/SubmitLoader";
 import { BatchDetailsSection } from "./manufacturing-entry-form/components/BatchDetailsSection";
@@ -435,18 +435,28 @@ export function ManufacturingEntryForm() {
   }, [selectedProductCategory]);
 
   useEffect(() => {
-    if (selectedProductCategory !== "Grout" || !formData.finishedProductName) {
+    if (selectedProductCategory !== "Grout") {
       return;
     }
 
-    const recipe = groutRecipes[formData.finishedProductName];
+    const primaryItem = productItems[0];
+    const pouchSize = String(primaryItem?.bagSize || formData.bagSize || "");
+    const totalPouch = Number(primaryItem?.totalBagsProduced || formData.totalBagsProduced || totalProducedUnits || 0);
+    const pouchSizeKg = parseGroutPouchSizeToKg(pouchSize);
+    const totalGroutKg = pouchSizeKg * totalPouch;
+    const groutRecipeKey = selectedColor || groutProductColorMap[formData.finishedProductName] || formData.finishedProductName;
+    const recipe = buildGroutRecipeFromTotalKg(groutRecipeKey, totalGroutKg);
 
-    if (!recipe) {
-      return;
-    }
-
-    setRawMaterials(recipe);
-  }, [selectedProductCategory, formData.finishedProductName]);
+    setRawMaterials(recipe.length > 0 ? recipe : INITIAL_RAW_MATERIALS);
+  }, [
+    selectedProductCategory,
+    selectedColor,
+    formData.finishedProductName,
+    formData.bagSize,
+    formData.totalBagsProduced,
+    productItems[0]?.bagSize,
+    productItems[0]?.totalBagsProduced,
+  ]);
 
   useEffect(() => {
     if (selectedProductCategory !== "Epoxy" || !selectedColor) {

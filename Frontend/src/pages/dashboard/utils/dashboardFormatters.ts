@@ -1,4 +1,4 @@
-import type { InventoryEntry, ProductionMaterialLog, PurchaseEntry } from "@/lib/api";
+import type { InventoryEntry, ProductionMaterialLog } from "@/lib/api";
 import type { TrendView } from "@/pages/dashboard/types";
 
 export function formatCount(value: number) {
@@ -44,15 +44,14 @@ export function buildProductLabel(entry: ProductionMaterialLog) {
 }
 
 export function buildInventoryAlertLabel(
-  entry: Pick<InventoryEntry, "rawMaterialName" | "packagingType" | "level2" | "level3"> & Partial<Pick<PurchaseEntry, "packagingBag" | "bucketSize">>,
+  entry: Pick<InventoryEntry, "rawMaterialName" | "packagingType" | "level2" | "level3" | "level4">,
 ) {
   return [
     entry.rawMaterialName,
     entry.packagingType,
     entry.level2,
-    entry.packagingBag,
     entry.level3,
-    entry.bucketSize,
+    entry.level4,
   ]
     .filter(Boolean)
     .join(" / ");

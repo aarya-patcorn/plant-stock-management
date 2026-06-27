@@ -39,7 +39,7 @@ export type PurchaseEntry = {
 };
 
 export type InventoryEntry = {
-  _id: string;
+  id: string;
   rawMaterialName: string;
   packagingType: string;
   level2: string;
@@ -286,7 +286,7 @@ export async function loginUser(payload: LoginPayload) {
 }
 
 export async function fetchPurchaseEntries() {
-  const responseData = await requestApi("/api/inventory", {}, "Unable to fetch purchase entries.");
+  const responseData = await requestApi("/api/purchases", {}, "Unable to fetch purchase entries.");
   const entries = Array.isArray(responseData?.data) ? responseData.data : [];
   return entries.map(normalizePurchaseEntry);
 }
@@ -425,7 +425,7 @@ function normalizeInventoryEntry(entry: unknown): InventoryEntry {
       : {};
 
   return {
-    _id: stringifyValue(record._id ?? record.id),
+    id: stringifyValue(record.id ?? record._id),
     rawMaterialName: stringifyValue(record.rawMaterialName),
     packagingType: stringifyValue(record.packagingType),
     level2: stringifyValue(record.level2),

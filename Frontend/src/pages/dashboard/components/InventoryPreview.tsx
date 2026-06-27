@@ -1,6 +1,6 @@
 import { AlertTriangle, ArrowRight, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { PurchaseEntry } from "@/lib/api";
+import type { InventoryEntry } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import {
 } from "@/pages/dashboard/utils/dashboardFormatters";
 
 type InventoryPreviewProps = {
-  entries: PurchaseEntry[];
+  entries: InventoryEntry[];
   isLoading: boolean;
 };
 

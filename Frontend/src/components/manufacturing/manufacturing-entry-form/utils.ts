@@ -112,7 +112,6 @@ export function getOptionsWithOther(options: string[]) {
 export const getBatchKg = (tphBatch: string) => {
   if (tphBatch === "1TPH") return 500;
   if (tphBatch === "2TPH") return 1000;
-  if (tphBatch === "Manual Blender") return 300;
   if (tphBatch === "Sigma Mixer") return 62;
   return 0;
 };
