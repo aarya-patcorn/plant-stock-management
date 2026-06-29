@@ -62,7 +62,7 @@ export type ProductionTrendPoint = {
 
 export type DashboardStats = {
   todaysDispatchBags: number;
-  todaysProductionKg: number;
+  todaysProductionQty: number;
 };
 
 export type DashboardReportsState = DashboardReports;

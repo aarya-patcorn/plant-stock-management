@@ -178,7 +178,7 @@ function formatGroutQuantity(value: number) {
 }
 
 export function buildGroutRecipeFromTotalKg(
-  productNameOrColor: string,
+  productNameOrColor: string, 
   totalGroutKg: number,
 ): ManufacturingRawMaterial[] {
   const normalizedProductName = normalizeGroutProductName(productNameOrColor);
