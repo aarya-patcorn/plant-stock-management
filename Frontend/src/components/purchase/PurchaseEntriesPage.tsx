@@ -191,7 +191,7 @@ function Field({
 }
 
 function buildMaterialLabel(entry: PurchaseEntry) {
-  return [entry.rawMaterialName, entry.packagingType, entry.level2, entry.level3]
+  return [entry.rawMaterialName, entry.packagingType, entry.level2, entry.level3, entry.level4]
     .filter(Boolean)
     .join(" / ");
 }
