@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import { fetchProductionMaterialLogs, type ProductionMaterialLog } from "@/lib/api";
@@ -41,6 +41,18 @@ function formatCount(value: number) {
 function getAlertUnit(entry: ProductionMaterialLog) {
   const unit = (entry as ProductionMaterialLog & { unit?: string }).unit;
   return unit?.trim() || "bags";
+}
+
+function downloadFile(filename: string, content: BlobPart, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+
+  URL.revokeObjectURL(url);
 }
 
 function ProductionLowStockAlertCard({
@@ -233,7 +245,7 @@ export function ProductionMaterialLogsPage() {
   const lowStockAlerts = useMemo<ProductionLowStockAlert[]>(
     () =>
       sortedEntries
-        .filter((entry) => entry.productCategory === "Tile Adhesive" && toNumber(entry.currentQuantity) < 200)
+        .filter((entry) => entry.productCategory === "Tile Adhesive"  && toNumber(entry.currentQuantity) < 200)
         .map((entry) => ({
           id: entry.id,
           productCategory: entry.productCategory,
@@ -314,23 +326,46 @@ export function ProductionMaterialLogsPage() {
         cell: ({ row }) => row.original.bagSize || "-",
       },
       {
-        id: "totalBagsProduced",
-        header: "Total Stock",
-        cell: ({ row }) => formatCount(toNumber(row.original.currentQuantity) + toNumber(row.original.shippedQuantity)),
-      },
-      {
         accessorKey: "currentQuantity",
         header: "Current Stock",
         cell: ({ row }) => formatCount(toNumber(row.original.currentQuantity)),
       },
-      {
-        accessorKey: "shippedQuantity",
-        header: "Dispatched Bags",
-        cell: ({ row }) => formatCount(toNumber(row.original.shippedQuantity)),
-      }
     ],
     [],
   );
+
+  const exportCsv = () => {
+    if (sortedEntries.length === 0) {
+      return;
+    }
+
+    const headers = [
+      "Product",
+      "Token",
+      "Bag Size",
+      "Current Stock",
+    ];
+
+    const rows = sortedEntries.map((row) => [
+      buildProductLabel(row),
+      row.token,
+      row.bagSize,
+      formatCount(toNumber(row.currentQuantity)),
+    ]);
+
+    const csvText = [headers, ...rows]
+      .map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const categoryLabel = selectedProductCategory || "all-categories";
+    const productLabel = selectedProductName || "all-products";
+
+    downloadFile(
+      `production-material-logs-${categoryLabel}-${productLabel}.csv`,
+      csvText,
+      "text/csv;charset=utf-8;",
+    );
+  };
 
   return (
     <div className="space-y-5">
@@ -423,7 +458,7 @@ export function ProductionMaterialLogsPage() {
         </CardHeader>
         <CardContent>
           {!isLoading && !loadError ? (
-            <div className="mb-4 grid gap-4 md:grid-cols-2">
+            <div className="mb-4 grid gap-4 md:grid-cols-3">
               <div>
                 <p className="mb-2 text-sm font-medium text-foreground">Product Category</p>
                 <Select
@@ -452,6 +487,20 @@ export function ProductionMaterialLogsPage() {
                     </option>
                   ))}
                 </Select>
+              </div>
+
+              <div className="flex flex-col justify-end">
+                <p className="mb-2 text-sm font-medium text-foreground">Export</p>
+                <Button
+                  className="w-full md:justify-center"
+                  disabled={sortedEntries.length === 0}
+                  onClick={exportCsv}
+                  type="button"
+                  variant="outline"
+                >
+                  <FileSpreadsheet />
+                  Export CSV
+                </Button>
               </div>
             </div>
           ) : null}

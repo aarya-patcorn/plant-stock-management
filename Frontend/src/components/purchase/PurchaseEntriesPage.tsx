@@ -580,12 +580,21 @@ export function PurchaseEntriesPage() {
         id: "quantity",
         accessorFn: (row) => [row.quantityPurchased, row.unit].filter(Boolean).join(" "),
         header: "Quantity",
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <span>{[row.original.quantityPurchased, row.original.unit].filter(Boolean).join(" ") || "-"}</span>
-            {row.original.unit ? <DataBadge type="unit">{row.original.unit}</DataBadge> : null}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const { quantityPurchased, unit } = row.original;
+
+          const displayQuantity =
+            unit?.toLowerCase() === "kg"
+              ? `${(Number(quantityPurchased) / 1000).toFixed(2)} mt`
+              : `${quantityPurchased} ${unit ?? ""}`;
+
+          return (
+            <div className="flex items-center gap-2">
+              <span>{displayQuantity || "-"}</span>
+              {unit ? <DataBadge type="unit">{unit.toLowerCase() === "kg" ? "mt" : unit}</DataBadge> : null}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "supplierName",

@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
@@ -38,7 +39,8 @@ import {
 } from "@/components/ui/table-filters";
 import { applyTableFilters } from "@/lib/tableFilters";
 
-const ENTRIES_PER_PAGE = 10;
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const EDIT_SHEET_ANIMATION_MS = 300;
 const batchOptions = ["1TPH", "2TPH", "Manual Blender", "Sigma Mixer", "Manual Hand Mixer", "Other"];
 const productCategories = ["Tile Adhesive", "Bondure", "Epoxy", "Grout", "Tile Cleaner", "Other"];
@@ -127,6 +129,7 @@ export function ManufacturingEntriesPage() {
   const [loadError, setLoadError] = useState("");
   const [filters, setFilters] = useState<Filter[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [isUpdating, setIsUpdating] = useState(false);
   const editSheetCloseTimeoutRef = useRef<number | null>(null);
 
@@ -222,15 +225,15 @@ export function ManufacturingEntriesPage() {
     [filters, sortedEntries],
   );
 
-  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / ENTRIES_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
   const paginatedEntries = useMemo(
-    () => filteredEntries.slice((currentPage - 1) * ENTRIES_PER_PAGE, currentPage * ENTRIES_PER_PAGE),
-    [currentPage, filteredEntries],
+    () => filteredEntries.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredEntries, pageSize],
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters]);
+  }, [filters, pageSize]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -1012,27 +1015,42 @@ export function ManufacturingEntriesPage() {
 
           {!isLoading && !loadError && sortedEntries.length > 0 ? (
             <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {(currentPage - 1) * ENTRIES_PER_PAGE + 1}-{Math.min(currentPage * ENTRIES_PER_PAGE, filteredEntries.length)} of {filteredEntries.length}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                  disabled={currentPage === 1}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-foreground">Rows per page</span>
+                <Select
+                  value={String(pageSize)}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="w-[88px]"
                 >
-                  Previous
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
+                  {PAGE_SIZE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
               </div>
+
+              <Pagination className="w-auto justify-start sm:justify-end">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                      disabled={currentPage === 1}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                      disabled={currentPage === totalPages}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           ) : null}
         </CardContent>
@@ -1040,6 +1058,8 @@ export function ManufacturingEntriesPage() {
     </div>
   );
 }
+
+
 
 
 

@@ -69,6 +69,16 @@ const convertToKg = (quantity, unit) => {
   return qty;
 };
 
+const normalizeStoredUnit = (unit) => {
+  const normalizedUnit = normalizeText(unit).toLowerCase();
+
+  if (["mt", "ton", "tons", "tonne", "tonnes"].includes(normalizedUnit)) {
+    return "kg";
+  }
+
+  return unit || "";
+};
+
 const normalizeAttachmentFields = (data, existingPurchase = null, uploadedAttachment = null) => {
   if (uploadedAttachment) {
     return {
@@ -98,6 +108,7 @@ const normalizeAttachmentFields = (data, existingPurchase = null, uploadedAttach
 };
 
 const normalizePurchaseData = (data, existingPurchase = null, uploadedAttachment = null) => {
+  const normalizedUnit = normalizeStoredUnit(data.unit);
   const quantityPurchased = convertToKg(data.quantityPurchased ?? data.purchaseStock, data.unit);
   const attachmentFields = normalizeAttachmentFields(data, existingPurchase, uploadedAttachment);
 
@@ -117,7 +128,7 @@ const normalizePurchaseData = (data, existingPurchase = null, uploadedAttachment
     sandEpoxyColor: data.sandEpoxyColor || data.colorOfSandEpoxy || "",
     quantityPurchased,
     purchaseStock: quantityPurchased,
-    unit: data.unit || "",
+    unit: normalizedUnit,
     supplierName: data.supplierName || "",
     invoiceNo: data.invoiceNo || "",
     unloadBy: data.unloadBy || "",
@@ -140,19 +151,11 @@ const buildInventoryFilter = (data) =>
     sandEpoxyColor: data.sandEpoxyColor || "",
   });
 
-const getInventoryUnit = (unit) => {
-  const normalizedUnit = String(unit || "").toLowerCase();
-
-  if (normalizedUnit === "mt") return "kg";
-  if (normalizedUnit === "kg") return "kg";
-
-  return unit;
-};
 
 const addPurchaseToInventory = async (purchaseData, quantity) => {
   const filter = buildInventoryFilter(purchaseData);
   const inventory = await Inventory.findOne(filter);
-  const inventoryUnit = getInventoryUnit(purchaseData.unit);
+  const inventoryUnit = normalizeStoredUnit(purchaseData.unit);
 
   if (!inventory) {
     await Inventory.create({
@@ -211,7 +214,7 @@ const updatePurchaseInventory = async (oldPurchaseData, newPurchaseData) => {
 
     inventory.purchaseStock += delta;
     inventory.currentStock += delta;
-    inventory.unit = getInventoryUnit(newPurchaseData.unit);
+    inventory.unit = normalizeStoredUnit(newPurchaseData.unit);
     await inventory.save();
     return;
   }
