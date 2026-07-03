@@ -10,12 +10,16 @@ import { TooltipText } from "@/components/ui/tooltip-text";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "../ui/pagination";
 
 function buildInventoryLabel(entry: InventoryEntry) {
   return [entry.level2, entry.level3, entry.level4, entry.sandEpoxyColor]
     .filter(Boolean)
     .join(" / ");
 }
+
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 export function InventoryEntriesPage() {
   const PAGE_SIZE = 7;
@@ -26,6 +30,7 @@ export function InventoryEntriesPage() {
   const [packagingTypeFilter, setPackagingTypeFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
 
   useEffect(() => {
     let isMounted = true;
@@ -117,16 +122,13 @@ export function InventoryEntriesPage() {
     });
   }, [filteredEntries, searchQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(searchedEntries.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
 
   const paginatedEntries = useMemo(
-    () =>
-      searchedEntries.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE,
-      ),
-    [currentPage, searchedEntries],
+    () => filteredEntries.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredEntries, pageSize],
   );
+
 
   useEffect(() => {
     setPackagingTypeFilter("");
@@ -270,27 +272,44 @@ export function InventoryEntriesPage() {
                 emptyMessage="No inventory entries found."
               />
 
-              {searchedEntries.length > 0 ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <Button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                    type="button"
-                    variant="outline"
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                    type="button"
-                    variant="outline"
-                  >
-                    Next
-                  </Button>
+              {!isLoading && !loadError && sortedEntries.length > 0 ? (
+                <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-foreground">Rows per page</span>
+                    <Select
+                      value={String(pageSize)}
+                      onChange={(event) => {
+                        setPageSize(Number(event.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="w-[88px]"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  <Pagination className="w-auto justify-start sm:justify-end">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          type="button"
+                          onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                          disabled={currentPage === 1}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          type="button"
+                          onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                          disabled={currentPage === totalPages}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 </div>
               ) : null}
             </div>

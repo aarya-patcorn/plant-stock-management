@@ -11,6 +11,7 @@ import { TooltipText } from "@/components/ui/tooltip-text";
 import { Select } from "@/components/ui/select";
 import LoadingLoader from "@/components/ui/LoadingLoader";
 import { clampPercentage } from "@/pages/dashboard/utils/dashboardCalculations";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "../ui/pagination";
 
 type ProductionLowStockAlert = {
   id: string;
@@ -22,6 +23,9 @@ type ProductionLowStockAlert = {
   currentQuantity: number;
   unit: string;
 };
+
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 function buildProductLabel(entry: ProductionMaterialLog) {
   return [entry.productCategory, entry.productName, entry.productColor].filter(Boolean).join(" / ");
@@ -69,21 +73,21 @@ function ProductionLowStockAlertCard({
   const tone =
     percentage <= 20
       ? {
-          badgeClassName: "border-red-200 bg-red-50 text-red-700 hover:bg-red-50",
-          progressClassName: "stroke-red-500",
-          trackClassName: "stroke-red-100",
-        }
+        badgeClassName: "border-red-200 bg-red-50 text-red-700 hover:bg-red-50",
+        progressClassName: "stroke-red-500",
+        trackClassName: "stroke-red-100",
+      }
       : percentage <= 50
         ? {
-            badgeClassName: "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50",
-            progressClassName: "stroke-amber-500",
-            trackClassName: "stroke-amber-100",
-          }
+          badgeClassName: "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50",
+          progressClassName: "stroke-amber-500",
+          trackClassName: "stroke-amber-100",
+        }
         : {
-            badgeClassName: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50",
-            progressClassName: "stroke-emerald-500",
-            trackClassName: "stroke-emerald-100",
-          };
+          badgeClassName: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50",
+          progressClassName: "stroke-emerald-500",
+          trackClassName: "stroke-emerald-100",
+        };
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -155,7 +159,6 @@ function ProductionLowStockAlertCard({
 }
 
 export function ProductionMaterialLogsPage() {
-  const PAGE_SIZE = 7;
   const ALERT_PAGE_SIZE = 3;
   const [entries, setEntries] = useState<ProductionMaterialLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -164,6 +167,7 @@ export function ProductionMaterialLogsPage() {
   const [selectedProductName, setSelectedProductName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [currentAlertPage, setCurrentAlertPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
 
   useEffect(() => {
     let isMounted = true;
@@ -245,7 +249,10 @@ export function ProductionMaterialLogsPage() {
   const lowStockAlerts = useMemo<ProductionLowStockAlert[]>(
     () =>
       sortedEntries
-        .filter((entry) => entry.productCategory === "Tile Adhesive"  && toNumber(entry.currentQuantity) < 200)
+        .filter((entry) =>
+          ["Tile Adhesive", "Bondure"].includes(entry.productCategory) &&
+          toNumber(entry.currentQuantity) < 200
+        )
         .map((entry) => ({
           id: entry.id,
           productCategory: entry.productCategory,
@@ -259,16 +266,13 @@ export function ProductionMaterialLogsPage() {
     [sortedEntries],
   );
 
-  const totalPages = Math.max(1, Math.ceil(sortedEntries.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
+
   const totalAlertPages = Math.max(1, Math.ceil(lowStockAlerts.length / ALERT_PAGE_SIZE));
 
   const paginatedEntries = useMemo(
-    () =>
-      sortedEntries.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE,
-      ),
-    [currentPage, sortedEntries],
+    () => filteredEntries.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredEntries, pageSize],
   );
 
   const paginatedAlerts = useMemo(
@@ -282,8 +286,7 @@ export function ProductionMaterialLogsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-    setCurrentAlertPage(1);
-  }, [selectedProductCategory, selectedProductName]);
+  }, [pageSize]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -520,27 +523,46 @@ export function ProductionMaterialLogsPage() {
                 emptyMessage="Production material logs will appear here once available."
               />
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <Button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                  type="button"
-                  variant="outline"
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                  type="button"
-                  variant="outline"
-                >
-                  Next
-                </Button>
-              </div>
+              {!isLoading && !loadError && sortedEntries.length > 0 ? (
+                <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-foreground">Rows per page</span>
+                    <Select
+                      value={String(pageSize)}
+                      onChange={(event) => {
+                        setPageSize(Number(event.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="w-[88px]"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  <Pagination className="w-auto justify-start sm:justify-end">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          type="button"
+                          onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                          disabled={currentPage === 1}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          type="button"
+                          onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                          disabled={currentPage === totalPages}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              ) : null}
             </div>
           )}
         </CardContent>
