@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  getCoreRowModel,
-  getSortedRowModel,
-  type ColumnDef,
-  type SortingState,
-  useReactTable,
-} from "@tanstack/react-table";
-import {
   Bar,
   BarChart,
   Cell,
@@ -20,7 +13,8 @@ import {
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { BarChart3, Download, FileSpreadsheet, FileText, PackageSearch } from "lucide-react";
+import { BarChart3, FileSpreadsheet, FileText } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
   fetchDashboardReports,
   fetchDispatchEntries,
@@ -36,11 +30,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { TooltipText } from "@/components/ui/tooltip-text";
 import LoadingLoader from "@/components/ui/LoadingLoader";
-import { formatDateDDMMYYYY } from "@/pages/dashboard/utils/formatDateDDMMYYYY";
 import {
   TableFiltersBar,
   type Filter,
@@ -61,40 +53,15 @@ type ReportsData = {
   productionMaterialLogs: ProductionMaterialLog[];
 };
 
-type ProductionTableRow = {
-  id: string;
-  reportMode: "production";
-  productCategory: string;
-  productName: string;
-  totalBagsProduced: number;
-  color: string;
-  token: string;
-  bagSize: string;
-  currentQuantity: number;
-  availableBags: number;
-  dispatchedBags: number;
-  stockDate: string;
-};
-
-type DispatchTableRow = {
-  id: string;
-  reportMode: "dispatch";
-  date: string;
-  productCategory: string;
-  productName: string;
-  color: string;
-  token: string;
-  bagSize: string;
-  dispatchSite: string;
-  vehicleNo: string;
-  totalBags: number;
-};
-
-type ReportTableRow = ProductionTableRow | DispatchTableRow;
-
 const PIE_COLORS = ["#0f766e", "#f59e0b"];
 const BAR_COLOR_PRODUCTION = "#14b8a6";
 const BAR_COLOR_DISPATCH = "#fb923c";
+const ENTRIES_PER_PAGE = 10;
+const EMPTY_PRODUCT_ITEM = {
+  token: "",
+  bagSize: "",
+  totalBagsProduced: "",
+};
 
 function parseNumber(value: unknown) {
   const num = Number(value);
@@ -120,6 +87,20 @@ function formatDateInput(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(value: string) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-GB").replace(/\//g, "-");
 }
 
 function getCurrentMonthDateRange() {
@@ -163,8 +144,32 @@ function buildProductLabel(productCategory: string, productName: string, color: 
   return [productCategory, productName, color].filter(Boolean).join(" / ");
 }
 
+function buildManufacturingLabel(entry: ManufacturingEntry) {
+  return [entry.productCategory, entry.finishedProductName, entry.color].filter(Boolean).join(" / ");
+}
+
+function buildDispatchLabel(entry: DispatchEntry) {
+  return [entry.productCategory, entry.productName, entry.productColor].filter(Boolean).join(" / ");
+}
+
 function buildProductDetails(parts: Array<string | number>) {
   return parts.filter((value) => String(value || "").trim()).join(" | ");
+}
+
+function getProductItems(entry: ManufacturingEntry) {
+  return entry.productItems.length > 0 ? entry.productItems : [EMPTY_PRODUCT_ITEM];
+}
+
+function formatProductItems(entry: ManufacturingEntry) {
+  return getProductItems(entry)
+    .map((item) =>
+      [
+        item.token,
+        item.bagSize,
+        item.totalBagsProduced ? `${item.totalBagsProduced} qty` : "",
+      ].filter(Boolean).join(" / "),
+    )
+    .join(", ");
 }
 
 function downloadFile(filename: string, content: BlobPart, type: string) {
@@ -200,12 +205,6 @@ function StatCard({
   );
 }
 
-function getDefaultSorting(reportType: ReportType): SortingState {
-  return reportType === "production"
-    ? [{ desc: true, id: "stockDate" }]
-    : [{ desc: true, id: "date" }];
-}
-
 export function ReportsPage() {
   const initialRange = useMemo(() => getCurrentMonthDateRange(), []);
   const [data, setData] = useState<ReportsData>({
@@ -222,11 +221,7 @@ export function ReportsPage() {
   const [toDate, setToDate] = useState(initialRange.toDate);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [tableFilters, setTableFilters] = useState<Filter[]>([]);
-  const [sorting, setSorting] = useState<SortingState>(() => getDefaultSorting("production"));
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 8,
-  });
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let isMounted = true;
@@ -316,12 +311,11 @@ export function ReportsPage() {
         new Set(
           [
             ...data.manufacturingEntries.map((entry) => entry.productCategory),
-            ...data.productionMaterialLogs.map((entry) => entry.productCategory),
             ...data.dispatchEntries.map((entry) => entry.productCategory),
           ].filter(Boolean),
         ),
       ).sort((left, right) => left.localeCompare(right)),
-    [data.dispatchEntries, data.manufacturingEntries, data.productionMaterialLogs],
+    [data.dispatchEntries, data.manufacturingEntries],
   );
 
   const filteredManufacturingEntries = useMemo(
@@ -427,442 +421,503 @@ export function ReportsPage() {
     [summary.currentStock, summary.dispatchStock],
   );
 
-  const productionTableRows = useMemo<ProductionTableRow[]>(
+  const sortedManufacturingEntries = useMemo(
     () =>
-      filteredProductionLogs.map((entry) => ({
-        id: entry.id,
-        reportMode: "production",
-        productCategory: entry.productCategory,
-        productName: entry.productName,
-        totalBagsProduced: parseNumber(entry.currentQuantity) + parseNumber(entry.shippedQuantity),
-        color: entry.productColor,
-        token: entry.token,
-        bagSize: entry.bagSize,
-        currentQuantity: parseNumber(entry.currentQuantity),
-        availableBags: parseNumber(entry.currentQuantity),
-        dispatchedBags: parseNumber(entry.shippedQuantity),
-        stockDate: normalizeDateValue(entry.updatedAt || entry.createdAt),
-      })),
-    [filteredProductionLogs],
+      [...filteredManufacturingEntries].sort((left, right) =>
+        `${right.productionDate} ${right.batchNo}`.localeCompare(`${left.productionDate} ${left.batchNo}`),
+      ),
+    [filteredManufacturingEntries],
   );
 
-  const dispatchTableRows = useMemo<DispatchTableRow[]>(
-    () =>
-      filteredDispatchEntries.map((entry) => ({
-        id: entry.id,
-        reportMode: "dispatch",
-        date: entry.date,
-        productCategory: entry.productCategory,
-        productName: entry.productName,
-        color: entry.productColor,
-        token: entry.token,
-        bagSize: entry.bagSize,
-        dispatchSite: entry.dispatchSite,
-        vehicleNo: entry.vehicleNo,
-        totalBags: parseNumber(entry.totalBags),
-      })),
+  const sortedDispatchEntries = useMemo(
+    () => [...filteredDispatchEntries].sort((left, right) => `${right.date} ${right.time}`.localeCompare(`${left.date} ${left.time}`)),
     [filteredDispatchEntries],
   );
 
-  const tableData = useMemo<ReportTableRow[]>(
-    () => (reportType === "production" ? productionTableRows : dispatchTableRows),
-    [dispatchTableRows, productionTableRows, reportType],
+  const manufacturingFilterFields = useMemo<FilterFieldConfig[]>(
+    () => [
+      createDateFilterField("productionDate", "Date"),
+      createTextFilterField("batchNo", "Batch No"),
+      createSelectFilterField("tphBatch", "Batch Type", createSelectOptions(sortedManufacturingEntries.map((entry) => entry.tphBatch))),
+      createSelectFilterField("productCategory", "Category", createSelectOptions(sortedManufacturingEntries.map((entry) => entry.productCategory))),
+      createTextFilterField("finishedProductName", "Product"),
+      createSelectFilterField("color", "Color", createSelectOptions(sortedManufacturingEntries.map((entry) => entry.color))),
+      createNumberFilterField("totalBagsProduced", "Total Quantity"),
+      createNumberFilterField("wastageQty", "Wastage"),
+      createSelectFilterField("user", "Entry By", createSelectOptions(sortedManufacturingEntries.map((entry) => entry.user))),
+    ],
+    [sortedManufacturingEntries],
   );
 
-  const tableFilterFields = useMemo<FilterFieldConfig[]>(
-    () =>
-      reportType === "production"
-        ? [
-          createSelectFilterField("productCategory", "Product Category", createSelectOptions(productionTableRows.map((row) => row.productCategory))),
-          createTextFilterField("productName", "Product Name"),
-          createSelectFilterField("color", "Color", createSelectOptions(productionTableRows.map((row) => row.color))),
-          createSelectFilterField("token", "Token", createSelectOptions(productionTableRows.map((row) => row.token))),
-          createSelectFilterField("bagSize", "Bag Size", createSelectOptions(productionTableRows.map((row) => row.bagSize))),
-          createNumberFilterField("totalBagsProduced", "Total Stock"),
-          createNumberFilterField("currentQuantity", "Current Stock"),
-          createNumberFilterField("dispatchedBags", "Dispatched Bags"),
-          createDateFilterField("stockDate", "Updated On"),
-        ]
-        : [
-          createDateFilterField("date", "Date"),
-          createSelectFilterField("productCategory", "Product Category", createSelectOptions(dispatchTableRows.map((row) => row.productCategory))),
-          createTextFilterField("productName", "Product Name"),
-          createSelectFilterField("color", "Color", createSelectOptions(dispatchTableRows.map((row) => row.color))),
-          createSelectFilterField("token", "Token", createSelectOptions(dispatchTableRows.map((row) => row.token))),
-          createSelectFilterField("bagSize", "Bag Size", createSelectOptions(dispatchTableRows.map((row) => row.bagSize))),
-          createTextFilterField("dispatchSite", "Dispatch Site"),
-          createTextFilterField("vehicleNo", "Vehicle No"),
-          createNumberFilterField("totalBags", "Departed Bags"),
-        ],
-    [dispatchTableRows, productionTableRows, reportType],
+  const dispatchFilterFields = useMemo<FilterFieldConfig[]>(
+    () => [
+      createDateFilterField("date", "Date"),
+      createTextFilterField("challan", "Challan"),
+      createSelectFilterField("productCategory", "Category", createSelectOptions(sortedDispatchEntries.map((entry) => entry.productCategory))),
+      createTextFilterField("productName", "Product"),
+      createSelectFilterField("token", "Token", createSelectOptions(sortedDispatchEntries.map((entry) => entry.token))),
+      createSelectFilterField("bagSize", "Bag Size", createSelectOptions(sortedDispatchEntries.map((entry) => entry.bagSize))),
+      createNumberFilterField("totalBags", "Departed Bags"),
+      createTextFilterField("dispatchSite", "Dispatch Site"),
+      createTextFilterField("vehicleNo", "Vehicle No"),
+      createSelectFilterField("user", "Entry By", createSelectOptions(sortedDispatchEntries.map((entry) => entry.user))),
+    ],
+    [sortedDispatchEntries],
   );
 
-  const filteredTableData = useMemo(
+  const filteredManufacturingTableEntries = useMemo(
     () =>
       applyTableFilters(
-        tableData,
+        sortedManufacturingEntries,
         tableFilters,
-        reportType === "production"
-          ? {
-            productCategory: (row) => row.reportMode === "production" ? row.productCategory : "",
-            productName: (row) => row.reportMode === "production" ? row.productName : "",
-            color: (row) => row.reportMode === "production" ? row.color : "",
-            token: (row) => row.reportMode === "production" ? row.token : "",
-            bagSize: (row) => row.reportMode === "production" ? row.bagSize : "",
-            totalBagsProduced: (row) => row.reportMode === "production" ? row.totalBagsProduced : "",
-            currentQuantity: (row) => row.reportMode === "production" ? row.currentQuantity : "",
-            dispatchedBags: (row) => row.reportMode === "production" ? row.dispatchedBags : "",
-            stockDate: (row) => row.reportMode === "production" ? row.stockDate : "",
-          }
-          : {
-            date: (row) => row.reportMode === "dispatch" ? row.date : "",
-            productCategory: (row) => row.reportMode === "dispatch" ? row.productCategory : "",
-            productName: (row) => row.reportMode === "dispatch" ? row.productName : "",
-            color: (row) => row.reportMode === "dispatch" ? row.color : "",
-            token: (row) => row.reportMode === "dispatch" ? row.token : "",
-            bagSize: (row) => row.reportMode === "dispatch" ? row.bagSize : "",
-            dispatchSite: (row) => row.reportMode === "dispatch" ? row.dispatchSite : "",
-            vehicleNo: (row) => row.reportMode === "dispatch" ? row.vehicleNo : "",
-            totalBags: (row) => row.reportMode === "dispatch" ? row.totalBags : "",
-          },
-        reportType === "production"
-          ? {
-            totalBagsProduced: "number",
-            currentQuantity: "number",
-            dispatchedBags: "number",
-            stockDate: "date",
-          }
-          : {
-            date: "date",
-            totalBags: "number",
-          },
+        {
+          productionDate: (entry) => entry.productionDate,
+          batchNo: (entry) => entry.batchNo,
+          tphBatch: (entry) => entry.tphBatch,
+          productCategory: (entry) => entry.productCategory,
+          finishedProductName: (entry) => entry.finishedProductName,
+          color: (entry) => entry.color,
+          totalBagsProduced: (entry) => entry.totalBagsProduced,
+          wastageQty: (entry) => entry.wastageQty,
+          user: (entry) => entry.user,
+        },
+        {
+          productionDate: "date",
+          totalBagsProduced: "number",
+          wastageQty: "number",
+        },
       ),
-    [reportType, tableData, tableFilters],
+    [sortedManufacturingEntries, tableFilters],
+  );
+
+  const filteredDispatchTableEntries = useMemo(
+    () =>
+      applyTableFilters(
+        sortedDispatchEntries,
+        tableFilters,
+        {
+          date: (entry) => entry.date,
+          challan: (entry) => entry.challanNo || entry.challanName,
+          productCategory: (entry) => entry.productCategory,
+          productName: (entry) => entry.productName,
+          token: (entry) => entry.token,
+          bagSize: (entry) => entry.bagSize,
+          totalBags: (entry) => entry.totalBags,
+          dispatchSite: (entry) => entry.dispatchSite,
+          vehicleNo: (entry) => entry.vehicleNo,
+          user: (entry) => entry.user,
+        },
+        {
+          date: "date",
+          totalBags: "number",
+        },
+      ),
+    [sortedDispatchEntries, tableFilters],
+  );
+
+  const activeTableCount = reportType === "production"
+    ? filteredManufacturingTableEntries.length
+    : filteredDispatchTableEntries.length;
+  const totalPages = Math.max(1, Math.ceil(activeTableCount / ENTRIES_PER_PAGE));
+
+  const paginatedManufacturingEntries = useMemo(
+    () => filteredManufacturingTableEntries.slice((currentPage - 1) * ENTRIES_PER_PAGE, currentPage * ENTRIES_PER_PAGE),
+    [currentPage, filteredManufacturingTableEntries],
+  );
+
+  const paginatedDispatchEntries = useMemo(
+    () => filteredDispatchTableEntries.slice((currentPage - 1) * ENTRIES_PER_PAGE, currentPage * ENTRIES_PER_PAGE),
+    [currentPage, filteredDispatchTableEntries],
   );
 
   useEffect(() => {
-    setPagination((current) => ({ ...current, pageIndex: 0 }));
-  }, [fromDate, toDate, selectedCategory, reportType, tableData.length, tableFilters]);
+    setCurrentPage(1);
+  }, [fromDate, toDate, selectedCategory, reportType, tableFilters]);
 
-  const columns = useMemo<ColumnDef<ReportTableRow>[]>(
-    () =>
-      reportType === "production"
-        ? [
-          {
-            id: "productCategory",
-            header: "Product Category",
-            accessorFn: (row) => row.reportMode === "production" ? row.productCategory : "",
-            cell: ({ row }) =>
-              row.original.reportMode === "production" && row.original.productCategory
-                ? <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
-                : "-",
-          },
-          {
-            id: "productName",
-            header: "Product Name",
-            accessorFn: (row) => row.reportMode === "production" ? row.productName : "",
-            cell: ({ row }) => (
-              <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.reportMode === "production" ? row.original.productName || "-" : "-"}>
-                {row.original.reportMode === "production" ? row.original.productName || "-" : "-"}
-              </TooltipText>
-            ),
-          },
-          {
-            id: "color",
-            header: "Color",
-            accessorFn: (row) => row.reportMode === "production" ? row.color : "",
-            cell: ({ row }) =>
-              row.original.reportMode === "production" && row.original.color
-                ? <DataBadge type="color">{row.original.color}</DataBadge>
-                : "-",
-          },
-          {
-            id: "token",
-            header: "Token",
-            accessorFn: (row) => row.reportMode === "production" ? row.token : "",
-            cell: ({ row }) =>
-              row.original.reportMode === "production" && row.original.token
-                ? <DataBadge type="token">{row.original.token}</DataBadge>
-                : "-",
-          },
-          {
-            id: "bagSize",
-            header: "Bag Size",
-            accessorFn: (row) => row.reportMode === "production" ? row.bagSize : "",
-            cell: ({ row }) => row.original.reportMode === "production" ? row.original.bagSize || "-" : "-",
-          },
-          {
-            id: "totalBagsProduced",
-            header: "Total Stock",
-            accessorFn: (row) => row.reportMode === "production" ? row.totalBagsProduced : 0,
-            cell: ({ row }) =>
-              row.original.reportMode === "production" ? (
-                <span className="block text-right">{formatCount(row.original.totalBagsProduced)}</span>
-              ) : "-",
-          },
-          {
-            id: "currentQuantity",
-            header: "Current Stock",
-            accessorFn: (row) => row.reportMode === "production" ? row.currentQuantity : 0,
-            cell: ({ row }) =>
-              row.original.reportMode === "production" ? (
-                <span className="block text-right">{formatCount(row.original.currentQuantity)}</span>
-              ) : "-",
-          },
-          {
-            id: "dispatchedBags",
-            header: "Dispatched Bags",
-            accessorFn: (row) => row.reportMode === "production" ? row.dispatchedBags : 0,
-            cell: ({ row }) =>
-              row.original.reportMode === "production" ? (
-                <span className="block text-right">{formatCount(row.original.dispatchedBags)}</span>
-              ) : "-",
-          },
-          {
-            id: "stockDate",
-            header: "Updated On",
-            accessorFn: (row) => row.reportMode === "production" ? row.stockDate : "",
-            cell: ({ row }) => row.original.reportMode === "production" ? formatDateDDMMYYYY(row.original.stockDate) || "-" : "-",
-          },
-        ]
-        : [
-          {
-            id: "date",
-            header: "Date",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.date : "",
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.date || "-" : "-",
-          },
-          {
-            id: "productCategory",
-            header: "Product Category",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.productCategory : "",
-            cell: ({ row }) =>
-              row.original.reportMode === "dispatch" && row.original.productCategory
-                ? <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
-                : "-",
-          },
-          {
-            id: "productName",
-            header: "Product Name",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.productName : "",
-            cell: ({ row }) => (
-              <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.reportMode === "dispatch" ? row.original.productName || "-" : "-"}>
-                {row.original.reportMode === "dispatch" ? row.original.productName || "-" : "-"}
-              </TooltipText>
-            ),
-          },
-          {
-            id: "color",
-            header: "Color",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.color : "",
-            cell: ({ row }) =>
-              row.original.reportMode === "dispatch" && row.original.color
-                ? <DataBadge type="color">{row.original.color}</DataBadge>
-                : "-",
-          },
-          {
-            id: "token",
-            header: "Token",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.token : "",
-            cell: ({ row }) =>
-              row.original.reportMode === "dispatch" && row.original.token
-                ? <DataBadge type="token">{row.original.token}</DataBadge>
-                : "-",
-          },
-          {
-            id: "bagSize",
-            header: "Bag Size",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.bagSize : "",
-            cell: ({ row }) => row.original.reportMode === "dispatch" ? row.original.bagSize || "-" : "-",
-          },
-          {
-            id: "dispatchSite",
-            header: "Dispatch Site",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.dispatchSite : "",
-            cell: ({ row }) => (
-              <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.reportMode === "dispatch" ? row.original.dispatchSite || "-" : "-"}>
-                {row.original.reportMode === "dispatch" ? row.original.dispatchSite || "-" : "-"}
-              </TooltipText>
-            ),
-          },
-          {
-            id: "vehicleNo",
-            header: "Vehicle No",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.vehicleNo : "",
-            cell: ({ row }) => (
-              <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.reportMode === "dispatch" ? row.original.vehicleNo || "-" : "-"}>
-                {row.original.reportMode === "dispatch" ? row.original.vehicleNo || "-" : "-"}
-              </TooltipText>
-            ),
-          },
-          {
-            id: "totalBags",
-            header: "Departed Bags",
-            accessorFn: (row) => row.reportMode === "dispatch" ? row.totalBags : 0,
-            cell: ({ row }) =>
-              row.original.reportMode === "dispatch" ? (
-                <span className="block text-right">{formatCount(row.original.totalBags)}</span>
-              ) : "-",
-          },
-        ],
-    [reportType],
-  );
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     setTableFilters([]);
-    setSorting(getDefaultSorting(reportType));
   }, [reportType]);
 
-  const sortingTable = useReactTable({
-    columns,
-    data: filteredTableData,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-    state: {
-      sorting,
-    },
-  });
-
-  const sortedExportRows = useMemo(
-    () => sortingTable.getSortedRowModel().rows.map((row) => row.original),
-    [columns, filteredTableData, sorting, sortingTable],
+  const manufacturingColumns = useMemo<ColumnDef<ManufacturingEntry>[]>(
+    () => [
+      {
+        accessorKey: "productionDate",
+        header: "Date",
+        cell: ({ row }) => formatDisplayDate(row.original.productionDate),
+      },
+      {
+        accessorKey: "batchNo",
+        header: "Batch No",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.batchNo || "-"}>
+            {row.original.batchNo || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "tphBatch",
+        header: "Batch Type",
+        cell: ({ row }) => row.original.tphBatch || "-",
+      },
+      {
+        accessorKey: "productCategory",
+        header: "Category",
+        cell: ({ row }) =>
+          row.original.productCategory ? (
+            <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        accessorKey: "finishedProductName",
+        header: "Product",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.finishedProductName || "-"}>
+            {row.original.finishedProductName || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "color",
+        header: "Color",
+        cell: ({ row }) =>
+          row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-",
+      },
+      {
+        id: "productItems",
+        accessorFn: (row) => formatProductItems(row),
+        header: "Product Items",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block min-w-[260px] max-w-[320px] truncate" content={formatProductItems(row.original) || "-"}>
+            {formatProductItems(row.original) || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "totalBagsProduced",
+        header: "Total Quantity",
+        cell: ({ row }) => row.original.totalBagsProduced || "-",
+      },
+      {
+        accessorKey: "wastageQty",
+        header: "Wastage",
+        cell: ({ row }) => row.original.wastageQty || "-",
+      },
+      {
+        id: "rawMaterials",
+        accessorFn: (row) => [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits].filter(Boolean).join(" / "),
+        header: "Raw Materials",
+        cell: ({ row }) => {
+          const value = [row.original.rawMaterialNames, row.original.rawMaterialQty, row.original.rawMaterialUnits]
+            .filter(Boolean)
+            .join(" / ");
+          return (
+            <TooltipText as="span" className="block max-w-[220px] truncate" content={value || "-"}>
+              {value || "-"}
+            </TooltipText>
+          );
+        },
+      },
+      {
+        accessorKey: "user",
+        header: "Entry By",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.user || "-"}>
+            {row.original.user || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "remarks",
+        header: "Remarks",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.remarks || "-"}>
+            {row.original.remarks || "-"}
+          </TooltipText>
+        ),
+      },
+    ],
+    [],
   );
 
-  const totalPages = Math.max(1, Math.ceil(sortedExportRows.length / pagination.pageSize));
-
-  const paginatedRows = useMemo(
-    () =>
-      sortedExportRows.slice(
-        pagination.pageIndex * pagination.pageSize,
-        (pagination.pageIndex + 1) * pagination.pageSize,
-      ),
-    [pagination.pageIndex, pagination.pageSize, sortedExportRows],
+  const dispatchColumns = useMemo<ColumnDef<DispatchEntry>[]>(
+    () => [
+      {
+        accessorKey: "date",
+        header: "Date",
+        cell: ({ row }) => formatDisplayDate(row.original.date),
+      },
+      {
+        accessorKey: "time",
+        header: "Time",
+        cell: ({ row }) => row.original.time || "-",
+      },
+      {
+        id: "challan",
+        accessorFn: (row) => row.challanNo || row.challanName || "",
+        header: "Challan",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.challanNo || row.original.challanName || "-"}>
+            {row.original.challanNo || row.original.challanName || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        id: "product",
+        accessorFn: (row) => buildDispatchLabel(row),
+        header: "Product",
+        cell: ({ row }) => (
+          <div className="min-w-[220px] max-w-[260px] space-y-1">
+            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildDispatchLabel(row.original) || "-"}>
+              {buildDispatchLabel(row.original) || "-"}
+            </TooltipText>
+            {row.original.productCategory ? (
+              <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "token",
+        header: "Token",
+        cell: ({ row }) =>
+          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "-",
+      },
+      {
+        accessorKey: "bagSize",
+        header: "Bag Size",
+        cell: ({ row }) => row.original.bagSize || "-",
+      },
+      {
+        accessorKey: "totalBags",
+        header: "Departed Bags",
+        cell: ({ row }) => row.original.totalBags || "-",
+      },
+      {
+        accessorKey: "wastageQty",
+        header: "Wastage Qty",
+        cell: ({ row }) => row.original.wastageQty || "-",
+      },
+      {
+        accessorKey: "vehicleNo",
+        header: "Vehicle",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.vehicleNo || "-"}>
+            {row.original.vehicleNo || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "driverName",
+        header: "Driver",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.driverName || "-"}>
+            {row.original.driverName || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "dispatchSite",
+        header: "Dispatch Site",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.dispatchSite || "-"}>
+            {row.original.dispatchSite || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "user",
+        header: "Entry By",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.user || "-"}>
+            {row.original.user || "-"}
+          </TooltipText>
+        ),
+      },
+      {
+        accessorKey: "remarks",
+        header: "Remarks",
+        cell: ({ row }) => (
+          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.remarks || "-"}>
+            {row.original.remarks || "-"}
+          </TooltipText>
+        ),
+      },
+    ],
+    [],
   );
-
-  useEffect(() => {
-    if (pagination.pageIndex >= totalPages) {
-      setPagination((current) => ({
-        ...current,
-        pageIndex: Math.max(0, totalPages - 1),
-      }));
-    }
-  }, [pagination.pageIndex, totalPages]);
 
   const exportCsv = () => {
-    if (sortedExportRows.length === 0) {
+    if (reportType === "production") {
+      if (filteredManufacturingTableEntries.length === 0) {
+        return;
+      }
+
+      const headers = [
+        "Date",
+        "Batch No",
+        "Batch Type",
+        "Category",
+        "Product",
+        "Color",
+        "Product Items",
+        "Total Quantity",
+        "Wastage",
+        "Raw Materials",
+        "Entry By",
+        "Remarks",
+      ];
+
+      const rows = filteredManufacturingTableEntries.map((row) => [
+        row.productionDate,
+        row.batchNo,
+        row.tphBatch,
+        row.productCategory,
+        row.finishedProductName,
+        row.color,
+        formatProductItems(row),
+        row.totalBagsProduced,
+        row.wastageQty,
+        [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits].filter(Boolean).join(" / "),
+        row.user,
+        row.remarks,
+      ]);
+
+      const csvText = [headers, ...rows]
+        .map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`).join(","))
+        .join("\n");
+
+      downloadFile(`reports-${reportType}-${fromDate}-to-${toDate}.csv`, csvText, "text/csv;charset=utf-8;");
       return;
     }
 
-    const headers = reportType === "production"
-      ? ["Product Category", "Product Name", "Color", "Token", "Bag Size", "Current Stock", "Available Bags", "Dispatched Bags", "Updated On"]
-      : ["Date", "Product Category", "Product Name", "Color", "Token", "Bag Size", "Dispatch Site", "Vehicle No", "Departed Bags"];
+    if (filteredDispatchTableEntries.length === 0) {
+      return;
+    }
 
-    const rows = sortedExportRows.map((row) =>
-      reportType === "production" && row.reportMode === "production"
-        ? [
-          row.productCategory,
-          row.productName,
-          row.color,
-          row.token,
-          row.bagSize,
-          row.currentQuantity,
-          row.availableBags,
-          row.dispatchedBags,
-          row.stockDate,
-        ]
-        : row.reportMode === "dispatch"
-          ? [
-            row.date,
-            row.productCategory,
-            row.productName,
-            row.color,
-            row.token,
-            row.bagSize,
-            row.dispatchSite,
-            row.vehicleNo,
-            row.totalBags,
-          ]
-          : [],
-    );
+    const headers = [
+      "Date",
+      "Time",
+      "Challan",
+      "Product",
+      "Token",
+      "Bag Size",
+      "Departed Bags",
+      "Wastage Qty",
+      "Vehicle",
+      "Driver",
+      "Dispatch Site",
+      "Entry By",
+      "Remarks",
+    ];
+
+    const rows = filteredDispatchTableEntries.map((row) => [
+      row.date,
+      row.time,
+      row.challanNo || row.challanName,
+      buildDispatchLabel(row),
+      row.token,
+      row.bagSize,
+      row.totalBags,
+      row.wastageQty,
+      row.vehicleNo,
+      row.driverName,
+      row.dispatchSite,
+      row.user,
+      row.remarks,
+    ]);
 
     const csvText = [headers, ...rows]
       .map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`).join(","))
       .join("\n");
 
-    downloadFile(
-      `reports-${reportType}-${fromDate}-to-${toDate}.csv`,
-      csvText,
-      "text/csv;charset=utf-8;",
-    );
+    downloadFile(`reports-${reportType}-${fromDate}-to-${toDate}.csv`, csvText, "text/csv;charset=utf-8;");
   };
 
   const exportPdf = () => {
-    if (sortedExportRows.length === 0) {
-      return;
-    }
-
     const doc = new jsPDF();
     const today = formatDateInput(new Date());
     const categoryLabel = selectedCategory || "All Categories";
-    const heading = reportType === "production" ? "Plant stock details" : "Plant dispatch details";
 
     doc.setFontSize(16);
-    doc.text(heading, 14, 18);
+    doc.text(reportType === "production" ? "Plant production details" : "Plant dispatch details", 14, 18);
     doc.setFontSize(11);
     doc.text(`From date ${fromDate} -> ${toDate}`, 14, 27);
     doc.text(`Date: ${today}`, 14, 35);
     doc.text(`Product Category: ${categoryLabel}`, 14, 43);
 
-    const head = reportType === "production"
-      ? [["S. No.", "Product Name", "Product further details", "Stock Quantity"]]
-      : [["S. No.", "Product Name", "Product further details", "Departed Quantity"]];
+    if (reportType === "production") {
+      if (filteredManufacturingTableEntries.length === 0) {
+        return;
+      }
 
-    const body = sortedExportRows.map((row, index) =>
-      reportType === "production" && row.reportMode === "production"
-        ? [
-          index + 1,
-          row.productName || "-",
-          buildProductDetails([
-            row.productCategory,
-            row.color,
-            row.token,
-            row.bagSize,
-            `Available: ${row.availableBags}`,
-            `Dispatched: ${row.dispatchedBags}`,
-          ]),
-          formatCount(row.currentQuantity),
-        ]
-        : row.reportMode === "dispatch"
-          ? [
-            index + 1,
-            row.productName || "-",
-            buildProductDetails([
-              row.productCategory,
-              row.color,
-              row.token,
-              row.bagSize,
-              row.dispatchSite,
-              row.vehicleNo,
-              row.date,
-            ]),
-            formatCount(row.totalBags),
-          ]
-          : [],
-    );
+      const body = filteredManufacturingTableEntries.map((row, index) => [
+        index + 1,
+        row.finishedProductName || "-",
+        buildProductDetails([
+          row.productCategory,
+          row.color,
+          row.batchNo,
+          row.tphBatch,
+          formatProductItems(row),
+          [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits].filter(Boolean).join(" / "),
+          row.productionDate,
+        ]),
+        row.totalBagsProduced || "-",
+      ]);
 
-    autoTable(doc, {
-      body,
-      head,
-      margin: { left: 14, right: 14, top: 50 },
-      styles: {
-        fontSize: 10,
-        overflow: "linebreak",
-      },
-      headStyles: {
-        fillColor: [15, 118, 110],
-      },
-    });
+      autoTable(doc, {
+        body,
+        head: [["S. No.", "Product Name", "Product further details", "Total Quantity"]],
+        margin: { left: 14, right: 14, top: 50 },
+        styles: {
+          fontSize: 10,
+          overflow: "linebreak",
+        },
+        headStyles: {
+          fillColor: [15, 118, 110],
+        },
+      });
+    } else {
+      if (filteredDispatchTableEntries.length === 0) {
+        return;
+      }
+
+      const body = filteredDispatchTableEntries.map((row, index) => [
+        index + 1,
+        row.productName || "-",
+        buildProductDetails([
+          row.productCategory,
+          row.productColor,
+          row.token,
+          row.bagSize,
+          row.dispatchSite,
+          row.vehicleNo,
+          row.date,
+        ]),
+        formatCount(parseNumber(row.totalBags)),
+      ]);
+
+      autoTable(doc, {
+        body,
+        head: [["S. No.", "Product Name", "Product further details", "Departed Quantity"]],
+        margin: { left: 14, right: 14, top: 50 },
+        styles: {
+          fontSize: 10,
+          overflow: "linebreak",
+        },
+        headStyles: {
+          fillColor: [15, 118, 110],
+        },
+      });
+    }
 
     doc.text("Sincerely,", 14, doc.internal.pageSize.getHeight() - 26);
     doc.text("Guma Plant", 14, doc.internal.pageSize.getHeight() - 20);
@@ -873,7 +928,6 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6">
-
       {loadError ? (
         <div className="rounded-lg border border-dashed border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
           {loadError}
@@ -939,11 +993,21 @@ export function ReportsPage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button disabled={sortedExportRows.length === 0} onClick={exportCsv} type="button" variant="outline">
+            <Button
+              disabled={reportType === "production" ? filteredManufacturingTableEntries.length === 0 : filteredDispatchTableEntries.length === 0}
+              onClick={exportCsv}
+              type="button"
+              variant="outline"
+            >
               <FileSpreadsheet className="size-4" />
               Export CSV
             </Button>
-            <Button disabled={sortedExportRows.length === 0} onClick={exportPdf} type="button" variant="outline">
+            <Button
+              disabled={reportType === "production" ? filteredManufacturingTableEntries.length === 0 : filteredDispatchTableEntries.length === 0}
+              onClick={exportPdf}
+              type="button"
+              variant="outline"
+            >
               <FileText className="size-4" />
               Export PDF
             </Button>
@@ -963,15 +1027,9 @@ export function ReportsPage() {
                 <LoadingLoader />
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer height="100%" width="100%">
                 <PieChart>
-                  <Pie
-                    data={donutData}
-                    dataKey="value"
-                    innerRadius={78}
-                    outerRadius={112}
-                    paddingAngle={4}
-                  >
+                  <Pie data={donutData} dataKey="value" innerRadius={78} outerRadius={112} paddingAngle={4}>
                     {donutData.map((entry, index) => (
                       <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
@@ -999,7 +1057,7 @@ export function ReportsPage() {
                 No production data available for this filter.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer height="100%" width="100%">
                 <BarChart data={productionBarData} layout="vertical" margin={{ left: 8, right: 18, top: 10, bottom: 10 }}>
                   <XAxis type="number" />
                   <YAxis dataKey="label" type="category" width={140} tick={{ fontSize: 12 }} />
@@ -1035,7 +1093,7 @@ export function ReportsPage() {
               No dispatch data available for this filter.
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer height="100%" width="100%">
               <BarChart data={dispatchBarData} margin={{ left: 8, right: 18, top: 10, bottom: 10 }}>
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} interval={0} angle={-12} textAnchor="end" height={72} />
                 <YAxis />
@@ -1052,87 +1110,200 @@ export function ReportsPage() {
           <div>
             <CardTitle>{reportType === "production" ? "Production Details" : "Dispatch Details"}</CardTitle>
             <CardDescription>
-              {tableData.length === 0
+              {activeTableCount === 0
                 ? "No rows available for the selected filter."
-                : `${filteredTableData.length} rows available for the selected filter.`}
+                : `${activeTableCount} rows available for the selected filter.`}
             </CardDescription>
           </div>
           <Badge variant="outline">{selectedCategory || "All Categories"}</Badge>
         </CardHeader>
         <CardContent>
+          {!isLoading && !loadError && (reportType === "production" ? sortedManufacturingEntries.length > 0 : sortedDispatchEntries.length > 0) ? (
+            <div className="mb-5">
+              <TableFiltersBar
+                fields={reportType === "production" ? manufacturingFilterFields : dispatchFilterFields}
+                filters={tableFilters}
+                onChange={setTableFilters}
+              />
+            </div>
+          ) : null}
+
           {isLoading ? (
             <div className="flex justify-center rounded-md border border-dashed p-6">
               <LoadingLoader />
             </div>
-          ) : filteredTableData.length === 0 ? (
+          ) : activeTableCount === 0 ? (
             <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
               No report rows found for the selected filter.
             </div>
+          ) : reportType === "production" ? (
+            <>
+              <div className="space-y-4 lg:hidden">
+                {paginatedManufacturingEntries.map((entry) => (
+                  <Card key={entry.id} className="rounded-md border shadow-none">
+                    <CardContent className="space-y-4 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">{buildManufacturingLabel(entry) || "Production entry"}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{entry.batchNo || entry.id}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Date</p>
+                          <p className="mt-1">{formatDisplayDate(entry.productionDate)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Entry By</p>
+                          <p className="mt-1">{entry.user || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Batch Type</p>
+                          <p className="mt-1">{entry.tphBatch || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Product Items</p>
+                          <p className="mt-1">{formatProductItems(entry) || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Total Quantity</p>
+                          <p className="mt-1">{entry.totalBagsProduced || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Wastage</p>
+                          <p className="mt-1">{entry.wastageQty || "-"}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium uppercase text-muted-foreground">Raw Materials</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {[entry.rawMaterialNames, entry.rawMaterialQty, entry.rawMaterialUnits].filter(Boolean).join(" / ") || "-"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium uppercase text-muted-foreground">Remarks</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{entry.remarks || "-"}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="hidden lg:block">
+                <DataTable
+                  columns={manufacturingColumns}
+                  data={paginatedManufacturingEntries}
+                  emptyMessage="No production entries available."
+                />
+              </div>
+            </>
           ) : (
             <>
-              <DataTable
-                columns={columns}
-                data={paginatedRows}
-                emptyMessage="No report rows found for the selected filter."
-                manualSorting
-                onSortingChange={setSorting}
-                sorting={sorting}
-              />
+              <div className="space-y-4 lg:hidden">
+                {paginatedDispatchEntries.map((entry) => (
+                  <Card key={entry.id} className="rounded-md border shadow-none">
+                    <CardContent className="space-y-4 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">{buildDispatchLabel(entry) || "Dispatch entry"}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{entry.challanNo || entry.id}</p>
+                        </div>
+                      </div>
 
-              <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Showing {pagination.pageIndex * pagination.pageSize + 1}-
-                  {Math.min((pagination.pageIndex + 1) * pagination.pageSize, filteredTableData.length)} of {filteredTableData.length}
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-muted-foreground">
-                    Page {pagination.pageIndex + 1} of {totalPages}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      disabled={pagination.pageIndex === 0}
-                      onClick={() =>
-                        setPagination((current) => ({
-                          ...current,
-                          pageIndex: Math.max(0, current.pageIndex - 1),
-                        }))
-                      }
-                      type="button"
-                      variant="outline"
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      disabled={pagination.pageIndex + 1 >= totalPages}
-                      onClick={() =>
-                        setPagination((current) => ({
-                          ...current,
-                          pageIndex: Math.min(totalPages - 1, current.pageIndex + 1),
-                        }))
-                      }
-                      type="button"
-                      variant="outline"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Date</p>
+                          <p className="mt-1">{formatDisplayDate(entry.date)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Time</p>
+                          <p className="mt-1">{entry.time || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Token</p>
+                          <p className="mt-1">{entry.token || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Bag Size</p>
+                          <p className="mt-1">{entry.bagSize || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Stock</p>
+                          <p className="mt-1">{entry.quantity || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Departed Bags</p>
+                          <p className="mt-1">{entry.totalBags || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Wastage Qty</p>
+                          <p className="mt-1">{entry.wastageQty || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Remarks</p>
+                          <p className="mt-1">{entry.remarks || "-"}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Vehicle</p>
+                          <p className="mt-1">{entry.vehicleNo || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Site</p>
+                          <p className="mt-1">{entry.dispatchSite || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Entry By</p>
+                          <p className="mt-1">{entry.user || "-"}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="hidden lg:block">
+                <DataTable
+                  columns={dispatchColumns}
+                  data={paginatedDispatchEntries}
+                  emptyMessage="No dispatch entries available."
+                />
               </div>
             </>
           )}
+
+          {!isLoading && activeTableCount > 0 ? (
+            <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * ENTRIES_PER_PAGE + 1}-{Math.min(currentPage * ENTRIES_PER_PAGE, activeTableCount)} of {activeTableCount}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

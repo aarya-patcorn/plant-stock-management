@@ -23,7 +23,7 @@ export function ProductionLogsPreview({ isLoading, logs }: ProductionLogsPreview
     <Card className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <CardHeader className="gap-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <CardTitle className="text-lg sm:text-xl">Production Material Logs (Finish Goods)</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Stock Material Logs (Finish Goods)</CardTitle>
           <CardDescription className="hidden sm:block">Top 3 recent finished-product logs in compact inventory format.</CardDescription>
         </div>
         <Button asChild size="sm" variant="outline">

@@ -184,7 +184,7 @@ function AppShellLayout() {
       : isInventoryEntriesPage
         ? "Inventory Entries"
         : isProductionMaterialLogsPage
-          ? "Production Material Logs"
+          ? "Stock Material Logs"
       : isManufacturingPage
         ? "Production Entry"
         : isManufacturingEntriesPage

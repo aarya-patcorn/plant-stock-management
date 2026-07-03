@@ -10,7 +10,7 @@ export type GroutRecipeName =
   | "Red"
   | "Blue"
   | "Green"
-  | "Yellow";
+  | "Yellow"
 
 export type GroutRecipeMaterialName =
   | "White Cement"
@@ -20,7 +20,7 @@ export type GroutRecipeMaterialName =
   | "Yellow Pigment"
   | "Black Pigment"
   | "Red Pigment"
-  | "Blue Pigment";
+  | "Blue Pigment"
 
 export type GroutRecipeMap = Record<GroutRecipeName, Partial<Record<GroutRecipeMaterialName, number>>>;
 

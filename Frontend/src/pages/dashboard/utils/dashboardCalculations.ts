@@ -480,7 +480,13 @@ export function buildProductionTrendData(params: {
   manufacturingEntries
     .filter((entry) => {
       const matchesCategory = !activeReportCategory || entry.productCategory === activeReportCategory;
-      return matchesCategory && isWithinDateRange(entry.productionDate, reportFromDate, reportToDate);
+      if (!matchesCategory) {
+        return false;
+      }
+
+      return trendView === "day"
+        ? isWithinDateRange(entry.productionDate, reportFromDate, reportToDate)
+        : Boolean(normalizeDateValue(entry.productionDate));
     })
     .forEach((entry) => {
       const normalizedDate = normalizeDateValue(entry.productionDate);
@@ -508,3 +514,4 @@ export function buildProductionTrendData(params: {
       totalProductionKg: value.totalProductionKg,
     }));
 }
+
