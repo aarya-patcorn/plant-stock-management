@@ -12,7 +12,7 @@ interface FinishedProductSectionProps {
   formProductCategory: string;
   formTphBatch: string;
   getAutoProducedQuantity: (productCategory: string, totalProducedKg: number, bagSize: string) => string;
-  getBondureTotalBagsProduced: (bagSize: string) => string;
+  getBondureTotalBagsProduced: (bagSize: string, batchKg?: number) => string;
   getFinalTotalBagsProduced: (tphBatch: string, bagSize: string, wastageTotalBags: string) => string;
   isAutoCalculatedPackagingProduct: boolean;
   isTileAdhesiveProduct: boolean;
@@ -117,7 +117,7 @@ export function FinishedProductSection({
                     formProductCategory === "Tile Cleaner"
                       ? item.totalBagsProduced
                       : selectedProductCategory === "Bondure"
-                        ? getBondureTotalBagsProduced(bagSize)
+                        ? getBondureTotalBagsProduced(bagSize, batchKg)
                         : isAutoCalculatedPackagingProduct
                           ? getAutoProducedQuantity(selectedProductCategory, batchKg, bagSize)
                           : getFinalTotalBagsProduced(

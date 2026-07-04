@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Eye, RotateCcw, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -9,14 +9,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { fetchWastageQty, reduceWastageQty, submitEntry } from "@/lib/api";
 import { sanitizeNumberOnly, sanitizeTextOnly } from "@/lib/inputValidation";
 import {
-  bondureRecipes,
+  MANUAL_BLENDER_PRODUCT_CATEGORIES,
+  MANUAL_BLENDER_TILE_ADHESIVE_COLORS,
+  MANUAL_BLENDER_TILE_ADHESIVE_GREY_PRODUCTS,
+  MANUAL_BLENDER_TILE_ADHESIVE_WHITE_PRODUCTS,
   epoxyColors,
   epoxyProductColorMap,
   epoxyProducts,
   epoxyRecipes,
+  getBondureRecipe,
+  getTileAdhesiveRecipe,
   groutProductColorMap,
   groutProducts,
-  tileAdhesiveRecipes,
 } from "@/components/manufacturing/manufacturingData";
 import { buildGroutRecipeFromTotalKg, parseGroutPouchSizeToKg } from "@/components/manufacturing/groutRecipes";
 import { buildTileCleanerRecipe, normalizeTileCleanerProductName } from "@/components/manufacturing/tileCleanerRecipes";
@@ -120,28 +124,42 @@ export function ManufacturingEntryForm() {
 
   const totalProducedLabel =
     formData.tphBatch === "Manual Blender"
-      ? "Total Pouch"
+      ? selectedProductCategory === "Grout"
+        ? "Total Pouch"
+        : "Total Bags"
       : formData.tphBatch === "Sigma Mixer"
         ? "Total Bucket"
         : formData.tphBatch === "Manual Hand Mixer"
           ? "Total Can"
           : "Total Bags";
 
+  const isManualBlender = formData.tphBatch === "Manual Blender";
+  const isManualBlenderTileAdhesive = isManualBlender && isTileAdhesiveProduct;
   const productCategoryOptions =
-    formData.tphBatch === "2TPH" ? ["Tile Adhesive", "Bondure"] : PRODUCT_CATEGORIES;
-  const isProductCategoryLocked = ["1TPH", "Manual Blender", "Sigma Mixer", "Manual Hand Mixer"].includes(
+    formData.tphBatch === "2TPH"
+      ? ["Tile Adhesive", "Bondure"]
+      : isManualBlender
+        ? MANUAL_BLENDER_PRODUCT_CATEGORIES
+        : PRODUCT_CATEGORIES;
+  const isProductCategoryLocked = ["1TPH", "Sigma Mixer", "Manual Hand Mixer"].includes(
     formData.tphBatch,
   );
   const colorOptions =
-    formData.tphBatch === "Manual Blender"
-      ? GROUT_COLORS
-      : formData.tphBatch === "Sigma Mixer"
-        ? epoxyColors
-        : [];
+    isManualBlender && selectedProductCategory === "Tile Adhesive"
+      ? MANUAL_BLENDER_TILE_ADHESIVE_COLORS
+      : isManualBlender && selectedProductCategory === "Grout"
+        ? GROUT_COLORS
+        : formData.tphBatch === "Sigma Mixer"
+          ? epoxyColors
+          : [];
   const isColorDisabled =
     ["1TPH", "2TPH", "Manual Hand Mixer"].includes(formData.tphBatch) ||
-    isTileAdhesiveProduct ||
-    selectedProductCategory === "Grout";
+    !selectedProductCategory ||
+    selectedProductCategory === "Bondure" ||
+    selectedProductCategory === "Grout" ||
+    (isTileAdhesiveProduct && !isManualBlenderTileAdhesive);
+  const isFinishedProductDisabled =
+    isManualBlenderTileAdhesive && !selectedColor;
   const finishedProductOptions =
     formData.tphBatch === "Manual Hand Mixer"
       ? TILE_CLEANER_PRODUCTS
@@ -149,11 +167,15 @@ export function ManufacturingEntryForm() {
         ? groutProducts
         : selectedProductCategory === "Epoxy"
           ? epoxyProducts
-          : isTileAdhesiveProduct && selectedColor === "White"
-            ? TILE_ADHESIVE_WHITE_PRODUCTS
-            : isTileAdhesiveProduct && selectedColor === "Grey"
-              ? TILE_ADHESIVE_GREY_PRODUCTS
-              : [];
+          : isManualBlenderTileAdhesive && selectedColor === "White"
+            ? MANUAL_BLENDER_TILE_ADHESIVE_WHITE_PRODUCTS
+            : isManualBlenderTileAdhesive && selectedColor === "Grey"
+              ? MANUAL_BLENDER_TILE_ADHESIVE_GREY_PRODUCTS
+              : isTileAdhesiveProduct && selectedColor === "White"
+                ? TILE_ADHESIVE_WHITE_PRODUCTS
+                : isTileAdhesiveProduct && selectedColor === "Grey"
+                  ? TILE_ADHESIVE_GREY_PRODUCTS
+                  : [];
   const bagSizeLabel =
     formData.productCategory === "Epoxy"
       ? "Bucket Size"
@@ -202,11 +224,12 @@ export function ManufacturingEntryForm() {
     }
 
     setFormData((current) =>
-      current.finishedProductName === "Bondure"
+      current.finishedProductName === "Bondure" && current.color === "Grey"
         ? current
         : {
           ...current,
           finishedProductName: "Bondure",
+          color: "Grey",
         },
     );
   }, [selectedProductCategory]);
@@ -419,7 +442,7 @@ export function ManufacturingEntryForm() {
     }
 
     const recipeColor = selectedColor === "Grey" ? "Grey" : selectedColor;
-    const recipe = tileAdhesiveRecipes[recipeColor]?.[productName];
+    const recipe = getTileAdhesiveRecipe(formData.tphBatch, recipeColor, productName);
 
     if (!recipe) return;
 
@@ -431,8 +454,8 @@ export function ManufacturingEntryForm() {
       return;
     }
 
-    setRawMaterials(bondureRecipes);
-  }, [selectedProductCategory]);
+    setRawMaterials(getBondureRecipe(formData.tphBatch));
+  }, [selectedProductCategory, formData.tphBatch]);
 
   useEffect(() => {
     if (selectedProductCategory !== "Grout") {
@@ -885,11 +908,27 @@ export function ManufacturingEntryForm() {
             <ProductDetailsSection
               colorOptions={colorOptions}
               finishedProductOptions={finishedProductOptions}
+              isFinishedProductDisabled={isFinishedProductDisabled}
               formData={formData}
               getSelectValue={getSelectValue}
               isColorDisabled={isColorDisabled}
               isProductCategoryLocked={isProductCategoryLocked}
-              onColorChange={(value) => handleSelectChange("color", value)}
+              onColorChange={(value) => {
+                handleSelectChange(
+                  "color",
+                  value,
+                  [],
+                  isTileAdhesiveProduct
+                    ? {
+                      finishedProductName: "",
+                      bagSize: "",
+                    }
+                    : {},
+                );
+                if (isTileAdhesiveProduct) {
+                  setRawMaterials(INITIAL_RAW_MATERIALS);
+                }
+              }}
               onFinishedProductNameChange={(value) => {
                 handleSelectChange("finishedProductName", value);
                 setRawMaterials(INITIAL_RAW_MATERIALS);
@@ -906,10 +945,19 @@ export function ManufacturingEntryForm() {
                   color: false,
                 }));
 
+                const nextProductCategory = isOtherSelection ? "" : value;
+                const nextColor =
+                  isOtherSelection
+                    ? ""
+                    : formData.tphBatch === "2TPH"
+                      ? "Grey"
+                      : nextProductCategory === "Bondure"
+                        ? "Grey"
+                        : "";
                 setFormData({
                   ...formData,
-                  productCategory: isOtherSelection ? "" : value,
-                  color: isOtherSelection ? "" : formData.tphBatch === "2TPH" ? "Grey" : formData.color,
+                  productCategory: nextProductCategory,
+                  color: nextColor,
                   finishedProductName: "",
                   bagSize: "",
                 });

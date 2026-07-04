@@ -1,4 +1,4 @@
-﻿export type RawMaterialRecipeItem = {
+export type RawMaterialRecipeItem = {
   rawMaterialName: string;
   packagingType: string;
   level2: string;
@@ -162,6 +162,17 @@ export const bondureRecipes: RawMaterialRecipeItem[] = [
   { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "3", materialUnit: "kg" },
 ];
 
+export const MANUAL_BLENDER_PRODUCT_CATEGORIES = ["Grout", "Tile Adhesive", "Bondure"];
+export const MANUAL_BLENDER_TILE_ADHESIVE_COLORS = ["White", "Grey"];
+export const MANUAL_BLENDER_TILE_ADHESIVE_WHITE_PRODUCTS = ["K60", "K80", "K90", "KamdhenuX"];
+export const MANUAL_BLENDER_TILE_ADHESIVE_GREY_PRODUCTS = ["K50", "K60", "K80", "K90", "KamdhenuX"];
+
+export const manualBlenderBondureRecipes: RawMaterialRecipeItem[] = [
+  { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "200", materialUnit: "kg" },
+  { rawMaterialName: "Sand", packagingType: "Grey", level2: "Big (1200 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "300", materialUnit: "kg" },
+  { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "1.5", materialUnit: "kg" },
+];
+
 export const tileAdhesiveRecipes: Record<string, Record<string, RawMaterialRecipeItem[]>> = {
   White: {
     "K90": [
@@ -215,3 +226,56 @@ export const tileAdhesiveRecipes: Record<string, Record<string, RawMaterialRecip
 };
 
 
+
+const normalizeTileAdhesiveRecipeProductName = (productName: string) => {
+  if (["KamdhenuX", "Kamdhenu X", "KX"].includes(productName)) {
+    return "Kamdhenu X";
+  }
+
+  return productName;
+};
+
+export const manualBlenderGreyTileAdhesiveRecipes: Record<string, RawMaterialRecipeItem[]> = {
+  "K50": [
+    { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "200", materialUnit: "kg" },
+    { rawMaterialName: "Sand", packagingType: "Grey", level2: "Small (600 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "300", materialUnit: "kg" },
+    { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "2", materialUnit: "kg" },
+  ],
+  "K60": [
+    { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "200", materialUnit: "kg" },
+    { rawMaterialName: "Sand", packagingType: "Grey", level2: "Small (600 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "300", materialUnit: "kg" },
+    { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K60", level3: "", colorOfSandEpoxy: "", materialQuantity: "4.5", materialUnit: "kg" },
+  ],
+  "K80": [
+    { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "200", materialUnit: "kg" },
+    { rawMaterialName: "Sand", packagingType: "Grey", level2: "Small (600 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "300", materialUnit: "kg" },
+    { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K80", level3: "", colorOfSandEpoxy: "", materialQuantity: "4.5", materialUnit: "kg" },
+  ],
+  "K90": [
+    { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "200", materialUnit: "kg" },
+    { rawMaterialName: "Sand", packagingType: "Grey", level2: "Small (600 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "300", materialUnit: "kg" },
+    { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K90", level3: "", colorOfSandEpoxy: "", materialQuantity: "9", materialUnit: "kg" },
+  ],
+  "Kamdhenu X": [
+    { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "200", materialUnit: "kg" },
+    { rawMaterialName: "Sand", packagingType: "Grey", level2: "Small (600 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "300", materialUnit: "kg" },
+    { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "KX", level3: "", colorOfSandEpoxy: "", materialQuantity: "20", materialUnit: "kg" },
+  ],
+};
+
+export const getTileAdhesiveRecipe = (tphBatch: string, color: string, productName: string) => {
+  const normalizedProductName = normalizeTileAdhesiveRecipeProductName(productName);
+
+  if (tphBatch === "Manual Blender") {
+    if (color === "Grey") {
+      return manualBlenderGreyTileAdhesiveRecipes[normalizedProductName];
+    }
+
+    return tileAdhesiveRecipes.White[normalizedProductName];
+  }
+
+  return tileAdhesiveRecipes[color]?.[normalizedProductName];
+};
+
+export const getBondureRecipe = (tphBatch: string) =>
+  tphBatch === "Manual Blender" ? manualBlenderBondureRecipes : bondureRecipes;

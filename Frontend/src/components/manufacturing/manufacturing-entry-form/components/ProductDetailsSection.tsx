@@ -7,6 +7,7 @@ interface ProductDetailsSectionProps {
   colorOptions: string[];
   finishedProductOptions: string[];
   formData: ManufacturingFormData;
+  isFinishedProductDisabled: boolean;
   getSelectValue: (field: ManufacturingOtherField, value: string) => string;
   isColorDisabled: boolean;
   isProductCategoryLocked: boolean;
@@ -23,6 +24,7 @@ interface ProductDetailsSectionProps {
 export function ProductDetailsSection({
   colorOptions,
   finishedProductOptions,
+  isFinishedProductDisabled,
   formData,
   getSelectValue,
   isColorDisabled,
@@ -65,8 +67,9 @@ export function ProductDetailsSection({
         {renderOtherInput("productCategory", "Product Category", "Enter product category")}
 
         <Field htmlFor="finishedProductName" label="Finished Product Name">
-          {finishedProductOptions.length > 0 ? (
+          {finishedProductOptions.length > 0 || isFinishedProductDisabled ? (
             <Combobox
+              disabled={isFinishedProductDisabled}
               id="finishedProductName"
               name="finishedProductName"
               value={getSelectValue("finishedProductName", formData.finishedProductName)}
@@ -90,7 +93,7 @@ export function ProductDetailsSection({
           )}
         </Field>
 
-        {finishedProductOptions.length > 0 &&
+        {finishedProductOptions.length > 0 && !isFinishedProductDisabled &&
           renderOtherInput("finishedProductName", "Finished Product Name", "Enter finished product")}
 
         <Field htmlFor="color" label="Color (auto-filled for TPH batches)">
