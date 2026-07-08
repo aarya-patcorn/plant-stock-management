@@ -223,12 +223,12 @@ export function InventoryEntriesPage() {
       {
         accessorKey: "packagingType",
         header: "Packaging Type",
-        cell: ({ row }) => renderTextCell(row.original.packagingType, "block max-w-[180px] truncate"),
+        cell: ({ row }) => renderTextCell(row.original.packagingType, "block max-w-[180px] truncate") || "-",
       },
       {
         accessorKey: "productName",
         header: "Product Name",
-        cell: ({ row }) => renderTextCell(row.original.productName),
+        cell: ({ row }) => renderTextCell(row.original.productName) || "-",
       },
       {
         accessorKey: "color",

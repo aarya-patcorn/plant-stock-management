@@ -181,7 +181,7 @@ export function mapRawMaterialAlertRow(entry: InventoryEntry): RawMaterialAlertR
       id: entry.id,
       rawMaterialName,
       packagingType: "",
-      productName: "",
+      productName: level2 || "",
       color: packagingType,
       quantity: parseNumber(entry.currentStock),
       unit: compactValue(entry.unit).toLowerCase() || "",
@@ -370,22 +370,22 @@ export function InventoryAlerts({
         accessorKey: "rawMaterialName",
         header: "Raw Material Name",
         cell: ({ row }) =>
-          row.original.rawMaterialName ? <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge> : "",
+          row.original.rawMaterialName ? <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge> : "-",
       },
       {
         accessorKey: "packagingType",
         header: "Packaging Type",
-        cell: ({ row }) => renderTextCell(row.original.packagingType, "block max-w-[180px] truncate"),
+        cell: ({ row }) => renderTextCell(row.original.packagingType, "block max-w-[180px] truncate") || "-",
       },
       {
         accessorKey: "productName",
         header: "Product Name",
-        cell: ({ row }) => renderTextCell(row.original.productName),
+        cell: ({ row }) => renderTextCell(row.original.productName) || "-",
       },
       {
         accessorKey: "color",
         header: "Color",
-        cell: ({ row }) => (row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : ""),
+        cell: ({ row }) => (row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-"),
       },
       {
         accessorKey: "quantity",
@@ -407,17 +407,17 @@ export function InventoryAlerts({
       {
         accessorKey: "productName",
         header: "Product Name",
-        cell: ({ row }) => renderTextCell(row.original.productName),
+        cell: ({ row }) => renderTextCell(row.original.productName) || "-",
       },
       {
         accessorKey: "bagSize",
         header: "Bag Size",
-        cell: ({ row }) => renderTextCell(row.original.bagSize, "block max-w-[120px] truncate"),
+        cell: ({ row }) => renderTextCell(row.original.bagSize, "block max-w-[120px] truncate") || "-",
       },
       {
         accessorKey: "color",
         header: "Color",
-        cell: ({ row }) => (row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : ""),
+        cell: ({ row }) => (row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-"),
       },
       {
         accessorKey: "quantity",
