@@ -522,24 +522,6 @@ export function ManufacturingEntriesPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-        <CardHeader className="gap-5 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Production Register
-            </p>
-            <CardTitle className="text-3xl tracking-[-0.03em]">All production entries</CardTitle>
-            <CardDescription className="max-w-2xl">Review saved manufacturing batches, refine batch details, and manage production records from one place.</CardDescription>
-          </div>
-          <Button asChild variant="outline">
-            <Link to="/manufacturing-entry">
-              <ArrowLeft />
-              Back to production form
-            </Link>
-          </Button>
-        </CardHeader>
-      </Card>
-
       <Sheet open={isEditSheetOpen} onOpenChange={(open) => {
         if (open) {
           setIsEditSheetOpen(true);
@@ -912,9 +894,12 @@ export function ManufacturingEntriesPage() {
                   : `${sortedEntries.length} production entries available.`}
             </CardDescription>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
-            {isLoading ? "Loading..." : `${filteredEntries.length} total`}
-          </div>
+           <Button asChild variant="outline">
+            <Link to="/manufacturing-entry">
+              <ArrowLeft />
+              Back to production form
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent className="p-5">
           {!isLoading && !loadError && sortedEntries.length > 0 ? (

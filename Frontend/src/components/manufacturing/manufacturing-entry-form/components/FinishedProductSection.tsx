@@ -114,7 +114,7 @@ export function FinishedProductSection({
                 onChange={(e) => {
                   const bagSize = e.target.value;
                   const nextTotalBagsProduced =
-                    formProductCategory === "Tile Cleaner"
+                    formProductCategory === "Tile Cleaner" || formProductCategory === "Epoxy"
                       ? item.totalBagsProduced
                       : selectedProductCategory === "Bondure"
                         ? getBondureTotalBagsProduced(bagSize, batchKg)

@@ -15,8 +15,6 @@ function SnapshotWidget({
   caption,
   description,
   icon: Icon,
-  statusClassName,
-  statusLabel,
   title,
   trendLabel,
   value,
@@ -34,9 +32,6 @@ function SnapshotWidget({
                 {trendLabel}
               </Badge>
             ) : null}
-            <Badge className={`${statusClassName} text-[10px] sm:text-xs`} variant="outline">
-              {statusLabel}
-            </Badge>
           </div>
         </div>
         <div className="mt-3 space-y-1 sm:mt-4 sm:space-y-1.5">

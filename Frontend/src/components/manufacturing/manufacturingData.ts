@@ -9,18 +9,20 @@ export type RawMaterialRecipeItem = {
 };
 
 export const epoxyColors = [
-  "Deep Safayar",
-  "Light Grey",
-  "Slate Grey",
+  "Deep safayar",
+  "Light grey",
+  "Slate grey",
   "Ivory",
   "White",
-  "Coffee Brown",
-  "Dark Grey",
+  "Coffee brown",
+  "Dark grey",
   "Black",
-  "Harvest Gold",
-  "English Walnut",
-  "Dhaulpur Pink",
+  "Harvest gold",
+  "English walnut",
+  "Dhaulpur pink",
   "Redwood",
+  "Crystean",
+  "Steel",
 ];
 
 export const groutProducts = [
@@ -63,6 +65,8 @@ export const epoxyProducts = [
   "English walnut epoxy",
   "Dholpur pink epoxy",
   "Redwood epoxy",
+  "Crystean epoxy",
+  "Steel epoxy",
 ];
 
 export const epoxyProductColorMap: Record<string, string> = {
@@ -79,82 +83,99 @@ export const epoxyProductColorMap: Record<string, string> = {
   "English walnut epoxy": "English walnut",
   "Dholpur pink epoxy": "Dholpur pink",
   "Redwood epoxy": "Redwood",
+  "Crystean epoxy": "Crystean",
+  "Steel epoxy": "Steel",
 };
 
-export const epoxyRecipes: Record<string, RawMaterialRecipeItem[]> = {
-  "White": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "White", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Black": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Black", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Ivory": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Ivory", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Deep Safayar": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Blue", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Slate Grey": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Slate Grey", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Light Grey": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Light Grey", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Dark Grey": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Dark Grey", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Coffee Brown": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Coffee Brown", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Harvest Gold": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Jaisalmer", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "English Walnut": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Sabal", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Dhaulpur Pink": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Savetrane", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
-  "Redwood": [
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Resin", level3: "", colorOfSandEpoxy: "", materialQuantity: "12.500", materialUnit: "kg" },
-    { rawMaterialName: "Packaging", packagingType: "FG", level2: "Epoxy", level3: "Coloured Sand", colorOfSandEpoxy: "Terracotta", materialQuantity: "50", materialUnit: "kg" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Byk", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-    { rawMaterialName: "Chemical", packagingType: "Epoxy", level2: "Benton", level3: "", colorOfSandEpoxy: "", materialQuantity: "60", materialUnit: "gm" },
-  ],
+const EPOXY_PER_KG_RECIPE = {
+  resinGm: 201.6129032,
+  bykGm: 0.9677419355,
+  bentonGm: 0.9677419355,
+  colouredSandKg: 0.8064516129,
 };
+
+function parseEpoxySizeToKg(bucketSize: string) {
+  const text = String(bucketSize || "").trim().toLowerCase();
+  const match = text.match(/(\d+(?:\.\d+)?)/);
+  const quantity = match ? Number(match[1]) : 0;
+
+  if (!Number.isFinite(quantity)) {
+    return 0;
+  }
+
+  if (text.includes("gm") || text.includes("gram")) {
+    return quantity / 1000;
+  }
+
+  if (text.includes("mt") || text.includes("ton")) {
+    return quantity * 1000;
+  }
+
+  return quantity;
+}
+
+function formatEpoxyQuantity(value: number, decimals = 4) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  return String(Number(value.toFixed(decimals)));
+}
+
+export function buildEpoxyRecipe(
+  selectedColor: string,
+  bucketSize: string,
+  totalBucketCount: string | number,
+): RawMaterialRecipeItem[] {
+  const color = String(selectedColor || "").trim();
+  const bucketSizeKg = parseEpoxySizeToKg(bucketSize);
+  const totalBuckets = Number(totalBucketCount) || 0;
+  const totalEpoxyKg = bucketSizeKg * totalBuckets;
+  const canCalculateQuantity = Boolean(color) && bucketSizeKg > 0 && totalBuckets > 0 && totalEpoxyKg > 0;
+
+  if (!color) {
+    return [];
+  }
+
+  return [
+    {
+      rawMaterialName: "Chemical",
+      packagingType: "Epoxy",
+      level2: "Resin",
+      level3: "",
+      colorOfSandEpoxy: "",
+      materialQuantity: canCalculateQuantity ? formatEpoxyQuantity(EPOXY_PER_KG_RECIPE.resinGm * totalEpoxyKg) : "",
+      materialUnit: "gm",
+    },
+    {
+      rawMaterialName: "Packaging",
+      packagingType: "FG",
+      level2: "Epoxy",
+      level3: "Coloured Sand",
+      colorOfSandEpoxy: color,
+      materialQuantity: canCalculateQuantity ? formatEpoxyQuantity(EPOXY_PER_KG_RECIPE.colouredSandKg * totalEpoxyKg) : "",
+      materialUnit: "kg",
+    },
+    {
+      rawMaterialName: "Chemical",
+      packagingType: "Epoxy",
+      level2: "Byk",
+      level3: "",
+      colorOfSandEpoxy: "",
+      materialQuantity: canCalculateQuantity ? formatEpoxyQuantity(EPOXY_PER_KG_RECIPE.bykGm * totalEpoxyKg) : "",
+      materialUnit: "gm",
+    },
+    {
+      rawMaterialName: "Chemical",
+      packagingType: "Epoxy",
+      level2: "Benton",
+      level3: "",
+      colorOfSandEpoxy: "",
+      materialQuantity: canCalculateQuantity ? formatEpoxyQuantity(EPOXY_PER_KG_RECIPE.bentonGm * totalEpoxyKg) : "",
+      materialUnit: "gm",
+    },
+  ];
+}
 
 export const bondureRecipes: RawMaterialRecipeItem[] = [
   { rawMaterialName: "Cement", packagingType: "PPC", level2: "Silo", level3: "", colorOfSandEpoxy: "", materialQuantity: "400", materialUnit: "kg" },

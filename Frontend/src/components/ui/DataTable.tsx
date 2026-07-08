@@ -30,7 +30,7 @@ const BADGE_TYPE_STYLES: Record<string, string> = {
   productCategory: "bg-amber-50 text-amber-800 ring-1 ring-amber-200",
   rawMaterialName: "bg-cyan-50 text-cyan-800 ring-1 ring-cyan-200",
   token: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
-  unit: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+  unit: "bg-yellow-50 text-emerald-700 ring-1 ring-emerald-200",
   packagingBagColor: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
 };
 

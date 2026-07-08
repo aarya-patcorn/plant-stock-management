@@ -16,7 +16,7 @@ import {
   epoxyColors,
   epoxyProductColorMap,
   epoxyProducts,
-  epoxyRecipes,
+  buildEpoxyRecipe,
   getBondureRecipe,
   getTileAdhesiveRecipe,
   groutProductColorMap,
@@ -94,16 +94,17 @@ export function ManufacturingEntryForm() {
     formData.finishedProductName,
   );
 
-  const batchKg = getBatchKg(formData.tphBatch);
   const totalPackedKg = useMemo(() => getTotalPackedKg(productItems), [productItems]);
-  const remainingKg = Math.max(0, batchKg - totalPackedKg);
+  const isEpoxyProduct = selectedProductCategory === "Epoxy";
+  const batchKg = isEpoxyProduct ? totalPackedKg : getBatchKg(formData.tphBatch);
+  const remainingKg = isEpoxyProduct ? 0 : Math.max(0, batchKg - totalPackedKg);
   const totalProducedUnits = useMemo(
     () => String(productItems.reduce((sum, item) => sum + (Number(item.totalBagsProduced) || 0), 0)),
     [productItems],
   );
   const isTileAdhesiveProduct = selectedProductCategory === "Tile Adhesive";
   const isTileCleanerProduct = selectedProductCategory === "Tile Cleaner";
-  const isAutoCalculatedPackagingProduct = ["Epoxy", "Grout"].includes(selectedProductCategory);
+  const isAutoCalculatedPackagingProduct = selectedProductCategory === "Grout";
   const isSinglePackagingRowProduct = isAutoCalculatedPackagingProduct || isTileCleanerProduct;
   const wastageSizeLabel = getWastageSizeLabel(formData.productCategory);
   const wastageSizeOptions = getWastageSizeOptions(formData.productCategory);
@@ -319,7 +320,7 @@ export function ManufacturingEntryForm() {
 
       const packedKg = getTotalPackedKg(updated);
 
-      if (batchKg > 0 && packedKg > batchKg) {
+      if (!isEpoxyProduct && batchKg > 0 && packedKg > batchKg) {
         toast.error("Total bags cannot be greater than batch quantity.");
         return current;
       }
@@ -482,18 +483,14 @@ export function ManufacturingEntryForm() {
   ]);
 
   useEffect(() => {
-    if (selectedProductCategory !== "Epoxy" || !selectedColor) {
+    if (selectedProductCategory !== "Epoxy") {
       return;
     }
 
-    const recipe = epoxyRecipes[selectedColor];
+    const recipe = buildEpoxyRecipe(selectedColor, "1kg", totalPackedKg);
 
-    if (!recipe) {
-      return;
-    }
-
-    setRawMaterials(recipe);
-  }, [selectedProductCategory, selectedColor]);
+    setRawMaterials(recipe.length > 0 ? recipe : INITIAL_RAW_MATERIALS);
+  }, [selectedProductCategory, selectedColor, totalPackedKg]);
 
   useEffect(() => {
     if (selectedProductCategory !== "Tile Cleaner") {
@@ -1008,6 +1005,7 @@ export function ManufacturingEntryForm() {
               setWastageTotalBags={(value) => setWastageTotalBags(sanitizeNumberOnly(value))}
               wastageBagSize={wastageBagSize}
               wastageSizeLabel={wastageSizeLabel}
+              
               wastageSizeOptions={wastageSizeOptions}
               wastageTotalBags={wastageTotalBags}
             />

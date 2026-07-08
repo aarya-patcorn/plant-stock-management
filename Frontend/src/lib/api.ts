@@ -22,6 +22,8 @@ export type PurchaseEntry = {
   level4: string;
   packagingBag: string;
   packagingBagColor: string;
+  bagColor: string;
+  sandEpoxyColor: string;
   coupon?: string;
   bucketSize: string;
   quantityPurchased: string;
@@ -401,6 +403,8 @@ function normalizePurchaseEntry(entry: unknown): PurchaseEntry {
     level4: stringifyValue(record.level4),
     packagingBag: stringifyValue(record.packagingBag ?? record.level4),
     packagingBagColor: stringifyValue(record.packagingBagColor ?? record.bagColor),
+    bagColor: stringifyValue(record.bagColor),
+    sandEpoxyColor: stringifyValue(record.sandEpoxyColor ?? record.colorOfSandEpoxy),
     coupon: stringifyValue(record.coupon),
     bucketSize: stringifyValue(record.bucketSize ?? record.level4),
     quantityPurchased: stringifyValue(record.quantityPurchased ?? record.purchaseStock),
@@ -626,3 +630,4 @@ function safeParseJson(text: string): ApiResponse {
     return null;
   }
 }
+

@@ -140,6 +140,17 @@ function isWithinDateRange(value: string, fromDate: string, toDate: string) {
   return normalized >= fromDate && normalized <= toDate;
 }
 
+function parseBagSizeKg(value: unknown) {
+  const normalized = String(value ?? "").trim();
+
+  if (!normalized) {
+    return 0;
+  }
+
+  const match = normalized.match(/(\d+(?:\.\d+)?)/i);
+  return match ? parseNumber(match[1]) : 0;
+}
+
 function buildProductLabel(productCategory: string, productName: string, color: string) {
   return [productCategory, productName, color].filter(Boolean).join(" / ");
 }
@@ -332,8 +343,9 @@ export function ReportsPage() {
     () =>
       data.productionMaterialLogs.filter((entry) => {
         const categoryMatch = !selectedCategory || entry.productCategory === selectedCategory;
-        const dateSource = entry.updatedAt || entry.createdAt;
-        const dateMatch = isWithinDateRange(dateSource, fromDate, toDate);
+        const dateMatch =
+          isWithinDateRange(entry.updatedAt, fromDate, toDate) ||
+          isWithinDateRange(entry.createdAt, fromDate, toDate);
         return categoryMatch && dateMatch;
       }),
     [data.productionMaterialLogs, fromDate, selectedCategory, toDate],
@@ -366,12 +378,17 @@ export function ReportsPage() {
       (sum, entry) => sum + parseNumber(entry.shippedQuantity),
       0,
     );
+    const totalDispatch = filteredDispatchEntries.reduce(
+      (sum, entry) => sum + parseBagSizeKg(entry.bagSize) * parseNumber(entry.totalBags),
+      0,
+    );
 
     return {
       currentStock,
       dispatchStock,
       totalBagsProduced,
       totalDispatchBags,
+      totalDispatch,
     };
   }, [filteredDispatchEntries, filteredManufacturingEntries, filteredProductionLogs]);
 
@@ -701,9 +718,12 @@ export function ReportsPage() {
         cell: ({ row }) => row.original.totalBags || "-",
       },
       {
-        accessorKey: "wastageQty",
-        header: "Wastage Qty",
-        cell: ({ row }) => row.original.wastageQty || "-",
+        accessorKey: "quantity",
+        header: "Quantity",
+        cell: ({ row }) => {
+          const bagSize = parseBagSizeKg(row.original.bagSize);
+          return `${bagSize * parseNumber(row.original.totalBags)} KG`;
+        },
       },
       {
         accessorKey: "vehicleNo",
@@ -810,7 +830,7 @@ export function ReportsPage() {
       "Token",
       "Bag Size",
       "Departed Bags",
-      "Wastage Qty",
+      "Quantity",
       "Vehicle",
       "Driver",
       "Dispatch Site",
@@ -947,13 +967,13 @@ export function ReportsPage() {
         />
         <StatCard
           description="Total departed bags from dispatch records."
-          title="Total Departures"
-          value={isLoading ? "..." : formatCount(summary.totalDispatchBags)}
+          title="Total Departures MT"
+          value={isLoading ? "..." : formatKgToMt(summary.totalDispatch)}
         />
         <StatCard
-          description="Current product stock from production material logs."
-          title="Current Stock"
-          value={isLoading ? "..." : formatCount(summary.currentStock)}
+          description="Total departed bags from dispatch records."
+          title="Total Bags Dispatched"
+          value={isLoading ? "..." : formatCount(summary.totalDispatchBags)}
         />
       </div>
 
@@ -1016,31 +1036,6 @@ export function ReportsPage() {
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-          <CardHeader>
-            <CardTitle>Production vs Dispatch Stock</CardTitle>
-            <CardDescription>Donut chart based on the selected date range and category.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[320px]">
-            {isLoading ? (
-              <div className="flex h-full items-center justify-center">
-                <LoadingLoader />
-              </div>
-            ) : (
-              <ResponsiveContainer height="100%" width="100%">
-                <PieChart>
-                  <Pie data={donutData} dataKey="value" innerRadius={78} outerRadius={112} paddingAngle={4}>
-                    {donutData.map((entry, index) => (
-                      <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => formatTooltipValue(value)} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
 
         <Card className="border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
           <CardHeader>
@@ -1068,42 +1063,42 @@ export function ReportsPage() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      <Card className="border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle>Most Dispatched Items</CardTitle>
-              <CardDescription>Top dispatched items by departed bags in the filtered period.</CardDescription>
+        <Card className="border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>Most Dispatched Items</CardTitle>
+                <CardDescription>Top dispatched items by departed bags in the filtered period.</CardDescription>
+              </div>
+              <Badge variant="outline">
+                <BarChart3 className="mr-2 size-4" />
+                {reportType === "production" ? "Production details table below" : "Dispatch details table below"}
+              </Badge>
             </div>
-            <Badge variant="outline">
-              <BarChart3 className="mr-2 size-4" />
-              {reportType === "production" ? "Production details table below" : "Dispatch details table below"}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="h-[320px]">
-          {isLoading ? (
-            <div className="flex h-full items-center justify-center">
-              <LoadingLoader />
-            </div>
-          ) : dispatchBarData.length === 0 ? (
-            <div className="flex h-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
-              No dispatch data available for this filter.
-            </div>
-          ) : (
-            <ResponsiveContainer height="100%" width="100%">
-              <BarChart data={dispatchBarData} margin={{ left: 8, right: 18, top: 10, bottom: 10 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 12 }} interval={0} angle={-12} textAnchor="end" height={72} />
-                <YAxis />
-                <Tooltip formatter={(value) => formatTooltipValue(value)} />
-                <Bar dataKey="value" fill={BAR_COLOR_DISPATCH} radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="h-[320px]">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center">
+                <LoadingLoader />
+              </div>
+            ) : dispatchBarData.length === 0 ? (
+              <div className="flex h-full items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+                No dispatch data available for this filter.
+              </div>
+            ) : (
+              <ResponsiveContainer height="100%" width="100%">
+                <BarChart data={dispatchBarData} margin={{ left: 8, right: 18, top: 10, bottom: 10 }}>
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} interval={0} angle={-12} textAnchor="end" height={72} />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatTooltipValue(value)} />
+                  <Bar dataKey="value" fill={BAR_COLOR_DISPATCH} radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
         <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
@@ -1307,3 +1302,5 @@ export function ReportsPage() {
     </div>
   );
 }
+
+

@@ -10,6 +10,16 @@ import { DataBadge, DataTable } from "@/components/ui/DataTable";
 import { TooltipText } from "@/components/ui/tooltip-text";
 import { Select } from "@/components/ui/select";
 import LoadingLoader from "@/components/ui/LoadingLoader";
+import {
+  TableFiltersBar,
+  type Filter,
+  type FilterFieldConfig,
+  createNumberFilterField,
+  createSelectFilterField,
+  createSelectOptions,
+  createTextFilterField,
+} from "@/components/ui/table-filters";
+import { applyTableFilters } from "@/lib/tableFilters";
 import { clampPercentage } from "@/pages/dashboard/utils/dashboardCalculations";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "../ui/pagination";
 
@@ -165,7 +175,7 @@ export function ProductionMaterialLogsPage() {
   const [loadError, setLoadError] = useState("");
   const [selectedProductCategory, setSelectedProductCategory] = useState("");
   const [selectedProductName, setSelectedProductName] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [tableFilters, setTableFilters] = useState<Filter[]>([]);  const [currentPage, setCurrentPage] = useState(1);
   const [currentAlertPage, setCurrentAlertPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
 
@@ -266,14 +276,59 @@ export function ProductionMaterialLogsPage() {
     [sortedEntries],
   );
 
-  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / pageSize));
+  const logFilterFields = useMemo<FilterFieldConfig[]>(
+    () => [
+      createTextFilterField("productCategory", "Product Category"),
+      createTextFilterField("productName", "Product Name"),
+      createTextFilterField("bagSize", "Bag Size"),
+      createTextFilterField("color", "Color"),
+      createTextFilterField("token", "Token"),
+      createNumberFilterField("currentQuantity", "Current Quantity"),
+      createNumberFilterField("shippedQuantity", "Shipped Quantity"),
+      createSelectFilterField(
+        "productCategorySelect",
+        "Category",
+        createSelectOptions(sortedEntries.map((entry) => entry.productCategory)),
+      ),
+    ],
+    [sortedEntries],
+  );
+
+  const filteredTableEntries = useMemo(
+    () =>
+      applyTableFilters(
+        sortedEntries,
+        tableFilters,
+        {
+          productCategory: (entry) => entry.productCategory,
+          productName: (entry) => entry.productName,
+          bagSize: (entry) => entry.bagSize,
+          color: (entry) => entry.productColor,
+          token: (entry) => entry.token,
+          currentQuantity: (entry) => entry.currentQuantity,
+          shippedQuantity: (entry) => entry.shippedQuantity,
+          productCategorySelect: (entry) => entry.productCategory,
+        },
+        {
+          currentQuantity: "number",
+          shippedQuantity: "number",
+        },
+      ),
+    [sortedEntries, tableFilters],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredTableEntries.length / pageSize));
 
   const totalAlertPages = Math.max(1, Math.ceil(lowStockAlerts.length / ALERT_PAGE_SIZE));
 
-  const paginatedEntries = useMemo(
-    () => filteredEntries.slice((currentPage - 1) * pageSize, currentPage * pageSize),
-    [currentPage, filteredEntries, pageSize],
-  );
+ const paginatedEntries = useMemo(
+  () =>
+    filteredTableEntries.slice(
+      (currentPage - 1) * pageSize,
+      currentPage * pageSize,
+    ),
+  [currentPage, filteredTableEntries, pageSize],
+);
 
   const paginatedAlerts = useMemo(
     () =>
@@ -286,7 +341,7 @@ export function ProductionMaterialLogsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [pageSize]);
+  }, [pageSize, tableFilters]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -300,38 +355,57 @@ export function ProductionMaterialLogsPage() {
     }
   }, [currentAlertPage, totalAlertPages]);
 
+  const renderTextCell = (value: string, className = "block max-w-[220px] truncate") => {
+    const text = value.trim();
+
+    if (!text) {
+      return "";
+    }
+
+    return (
+      <TooltipText as="span" className={className} content={text}>
+        {text}
+      </TooltipText>
+    );
+  };
+
   const logColumns = useMemo<ColumnDef<ProductionMaterialLog>[]>(
     () => [
       {
-        id: "product",
-        accessorFn: (row) => buildProductLabel(row),
-        header: "Product",
-        cell: ({ row }) => (
-          <div className="min-w-[240px] max-w-[300px] space-y-1">
-            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildProductLabel(row.original) || "-"}>
-              {buildProductLabel(row.original) || "Production log"}
-            </TooltipText>
-            {row.original.productCategory ? (
-              <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
-            ) : null}
-          </div>
-        ),
+        accessorKey: "productCategory",
+        header: "Product Category",
+        cell: ({ row }) =>
+          row.original.productCategory ? <DataBadge type="productCategory">{row.original.productCategory}</DataBadge> : "",
       },
       {
-        accessorKey: "token",
-        header: "Token",
-        cell: ({ row }) =>
-          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "-",
+        accessorKey: "productName",
+        header: "Product Name",
+        cell: ({ row }) => renderTextCell(row.original.productName),
       },
       {
         accessorKey: "bagSize",
         header: "Bag Size",
-        cell: ({ row }) => row.original.bagSize || "-",
+        cell: ({ row }) => renderTextCell(row.original.bagSize, "block max-w-[120px] truncate"),
+      },
+      {
+        accessorKey: "productColor",
+        header: "Color",
+        cell: ({ row }) => (row.original.productColor ? <DataBadge type="color">{row.original.productColor}</DataBadge> : ""),
+      },
+      {
+        accessorKey: "token",
+        header: "Token",
+        cell: ({ row }) => (row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : ""),
       },
       {
         accessorKey: "currentQuantity",
-        header: "Current Stock",
-        cell: ({ row }) => formatCount(toNumber(row.original.currentQuantity)),
+        header: "Current Quantity",
+        cell: ({ row }) => <span className="block text-right">{formatCount(toNumber(row.original.currentQuantity))}</span>,
+      },
+      {
+        accessorKey: "shippedQuantity",
+        header: "Shipped Quantity",
+        cell: ({ row }) => <span className="block text-right">{formatCount(toNumber(row.original.shippedQuantity))}</span>,
       },
     ],
     [],
@@ -449,15 +523,18 @@ export function ProductionMaterialLogsPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Stock material log list</CardTitle>
-          <CardDescription>
-            {isLoading
-              ? "Loading production material logs from sheet..."
-              : sortedEntries.length === 0
-                ? "No production material logs found yet."
-                : `${sortedEntries.length} production material logs available.`}
-          </CardDescription>
+        <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+          <div>
+            <CardTitle>Stock material log list</CardTitle>
+            <CardDescription>
+              {isLoading
+                ? "Loading production material logs from sheet..."
+                : sortedEntries.length === 0
+                  ? "No production material logs found yet."
+                  : `${sortedEntries.length} production material logs available.`}
+            </CardDescription>
+          </div>
+          <TableFiltersBar fields={logFilterFields} filters={tableFilters} onChange={setTableFilters} className="shrink-0" />
         </CardHeader>
         <CardContent>
           {!isLoading && !loadError ? (
@@ -570,4 +647,10 @@ export function ProductionMaterialLogsPage() {
     </div>
   );
 }
+
+
+
+
+
+
 

@@ -41,7 +41,6 @@ const packagingBagColorOptions = ["White", "Grey"];
 const packagingBagOptions = ["K50", "K60", "K70", "K80", "K90", "Kamdhenu X"];
 const bucketSizeOptions = ["1L", "5L"];
 const unloadByOptions = ["Sujeet", "Thailesh", "Vashu"];
-const ENTRIES_PER_PAGE = 10;
 const EDIT_SHEET_ANIMATION_MS = 300;
 
 type MaterialConfig = {
@@ -195,7 +194,7 @@ function Field({
 }
 
 function buildMaterialLabel(entry: PurchaseEntry) {
-  return [entry.rawMaterialName, entry.packagingType, entry.level2, entry.level3, entry.level4]
+  return [entry.packagingType, entry.level2, entry.level3, entry.level4]
     .filter(Boolean)
     .join(" / ");
 }
@@ -223,46 +222,6 @@ function normalizeTimeForInput(value: string) {
 
 function normalizeUnitForEdit(value: string) {
   return value.trim().toLowerCase() === "mt" ? "kg" : value;
-}
-
-function getAttachmentLink(value: string) {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return null;
-  }
-
-  try {
-    const url = new URL(trimmedValue);
-
-    if (url.hostname === "docs.google.com") {
-      const documentMatch = url.pathname.match(/^\/document\/d\/([^/]+)/);
-      if (documentMatch) {
-        return `https://docs.google.com/document/d/${documentMatch[1]}/export?format=pdf`;
-      }
-
-      const spreadsheetMatch = url.pathname.match(/^\/spreadsheets\/d\/([^/]+)/);
-      if (spreadsheetMatch) {
-        return `https://docs.google.com/spreadsheets/d/${spreadsheetMatch[1]}/export?format=pdf`;
-      }
-
-      const presentationMatch = url.pathname.match(/^\/presentation\/d\/([^/]+)/);
-      if (presentationMatch) {
-        return `https://docs.google.com/presentation/d/${presentationMatch[1]}/export/pdf`;
-      }
-    }
-
-    if (url.hostname === "drive.google.com") {
-      const driveFileMatch = url.pathname.match(/^\/file\/d\/([^/]+)/);
-      if (driveFileMatch) {
-        return `https://drive.google.com/file/d/${driveFileMatch[1]}/preview`;
-      }
-    }
-
-    return url.toString();
-  } catch {
-    return null;
-  }
 }
 
 function renderAttachmentActions(
@@ -567,6 +526,15 @@ export function PurchaseEntriesPage() {
         cell: ({ row }) => row.original.time || "-",
       },
       {
+        accessorKey: "rawMaterialName",
+        header: "Raw Material",
+        cell: ({ row }) => (
+          row.original.rawMaterialName ? (
+            <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge>
+          ) : null
+        ),
+      },
+      {
         id: "material",
         accessorFn: (row) => buildMaterialLabel(row),
         header: "Material",
@@ -575,9 +543,6 @@ export function PurchaseEntriesPage() {
             <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildMaterialLabel(row.original) || "-"}>
               {buildMaterialLabel(row.original) || "-"}
             </TooltipText>
-            {row.original.rawMaterialName ? (
-              <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge>
-            ) : null}
           </div>
         ),
       },
@@ -670,32 +635,11 @@ export function PurchaseEntriesPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-        <CardHeader className="gap-5 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Purchase Register
-            </p>
-            <CardTitle className="text-3xl tracking-[-0.03em]">All purchase entries</CardTitle>
-            <CardDescription className="max-w-2xl">
-              Review saved purchase records, update item details, and keep stock-related purchase data organized in one place.
-            </CardDescription>
-          </div>
-          <Button asChild variant="outline">
-            <Link to="/purchase-entry">
-              <ArrowLeft />
-              Back to purchase form
-            </Link>
-          </Button>
-        </CardHeader>
-      </Card>
-
       <Sheet open={isEditSheetOpen} onOpenChange={(open) => {
         if (open) {
           setIsEditSheetOpen(true);
           return;
         }
-
         closeEditSheet();
       }}>
         <SheetContent
@@ -1113,9 +1057,14 @@ export function PurchaseEntriesPage() {
                   : `${sortedEntries.length} purchase entries available.`}
             </CardDescription>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
-            {isLoading ? "Loading..." : `${filteredEntries.length} total`}
-          </div>
+
+          <Button asChild variant="outline">
+            <Link to="/purchase-entry">
+              <ArrowLeft />
+              Back to purchase form
+            </Link>
+          </Button>
+
         </CardHeader>
         <CardContent className="p-5">
           {!isLoading && !loadError && sortedEntries.length > 0 ? (
@@ -1260,6 +1209,8 @@ export function PurchaseEntriesPage() {
     </div>
   );
 }
+
+
 
 
 

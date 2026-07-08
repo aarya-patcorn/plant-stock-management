@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   Factory,
+  Layers,
   LayoutDashboard,
+  Container,
   LogOut,
   Menu,
   PackagePlus,
@@ -47,6 +49,13 @@ const navSections: Array<{
       { icon: PackagePlus, label: "Purchase Entry", path: "/purchase-entry" },
       { icon: Factory, label: "Production", path: "/manufacturing-entry" },
       { icon: SendToBack, label: "Dispatch", path: "/product-departure" },
+    ],
+  },
+  {
+    title: "Inventory",
+    items: [
+      { icon: Layers, label: "Raw Material", path: "/inventory-entries" },
+      { icon: Container, label: "Finish Goods", path: "/production-material-logs" },
     ],
   },
 ];

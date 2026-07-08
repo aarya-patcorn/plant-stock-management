@@ -58,7 +58,7 @@ function Field({
 }
 
 function buildDispatchLabel(entry: DispatchEntry) {
-  return [entry.productCategory, entry.productName, entry.productColor].filter(Boolean).join(" / ");
+  return [entry.productName, entry.productColor].filter(Boolean).join(" / ");
 }
 
 function normalizeTimeForInput(value: string) {
@@ -413,6 +413,16 @@ export function DispatchEntriesPage() {
         ),
       },
       {
+        id: "productCategory",
+        accessorFn: (row) => row.productCategory || "",
+        header: "Product Category",
+        cell: ({ row }) => (
+            row.original.productCategory ? (
+              <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+            ) : null
+        ),
+      },
+      {
         id: "product",
         accessorFn: (row) => buildDispatchLabel(row),
         header: "Product",
@@ -421,9 +431,6 @@ export function DispatchEntriesPage() {
             <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildDispatchLabel(row.original) || "-"}>
               {buildDispatchLabel(row.original) || "-"}
             </TooltipText>
-            {row.original.productCategory ? (
-              <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
-            ) : null}
           </div>
         ),
       },
@@ -442,11 +449,6 @@ export function DispatchEntriesPage() {
         accessorKey: "totalBags",
         header: "Departed Bags",
         cell: ({ row }) => row.original.totalBags || "-",
-      },
-      {
-        accessorKey: "wastageQty",
-        header: "Wastage Qty",
-        cell: ({ row }) => row.original.wastageQty || "-",
       },
       {
         accessorKey: "vehicleNo",
@@ -511,24 +513,6 @@ export function DispatchEntriesPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-white/70 bg-white/88 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-        <CardHeader className="gap-5 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Dispatch Register
-            </p>
-            <CardTitle className="text-3xl tracking-[-0.03em]">All dispatch entries</CardTitle>
-            <CardDescription className="max-w-2xl">Review saved dispatch records, update shipment details, and manage departure tracking from one workspace.</CardDescription>
-          </div>
-          <Button asChild variant="outline">
-            <Link to="/product-departure">
-              <ArrowLeft />
-              Back to dispatch form
-            </Link>
-          </Button>
-        </CardHeader>
-      </Card>
-
       <Sheet open={isEditSheetOpen} onOpenChange={(open) => {
         if (open) {
           setIsEditSheetOpen(true);
@@ -872,9 +856,12 @@ export function DispatchEntriesPage() {
                   : `${sortedEntries.length} dispatch entries available.`}
             </CardDescription>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-background/70 px-3 py-2 text-sm font-medium text-muted-foreground">
-            {isLoading ? "Loading..." : `${filteredEntries.length} total`}
-          </div>
+          <Button asChild variant="outline">
+            <Link to="/product-departure">
+              <ArrowLeft />
+              Back to dispatch form
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent className="p-5">
           {!isLoading && !loadError && sortedEntries.length > 0 ? (
@@ -946,7 +933,7 @@ export function DispatchEntriesPage() {
                           <p className="mt-1">{entry.totalBags || "-"}</p>
                         </div>
                         <div>
-                          <p className="text-xs font-medium uppercase text-muted-foreground">Wastage Qty</p>
+                          <p className="text-xs font-medium uppercase text-muted-foreground">Quantity</p>
                           <p className="mt-1">{entry.wastageQty || "-"}</p>
                         </div>
                         <div>
