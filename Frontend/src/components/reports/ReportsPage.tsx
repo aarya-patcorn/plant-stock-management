@@ -460,7 +460,6 @@ export function ReportsPage() {
       createTextFilterField("finishedProductName", "Product"),
       createSelectFilterField("color", "Color", createSelectOptions(sortedManufacturingEntries.map((entry) => entry.color))),
       createNumberFilterField("totalBagsProduced", "Total Quantity"),
-      createNumberFilterField("wastageQty", "Wastage"),
       createSelectFilterField("user", "Entry By", createSelectOptions(sortedManufacturingEntries.map((entry) => entry.user))),
     ],
     [sortedManufacturingEntries],
@@ -495,13 +494,11 @@ export function ReportsPage() {
           finishedProductName: (entry) => entry.finishedProductName,
           color: (entry) => entry.color,
           totalBagsProduced: (entry) => entry.totalBagsProduced,
-          wastageQty: (entry) => entry.wastageQty,
           user: (entry) => entry.user,
         },
         {
           productionDate: "date",
           totalBagsProduced: "number",
-          wastageQty: "number",
         },
       ),
     [sortedManufacturingEntries, tableFilters],
@@ -572,7 +569,7 @@ export function ReportsPage() {
         accessorKey: "batchNo",
         header: "Batch No",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.batchNo || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full truncate" content={row.original.batchNo || "-"}>
             {row.original.batchNo || "-"}
           </TooltipText>
         ),
@@ -596,7 +593,7 @@ export function ReportsPage() {
         accessorKey: "finishedProductName",
         header: "Product",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.finishedProductName || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.finishedProductName || "-"}>
             {row.original.finishedProductName || "-"}
           </TooltipText>
         ),
@@ -612,7 +609,7 @@ export function ReportsPage() {
         accessorFn: (row) => formatProductItems(row),
         header: "Product Items",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-[260px] max-w-[320px] truncate" content={formatProductItems(row.original) || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={formatProductItems(row.original) || "-"}>
             {formatProductItems(row.original) || "-"}
           </TooltipText>
         ),
@@ -623,11 +620,6 @@ export function ReportsPage() {
         cell: ({ row }) => row.original.totalBagsProduced || "-",
       },
       {
-        accessorKey: "wastageQty",
-        header: "Wastage",
-        cell: ({ row }) => row.original.wastageQty || "-",
-      },
-      {
         id: "rawMaterials",
         accessorFn: (row) => [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits].filter(Boolean).join(" / "),
         header: "Raw Materials",
@@ -636,7 +628,7 @@ export function ReportsPage() {
             .filter(Boolean)
             .join(" / ");
           return (
-            <TooltipText as="span" className="block max-w-[220px] truncate" content={value || "-"}>
+            <TooltipText as="span" className="block min-w-0 w-full break-words" content={value || "-"}>
               {value || "-"}
             </TooltipText>
           );
@@ -646,7 +638,7 @@ export function ReportsPage() {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.user || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.user || "-"}>
             {row.original.user || "-"}
           </TooltipText>
         ),
@@ -655,7 +647,7 @@ export function ReportsPage() {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.remarks || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.remarks || "-"}>
             {row.original.remarks || "-"}
           </TooltipText>
         ),
@@ -681,7 +673,7 @@ export function ReportsPage() {
         accessorFn: (row) => row.challanNo || row.challanName || "",
         header: "Challan",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.challanNo || row.original.challanName || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.challanNo || row.original.challanName || "-"}>
             {row.original.challanNo || row.original.challanName || "-"}
           </TooltipText>
         ),
@@ -691,8 +683,8 @@ export function ReportsPage() {
         accessorFn: (row) => buildDispatchLabel(row),
         header: "Product",
         cell: ({ row }) => (
-          <div className="min-w-[220px] max-w-[260px] space-y-1">
-            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildDispatchLabel(row.original) || "-"}>
+          <div className="min-w-0 max-w-full space-y-1">
+            <TooltipText as="p" className="min-w-0 break-words font-medium text-slate-900" content={buildDispatchLabel(row.original) || "-"}>
               {buildDispatchLabel(row.original) || "-"}
             </TooltipText>
             {row.original.productCategory ? (
@@ -729,7 +721,7 @@ export function ReportsPage() {
         accessorKey: "vehicleNo",
         header: "Vehicle",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.vehicleNo || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full truncate" content={row.original.vehicleNo || "-"}>
             {row.original.vehicleNo || "-"}
           </TooltipText>
         ),
@@ -738,7 +730,7 @@ export function ReportsPage() {
         accessorKey: "driverName",
         header: "Driver",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.driverName || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full truncate" content={row.original.driverName || "-"}>
             {row.original.driverName || "-"}
           </TooltipText>
         ),
@@ -747,7 +739,7 @@ export function ReportsPage() {
         accessorKey: "dispatchSite",
         header: "Dispatch Site",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.dispatchSite || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.dispatchSite || "-"}>
             {row.original.dispatchSite || "-"}
           </TooltipText>
         ),
@@ -756,7 +748,7 @@ export function ReportsPage() {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.user || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.user || "-"}>
             {row.original.user || "-"}
           </TooltipText>
         ),
@@ -765,7 +757,7 @@ export function ReportsPage() {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.remarks || "-"}>
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.remarks || "-"}>
             {row.original.remarks || "-"}
           </TooltipText>
         ),
@@ -789,7 +781,6 @@ export function ReportsPage() {
         "Color",
         "Product Items",
         "Total Quantity",
-        "Wastage",
         "Raw Materials",
         "Entry By",
         "Remarks",
@@ -804,7 +795,6 @@ export function ReportsPage() {
         row.color,
         formatProductItems(row),
         row.totalBagsProduced,
-        row.wastageQty,
         [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits].filter(Boolean).join(" / "),
         row.user,
         row.remarks,
@@ -846,7 +836,6 @@ export function ReportsPage() {
       row.token,
       row.bagSize,
       row.totalBags,
-      row.wastageQty,
       row.vehicleNo,
       row.driverName,
       row.dispatchSite,
@@ -1165,10 +1154,6 @@ export function ReportsPage() {
                           <p className="text-xs font-medium uppercase text-muted-foreground">Total Quantity</p>
                           <p className="mt-1">{entry.totalBagsProduced || "-"}</p>
                         </div>
-                        <div>
-                          <p className="text-xs font-medium uppercase text-muted-foreground">Wastage</p>
-                          <p className="mt-1">{entry.wastageQty || "-"}</p>
-                        </div>
                       </div>
 
                       <div>
@@ -1232,10 +1217,6 @@ export function ReportsPage() {
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Departed Bags</p>
                           <p className="mt-1">{entry.totalBags || "-"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium uppercase text-muted-foreground">Wastage Qty</p>
-                          <p className="mt-1">{entry.wastageQty || "-"}</p>
                         </div>
                         <div>
                           <p className="text-xs font-medium uppercase text-muted-foreground">Remarks</p>
