@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   ManufacturingFormData,
   ManufacturingOtherField,
   ManufacturingProductItem,
@@ -72,3 +72,4 @@ export const EMPTY_PRODUCT_ITEM: ManufacturingProductItem = {
 export const INITIAL_MANUFACTURING_OTHER_STATE = Object.fromEntries(
   MANUFACTURING_OTHER_FIELDS.map((field) => [field, false]),
 ) as Record<ManufacturingOtherField, boolean>;
+

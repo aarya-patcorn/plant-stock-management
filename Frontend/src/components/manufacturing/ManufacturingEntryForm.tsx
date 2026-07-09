@@ -12,7 +12,6 @@ import {
   MANUAL_BLENDER_PRODUCT_CATEGORIES,
   MANUAL_BLENDER_TILE_ADHESIVE_COLORS,
   MANUAL_BLENDER_TILE_ADHESIVE_GREY_PRODUCTS,
-  MANUAL_BLENDER_TILE_ADHESIVE_WHITE_PRODUCTS,
   epoxyColors,
   epoxyProductColorMap,
   epoxyProducts,
@@ -136,6 +135,8 @@ export function ManufacturingEntryForm() {
 
   const isManualBlender = formData.tphBatch === "Manual Blender";
   const isManualBlenderTileAdhesive = isManualBlender && isTileAdhesiveProduct;
+  const isManualBlenderTileAdhesiveK50 =
+    isManualBlenderTileAdhesive && formData.finishedProductName === "K50";
   const productCategoryOptions =
     formData.tphBatch === "2TPH"
       ? ["Tile Adhesive", "Bondure"]
@@ -158,9 +159,9 @@ export function ManufacturingEntryForm() {
     !selectedProductCategory ||
     selectedProductCategory === "Bondure" ||
     selectedProductCategory === "Grout" ||
+    isManualBlenderTileAdhesiveK50 ||
     (isTileAdhesiveProduct && !isManualBlenderTileAdhesive);
-  const isFinishedProductDisabled =
-    isManualBlenderTileAdhesive && !selectedColor;
+  const isFinishedProductDisabled = false;
   const finishedProductOptions =
     formData.tphBatch === "Manual Hand Mixer"
       ? TILE_CLEANER_PRODUCTS
@@ -168,10 +169,8 @@ export function ManufacturingEntryForm() {
         ? groutProducts
         : selectedProductCategory === "Epoxy"
           ? epoxyProducts
-          : isManualBlenderTileAdhesive && selectedColor === "White"
-            ? MANUAL_BLENDER_TILE_ADHESIVE_WHITE_PRODUCTS
-            : isManualBlenderTileAdhesive && selectedColor === "Grey"
-              ? MANUAL_BLENDER_TILE_ADHESIVE_GREY_PRODUCTS
+          : isManualBlenderTileAdhesive
+            ? MANUAL_BLENDER_TILE_ADHESIVE_GREY_PRODUCTS
               : isTileAdhesiveProduct && selectedColor === "White"
                 ? TILE_ADHESIVE_WHITE_PRODUCTS
                 : isTileAdhesiveProduct && selectedColor === "Grey"
@@ -927,7 +926,7 @@ export function ManufacturingEntryForm() {
                   "color",
                   value,
                   [],
-                  isTileAdhesiveProduct
+                  isTileAdhesiveProduct && !isManualBlenderTileAdhesive
                     ? {
                       finishedProductName: "",
                       bagSize: "",
@@ -939,7 +938,16 @@ export function ManufacturingEntryForm() {
                 }
               }}
               onFinishedProductNameChange={(value) => {
-                handleSelectChange("finishedProductName", value);
+                handleSelectChange(
+                  "finishedProductName",
+                  value,
+                  [],
+                  isManualBlenderTileAdhesive
+                    ? {
+                      color: value === "K50" ? "Grey" : formData.finishedProductName === "K50" ? "" : formData.color,
+                    }
+                    : {},
+                );
                 setRawMaterials(INITIAL_RAW_MATERIALS);
               }}
               onFinishedProductNameInputChange={(value) => updateTextField("finishedProductName", value)}
@@ -1098,11 +1106,3 @@ export function ManufacturingEntryForm() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
