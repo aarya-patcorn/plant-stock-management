@@ -65,6 +65,7 @@ export const INITIAL_RAW_MATERIALS: ManufacturingRawMaterial[] = [
 export const EMPTY_PRODUCT_ITEM: ManufacturingProductItem = {
   token: "",
   bagSize: "",
+  bucketSize: "",
   totalBagsProduced: "",
 };
 

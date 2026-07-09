@@ -60,6 +60,7 @@ export type InventoryEntry = {
 export type ManufacturingProductItem = {
   token: string;
   bagSize: string;
+  bucketSize?: string;
   totalBagsProduced: string;
 };
 
@@ -464,11 +465,13 @@ function normalizeManufacturingEntry(entry: unknown): ManufacturingEntry {
     ? productItemsSource.map((item) => ({
       token: stringifyValue(item.token),
       bagSize: stringifyValue(item.bagSize),
+      bucketSize: stringifyValue(item.bucketSize ?? item.bagSize),
       totalBagsProduced: stringifyValue(item.totalBagsProduced),
     }))
     : [{
       token: stringifyValue(record.token),
       bagSize: stringifyValue(record.bagSize ?? record.canSize),
+      bucketSize: stringifyValue(record.bucketSize ?? record.bagSize ?? record.canSize),
       totalBagsProduced: stringifyValue(record.totalBagsProduced ?? record.totalCan),
     }].filter((item) => item.token || item.bagSize || item.totalBagsProduced);
   const totalBagsProduced = productItems.length > 0

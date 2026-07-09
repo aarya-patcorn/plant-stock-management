@@ -47,6 +47,8 @@ export function FinishedProductSection({
   updateProductItem,
   wastageTotalBags,
 }: FinishedProductSectionProps) {
+  const isEpoxyProduct = formProductCategory === "Epoxy";
+
   return (
     <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm">
       <div className="flex items-center justify-between">
@@ -110,7 +112,7 @@ export function FinishedProductSection({
             <Field label={bagSizeLabel} htmlFor={`bagSize-${index}`}>
               <Combobox
                 id={`bagSize-${index}`}
-                value={item.bagSize}
+                value={isEpoxyProduct ? item.bucketSize || item.bagSize : item.bagSize}
                 onChange={(e) => {
                   const bagSize = e.target.value;
                   const nextTotalBagsProduced =
@@ -126,7 +128,7 @@ export function FinishedProductSection({
                             wastageTotalBags,
                           );
 
-                  updateProductItem(index, "bagSize", bagSize);
+                  updateProductItem(index, isEpoxyProduct ? "bucketSize" : "bagSize", bagSize);
                   updateProductItem(index, "totalBagsProduced", nextTotalBagsProduced);
                 }}
               >

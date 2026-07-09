@@ -118,13 +118,13 @@ export const getBatchKg = (tphBatch: string) => {
 };
 
 export const getBagSizeKg = (bagSize: string) => {
-  const match = bagSize.match(/\d+/);
-  return match ? Number(match[0]) : 0;
+  const match = String(bagSize || "").match(/(\d+(?:\.\d+)?)/i);
+  return match ? Number(match[1]) : 0;
 };
 
 export const getTotalPackedKg = (items: ManufacturingProductItem[]) => {
   return items.reduce((total, item) => {
-    const bagKg = getBagSizeKg(item.bagSize);
+    const bagKg = getBagSizeKg(item.bucketSize || item.bagSize);
     const bags = Number(item.totalBagsProduced) || 0;
     return total + bagKg * bags;
   }, 0);

@@ -46,6 +46,7 @@ export interface ManufacturingRawMaterial {
 export interface ManufacturingProductItem {
   token: string;
   bagSize: string;
+  bucketSize?: string;
   totalBagsProduced: string;
 }
 

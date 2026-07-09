@@ -202,12 +202,13 @@ export function ManufacturingEntryForm() {
         : { ...prev, wastageQty: nextValue };
     });
 
-    if (batchKg > 0 && remainingKg === 0 && totalPackedKg > 0) {
+    if (!isEpoxyProduct && batchKg > 0 && remainingKg === 0 && totalPackedKg > 0) {
       toast.success("Batch quantity completed. Remaining quantity is 0 KG.");
     }
   }, [
     availableWastageQty,
     batchKg,
+    isEpoxyProduct,
     remainingKg,
     remainingWastageQty,
     totalPackedKg,
@@ -314,33 +315,44 @@ export function ManufacturingEntryForm() {
     value: string,
   ) => {
     setProductItems((current) => {
-      const updated = current.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item,
-      );
+      return current.map((item, i) => {
+        if (i !== index) {
+          return item;
+        }
 
-      const packedKg = getTotalPackedKg(updated);
+        if (field === "bucketSize") {
+          return {
+            ...item,
+            bucketSize: value,
+            bagSize: selectedProductCategory === "Epoxy" ? value : item.bagSize,
+          };
+        }
 
-      if (!isEpoxyProduct && batchKg > 0 && packedKg > batchKg) {
-        toast.error("Total bags cannot be greater than batch quantity.");
-        return current;
-      }
+        if (field === "bagSize" && selectedProductCategory === "Epoxy") {
+          return {
+            ...item,
+            bagSize: value,
+            bucketSize: value,
+          };
+        }
 
-      return updated;
+        return { ...item, [field]: value };
+      });
     });
   };
 
   useEffect(() => {
+    if (selectedProductCategory === "Bondure" || selectedProductCategory === "Epoxy" || selectedProductCategory === "Tile Cleaner") {
+      return;
+    }
+
     setProductItems((current) =>
       current.map((item) => {
-        if (selectedProductCategory === "Bondure") {
-          return item;
-        }
-
         const nextTotalBagsProduced = isAutoCalculatedPackagingProduct
-          ? getAutoProducedQuantity(selectedProductCategory, batchKg, item.bagSize)
+          ? getAutoProducedQuantity(selectedProductCategory, batchKg, item.bucketSize || item.bagSize)
           : getFinalTotalBagsProduced(
             formData.tphBatch,
-            item.bagSize,
+            item.bucketSize || item.bagSize,
             wastageTotalBags,
           );
 
@@ -738,7 +750,7 @@ export function ManufacturingEntryForm() {
         rawMaterials: getRawMaterialsForSubmission(),
         productItems: productItems.map((item) => ({
           token: item.token,
-          bagSize: item.bagSize,
+          bagSize: item.bucketSize || item.bagSize,
           totalBagsProduced: Number(item.totalBagsProduced) || 0,
         })),
       };
