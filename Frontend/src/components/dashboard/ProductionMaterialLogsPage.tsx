@@ -417,17 +417,23 @@ export function ProductionMaterialLogsPage() {
     }
 
     const headers = [
-      "Product",
-      "Token",
+      "Product Category",
+      "Product Name",
       "Bag Size",
-      "Current Stock",
+      "Color",
+      "Token",
+      "Current Quantity",
+      "Shipped Quantity",
     ];
 
     const rows = sortedEntries.map((row) => [
-      buildProductLabel(row),
-      row.token,
+      row.productCategory,
+      row.productName,
       row.bagSize,
+      row.productColor,
+      row.token,
       formatCount(toNumber(row.currentQuantity)),
+      formatCount(toNumber(row.shippedQuantity)),
     ]);
 
     const csvText = [headers, ...rows]

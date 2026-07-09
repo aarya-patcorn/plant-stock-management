@@ -400,15 +400,15 @@ export function DispatchEntriesPage() {
       {
         accessorKey: "time",
         header: "Time",
-        cell: ({ row }) => row.original.time || "-",
+        cell: ({ row }) => row.original.time || "N/A",
       },
       {
         id: "challan",
         accessorFn: (row) => row.challanNo || row.challanName || "",
         header: "Challan",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.challanNo || row.original.challanName || "-"}>
-            {row.original.challanNo || row.original.challanName || "-"}
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.challanNo || row.original.challanName || "N/A"}>
+            {row.original.challanNo || row.original.challanName || "N/A"}
           </TooltipText>
         ),
       },
@@ -428,8 +428,8 @@ export function DispatchEntriesPage() {
         header: "Product",
         cell: ({ row }) => (
           <div className="min-w-[220px] max-w-[260px] space-y-1">
-            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildDispatchLabel(row.original) || "-"}>
-              {buildDispatchLabel(row.original) || "-"}
+            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildDispatchLabel(row.original) || "N/A"}>
+              {buildDispatchLabel(row.original) || "N/A"}
             </TooltipText>
           </div>
         ),
@@ -438,24 +438,24 @@ export function DispatchEntriesPage() {
         accessorKey: "token",
         header: "Token",
         cell: ({ row }) =>
-          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "-",
+          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "N/A",
       },
       {
         accessorKey: "bagSize",
         header: "Bag Size",
-        cell: ({ row }) => row.original.bagSize || "-",
+        cell: ({ row }) => row.original.bagSize || "N/A",
       },
       {
         accessorKey: "totalBags",
         header: "Departed Bags",
-        cell: ({ row }) => row.original.totalBags || "-",
+        cell: ({ row }) => row.original.totalBags || "N/A",
       },
       {
         accessorKey: "vehicleNo",
         header: "Vehicle",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.vehicleNo || "-"}>
-            {row.original.vehicleNo || "-"}
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.vehicleNo || "N/A"}>
+            {row.original.vehicleNo || "N/A"}
           </TooltipText>
         ),
       },
@@ -463,8 +463,8 @@ export function DispatchEntriesPage() {
         accessorKey: "driverName",
         header: "Driver",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.driverName || "-"}>
-            {row.original.driverName || "-"}
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.driverName || "N/A"}>
+            {row.original.driverName || "N/A"}
           </TooltipText>
         ),
       },
@@ -472,8 +472,8 @@ export function DispatchEntriesPage() {
         accessorKey: "dispatchSite",
         header: "Dispatch Site",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.dispatchSite || "-"}>
-            {row.original.dispatchSite || "-"}
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.dispatchSite || "N/A"}>
+            {row.original.dispatchSite || "N/A"}
           </TooltipText>
         ),
       },
@@ -481,8 +481,8 @@ export function DispatchEntriesPage() {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.user || "-"}>
-            {row.original.user || "-"}
+          <TooltipText as="span" className="block max-w-[160px] truncate" content={row.original.user || "N/A"}>
+            {row.original.user || "N/A"}
           </TooltipText>
         ),
       },
@@ -490,8 +490,8 @@ export function DispatchEntriesPage() {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.remarks || "-"}>
-            {row.original.remarks || "-"}
+          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.remarks || "N/A"}>
+            {row.original.remarks || "N/A"}
           </TooltipText>
         ),
       },

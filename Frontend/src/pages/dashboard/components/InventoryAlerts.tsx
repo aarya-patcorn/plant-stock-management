@@ -370,22 +370,22 @@ export function InventoryAlerts({
         accessorKey: "rawMaterialName",
         header: "Raw Material Name",
         cell: ({ row }) =>
-          row.original.rawMaterialName ? <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge> : "-",
+          row.original.rawMaterialName ? <DataBadge type="rawMaterialName">{row.original.rawMaterialName}</DataBadge> : "N/A",
       },
       {
         accessorKey: "packagingType",
         header: "Packaging Type",
-        cell: ({ row }) => renderTextCell(row.original.packagingType, "block max-w-[180px] truncate") || "-",
+        cell: ({ row }) => renderTextCell(row.original.packagingType, "block max-w-[180px] truncate") || "N/A",
       },
       {
         accessorKey: "productName",
         header: "Product Name",
-        cell: ({ row }) => renderTextCell(row.original.productName) || "-",
+        cell: ({ row }) => renderTextCell(row.original.productName) || "N/A",
       },
       {
         accessorKey: "color",
         header: "Color",
-        cell: ({ row }) => (row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-"),
+        cell: ({ row }) => (row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "N/A"),
       },
       {
         accessorKey: "quantity",
@@ -412,12 +412,12 @@ export function InventoryAlerts({
       {
         accessorKey: "bagSize",
         header: "Bag Size",
-        cell: ({ row }) => renderTextCell(row.original.bagSize, "block max-w-[120px] truncate") || "-",
+        cell: ({ row }) => renderTextCell(row.original.bagSize, "block max-w-[120px] truncate") || "N/A",
       },
       {
         accessorKey: "color",
         header: "Color",
-        cell: ({ row }) => (row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-"),
+        cell: ({ row }) => (row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "N/A"),
       },
       {
         accessorKey: "quantity",

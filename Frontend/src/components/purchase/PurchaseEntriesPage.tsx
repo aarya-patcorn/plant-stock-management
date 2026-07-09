@@ -523,7 +523,7 @@ export function PurchaseEntriesPage() {
       {
         accessorKey: "time",
         header: "Time",
-        cell: ({ row }) => row.original.time || "-",
+        cell: ({ row }) => row.original.time || "N/A",
       },
       {
         accessorKey: "rawMaterialName",
@@ -540,8 +540,8 @@ export function PurchaseEntriesPage() {
         header: "Material",
         cell: ({ row }) => (
           <div className="min-w-[220px] max-w-[260px] space-y-1">
-            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildMaterialLabel(row.original) || "-"}>
-              {buildMaterialLabel(row.original) || "-"}
+            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildMaterialLabel(row.original) || "N/A"}>
+              {buildMaterialLabel(row.original) || "N/A"}
             </TooltipText>
           </div>
         ),
@@ -570,8 +570,8 @@ export function PurchaseEntriesPage() {
         accessorKey: "supplierName",
         header: "Supplier",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.supplierName || "-"}>
-            {row.original.supplierName || "-"}
+          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.supplierName || "N/A"}>
+            {row.original.supplierName || "N/A"}
           </TooltipText>
         ),
       },
@@ -579,8 +579,8 @@ export function PurchaseEntriesPage() {
         accessorKey: "invoiceNo",
         header: "Invoice",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.invoiceNo || "-"}>
-            {row.original.invoiceNo || "-"}
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.invoiceNo || "N/A"}>
+            {row.original.invoiceNo || "N/A"}
           </TooltipText>
         ),
       },
@@ -588,8 +588,8 @@ export function PurchaseEntriesPage() {
         accessorKey: "unloadBy",
         header: "Unload By",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.unloadBy || "-"}>
-            {row.original.unloadBy || "-"}
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.unloadBy || "N/A"}>
+            {row.original.unloadBy || "N/A"}
           </TooltipText>
         ),
       },
@@ -603,8 +603,8 @@ export function PurchaseEntriesPage() {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.user || "-"}>
-            {row.original.user || "-"}
+          <TooltipText as="span" className="block max-w-[180px] truncate" content={row.original.user || "N/A"}>
+            {row.original.user || "N/A"}
           </TooltipText>
         ),
       },
@@ -612,8 +612,8 @@ export function PurchaseEntriesPage() {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.remarks || "-"}>
-            {row.original.remarks || "-"}
+          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.remarks || "N/A"}>
+            {row.original.remarks || "N/A"}
           </TooltipText>
         ),
       },

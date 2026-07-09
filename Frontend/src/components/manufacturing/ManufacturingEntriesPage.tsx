@@ -416,15 +416,15 @@ export function ManufacturingEntriesPage() {
         accessorKey: "batchNo",
         header: "Batch No",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.batchNo || "-"}>
-            {row.original.batchNo || "-"}
+          <TooltipText as="span" className="block max-w-[140px] truncate" content={row.original.batchNo || "N/A"}>
+            {row.original.batchNo || "N/A"}
           </TooltipText>
         ),
       },
       {
         accessorKey: "tphBatch",
         header: "Batch Type",
-        cell: ({ row }) => row.original.tphBatch || "-",
+        cell: ({ row }) => row.original.tphBatch || "N/A",
       },
       {
         accessorKey: "productCategory",
@@ -433,15 +433,15 @@ export function ManufacturingEntriesPage() {
           row.original.productCategory ? (
             <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
           ) : (
-            "-"
+            "N/A"
           ),
       },
       {
         accessorKey: "finishedProductName",
         header: "Product",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.finishedProductName || "-"}>
-            {row.original.finishedProductName || "-"}
+          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.finishedProductName || "N/A"}>
+            {row.original.finishedProductName || "N/A"}
           </TooltipText>
         ),
       },
@@ -449,27 +449,27 @@ export function ManufacturingEntriesPage() {
         accessorKey: "color",
         header: "Color",
         cell: ({ row }) =>
-          row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-",
+          row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "N/A",
       },
       {
         id: "productItems",
         accessorFn: (row) => formatProductItems(row),
         header: "Product Items",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-[260px] max-w-[320px] truncate" content={formatProductItems(row.original) || "-"}>
-            {formatProductItems(row.original) || "-"}
+          <TooltipText as="span" className="block min-w-[260px] max-w-[320px] truncate" content={formatProductItems(row.original) || "N/A"}>
+            {formatProductItems(row.original) || "N/A"}
           </TooltipText>
         ),
       },
       {
         accessorKey: "totalBagsProduced",
         header: "Total Quantity",
-        cell: ({ row }) => row.original.totalBagsProduced || "-",
+        cell: ({ row }) => row.original.totalBagsProduced || "N/A",
       },
       {
         accessorKey: "wastageQty",
         header: "Wastage",
-        cell: ({ row }) => row.original.wastageQty || "-",
+        cell: ({ row }) => row.original.wastageQty || "N/A",
       },
       {
         id: "rawMaterials",
@@ -480,8 +480,8 @@ export function ManufacturingEntriesPage() {
             .filter(Boolean)
             .join(" / ");
           return (
-            <TooltipText as="span" className="block max-w-[220px] truncate" content={value || "-"}>
-              {value || "-"}
+            <TooltipText as="span" className="block max-w-[220px] truncate" content={value || "N/A"}>
+              {value || "N/A"}
             </TooltipText>
           );
         },
@@ -490,8 +490,8 @@ export function ManufacturingEntriesPage() {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.user || "-"}>
-            {row.original.user || "-"}
+          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.user || "N/A"}>
+            {row.original.user || "N/A"}
           </TooltipText>
         ),
       },
@@ -499,8 +499,8 @@ export function ManufacturingEntriesPage() {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.remarks || "-"}>
-            {row.original.remarks || "-"}
+          <TooltipText as="span" className="block max-w-[220px] truncate" content={row.original.remarks || "N/A"}>
+            {row.original.remarks || "N/A"}
           </TooltipText>
         ),
       },

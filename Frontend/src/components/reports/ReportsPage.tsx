@@ -160,7 +160,7 @@ function buildManufacturingLabel(entry: ManufacturingEntry) {
 }
 
 function buildDispatchLabel(entry: DispatchEntry) {
-  return [entry.productCategory, entry.productName, entry.productColor].filter(Boolean).join(" / ");
+  return [entry.productName, entry.productColor].filter(Boolean).join(" / ");
 }
 
 function buildProductDetails(parts: Array<string | number>) {
@@ -605,19 +605,31 @@ export function ReportsPage() {
           row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "-",
       },
       {
-        id: "productItems",
-        accessorFn: (row) => formatProductItems(row),
-        header: "Product Items",
-        cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full break-words" content={formatProductItems(row.original) || "-"}>
-            {formatProductItems(row.original) || "-"}
-          </TooltipText>
-        ),
+        accessorFn: "token",
+        header: "Token",
+        cell: ({ row }) => row.original.token || "N/A"
+      },
+      {
+        accessorFn: "bagSize",
+        header: "Bag Size",
+        cell: ({ row }) => row.original.bagSize || "N/A"
       },
       {
         accessorKey: "totalBagsProduced",
+        header: "Total Bags/Buckets",
+        cell: ({ row }) => `${row.original.totalBagsProduced} qty` || "N/A",
+      },
+      {
+        accessorKey: "quantity",
         header: "Total Quantity",
-        cell: ({ row }) => row.original.totalBagsProduced || "-",
+        cell: ({ row }) => {
+          const totalBags = Number(row.original.totalBagsProduced ?? 0);
+          const bagSize = parseFloat(row.original.bagSize?.replace(/[^\d.]/g, "") || "0");
+
+          const totalQuantity = totalBags * bagSize;
+
+          return totalQuantity > 0 ? `${totalQuantity} KG` : "N/A";
+        },
       },
       {
         id: "rawMaterials",
@@ -628,8 +640,8 @@ export function ReportsPage() {
             .filter(Boolean)
             .join(" / ");
           return (
-            <TooltipText as="span" className="block min-w-0 w-full break-words" content={value || "-"}>
-              {value || "-"}
+            <TooltipText as="span" className="block min-w-0 w-full break-words" content={value || "N/A"}>
+              {value || "N/A"}
             </TooltipText>
           );
         },
@@ -638,8 +650,8 @@ export function ReportsPage() {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.user || "-"}>
-            {row.original.user || "-"}
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.user || "N/A"}>
+            {row.original.user || "N/A"}
           </TooltipText>
         ),
       },
@@ -647,8 +659,8 @@ export function ReportsPage() {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.remarks || "-"}>
-            {row.original.remarks || "-"}
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.remarks || "N/A"}>
+            {row.original.remarks || "N/A"}
           </TooltipText>
         ),
       },
@@ -666,48 +678,51 @@ export function ReportsPage() {
       {
         accessorKey: "time",
         header: "Time",
-        cell: ({ row }) => row.original.time || "-",
+        cell: ({ row }) => row.original.time || "N/A",
       },
       {
         id: "challan",
         accessorFn: (row) => row.challanNo || row.challanName || "",
         header: "Challan",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.challanNo || row.original.challanName || "-"}>
-            {row.original.challanNo || row.original.challanName || "-"}
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.challanNo || row.original.challanName || "N/A"}>
+            {row.original.challanNo || row.original.challanName || "N/A"}
           </TooltipText>
         ),
       },
       {
-        id: "product",
-        accessorFn: (row) => buildDispatchLabel(row),
-        header: "Product",
-        cell: ({ row }) => (
-          <div className="min-w-0 max-w-full space-y-1">
-            <TooltipText as="p" className="min-w-0 break-words font-medium text-slate-900" content={buildDispatchLabel(row.original) || "-"}>
-              {buildDispatchLabel(row.original) || "-"}
-            </TooltipText>
-            {row.original.productCategory ? (
-              <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
-            ) : null}
-          </div>
-        ),
+        accessorKey: "productCategory",
+        header: "Product Category",
+        cell: ({ row }) =>
+          row.original.productCategory ? (
+            <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+          ) : null
+      },
+      {
+        accessorKey: "productName",
+        header: "Product Name",
+        cell: ({ row }) => row.original.productName || "N/A",
+      },
+      {
+        accessorKey: "productColor",
+        header: "Color",
+        cell: ({ row }) => row.original.productColor || "N/A",
       },
       {
         accessorKey: "token",
         header: "Token",
         cell: ({ row }) =>
-          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "-",
+          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "N/A",
       },
       {
         accessorKey: "bagSize",
         header: "Bag Size",
-        cell: ({ row }) => row.original.bagSize || "-",
+        cell: ({ row }) => row.original.bagSize || "N/A",
       },
       {
         accessorKey: "totalBags",
         header: "Departed Bags",
-        cell: ({ row }) => row.original.totalBags || "-",
+        cell: ({ row }) => row.original.totalBags || "N/A",
       },
       {
         accessorKey: "quantity",
@@ -721,8 +736,8 @@ export function ReportsPage() {
         accessorKey: "vehicleNo",
         header: "Vehicle",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full truncate" content={row.original.vehicleNo || "-"}>
-            {row.original.vehicleNo || "-"}
+          <TooltipText as="span" className="block min-w-0 w-full truncate" content={row.original.vehicleNo || "N/A"}>
+            {row.original.vehicleNo || "N/A"}
           </TooltipText>
         ),
       },
@@ -730,8 +745,8 @@ export function ReportsPage() {
         accessorKey: "driverName",
         header: "Driver",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full truncate" content={row.original.driverName || "-"}>
-            {row.original.driverName || "-"}
+          <TooltipText as="span" className="block min-w-0 w-full truncate" content={row.original.driverName || "N/A"}>
+            {row.original.driverName || "N/A"}
           </TooltipText>
         ),
       },
@@ -739,8 +754,8 @@ export function ReportsPage() {
         accessorKey: "dispatchSite",
         header: "Dispatch Site",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.dispatchSite || "-"}>
-            {row.original.dispatchSite || "-"}
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.dispatchSite || "N/A"}>
+            {row.original.dispatchSite || "N/A"}
           </TooltipText>
         ),
       },
@@ -748,8 +763,8 @@ export function ReportsPage() {
         accessorKey: "user",
         header: "Entry By",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.user || "-"}>
-            {row.original.user || "-"}
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.user || "N/A"}>
+            {row.original.user || "N/A"}
           </TooltipText>
         ),
       },
@@ -757,8 +772,8 @@ export function ReportsPage() {
         accessorKey: "remarks",
         header: "Remarks",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.remarks || "-"}>
-            {row.original.remarks || "-"}
+          <TooltipText as="span" className="block min-w-0 w-full break-words" content={row.original.remarks || "N/A"}>
+            {row.original.remarks || "N/A"}
           </TooltipText>
         ),
       },
@@ -779,26 +794,37 @@ export function ReportsPage() {
         "Category",
         "Product",
         "Color",
-        "Product Items",
+        "Token",
+        "Bag Size",
+        "Total Bags/Buckets",
         "Total Quantity",
         "Raw Materials",
         "Entry By",
         "Remarks",
       ];
 
-      const rows = filteredManufacturingTableEntries.map((row) => [
-        row.productionDate,
-        row.batchNo,
-        row.tphBatch,
-        row.productCategory,
-        row.finishedProductName,
-        row.color,
-        formatProductItems(row),
-        row.totalBagsProduced,
-        [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits].filter(Boolean).join(" / "),
-        row.user,
-        row.remarks,
-      ]);
+      const rows = filteredManufacturingTableEntries.map((row) => {
+        const bagSize = parseFloat((row.bagSize || "").replace(/[^\d.]/g, ""));
+        const totalQuantity = Number(row.totalBagsProduced || 0) * bagSize;
+
+        return [
+          row.productionDate,
+          row.batchNo,
+          row.tphBatch,
+          row.productCategory,
+          row.finishedProductName,
+          row.color,
+          row.token || "N/A",
+          row.bagSize,
+          row.totalBagsProduced,
+          totalQuantity,
+          [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits]
+            .filter(Boolean)
+            .join(" / "),
+          row.user,
+          row.remarks || "N/A",
+        ];
+      });
 
       const csvText = [headers, ...rows]
         .map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`).join(","))
@@ -816,7 +842,9 @@ export function ReportsPage() {
       "Date",
       "Time",
       "Challan",
-      "Product",
+      "Product Category",
+      "Product Name",
+      "Color",
       "Token",
       "Bag Size",
       "Departed Bags",
@@ -828,20 +856,28 @@ export function ReportsPage() {
       "Remarks",
     ];
 
-    const rows = filteredDispatchTableEntries.map((row) => [
-      row.date,
-      row.time,
-      row.challanNo || row.challanName,
-      buildDispatchLabel(row),
-      row.token,
-      row.bagSize,
-      row.totalBags,
-      row.vehicleNo,
-      row.driverName,
-      row.dispatchSite,
-      row.user,
-      row.remarks,
-    ]);
+    const rows = filteredDispatchTableEntries.map((row) => {
+      const bagSize = parseFloat((row.bagSize || "").replace(/[^\d.]/g, "")) || 0;
+      const totalQuantity = Number(row.totalBags || 0) * bagSize;
+
+      return [
+        row.date,
+        row.time,
+        row.challanNo || row.challanName,
+        row.productCategory,
+        row.productName,
+        row.productColor,
+        row.token || "N/A",
+        row.bagSize,
+        row.totalBags,
+        `${totalQuantity} KG`,
+        row.vehicleNo,
+        row.driverName,
+        row.dispatchSite,
+        row.user,
+        row.remarks || "N/A",
+      ];
+    });
 
     const csvText = [headers, ...rows]
       .map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`).join(","))
