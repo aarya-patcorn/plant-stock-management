@@ -190,7 +190,7 @@ export const MANUAL_BLENDER_TILE_ADHESIVE_GREY_PRODUCTS = ["K50", "K60", "K80", 
 
 export const manualBlenderBondureRecipes: RawMaterialRecipeItem[] = [
   { rawMaterialName: "Cement", packagingType: "PPC", level2: "Bag", level3: "", colorOfSandEpoxy: "", materialQuantity: "150", materialUnit: "kg" },
-  { rawMaterialName: "Sand", packagingType: "Grey", level2: "Big (600 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "235", materialUnit: "kg" },
+  { rawMaterialName: "Sand", packagingType: "Grey", level2: "Small (600 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "235", materialUnit: "kg" },
   { rawMaterialName: "Sand", packagingType: "Grey", level2: "Big (1200 micron)", level3: "", colorOfSandEpoxy: "", materialQuantity: "115", materialUnit: "kg" },
   { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "2", materialUnit: "kg" },
 ];
