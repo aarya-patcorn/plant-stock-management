@@ -284,7 +284,6 @@ export function ProductionMaterialLogsPage() {
       createTextFilterField("color", "Color"),
       createTextFilterField("token", "Token"),
       createNumberFilterField("currentQuantity", "Current Quantity"),
-      createNumberFilterField("shippedQuantity", "Shipped Quantity"),
       createSelectFilterField(
         "productCategorySelect",
         "Category",
@@ -306,12 +305,10 @@ export function ProductionMaterialLogsPage() {
           color: (entry) => entry.productColor,
           token: (entry) => entry.token,
           currentQuantity: (entry) => entry.currentQuantity,
-          shippedQuantity: (entry) => entry.shippedQuantity,
           productCategorySelect: (entry) => entry.productCategory,
         },
         {
           currentQuantity: "number",
-          shippedQuantity: "number",
         },
       ),
     [sortedEntries, tableFilters],
@@ -402,11 +399,6 @@ export function ProductionMaterialLogsPage() {
         header: "Current Quantity",
         cell: ({ row }) => <span className="block text-right">{formatCount(toNumber(row.original.currentQuantity))}</span>,
       },
-      {
-        accessorKey: "shippedQuantity",
-        header: "Shipped Quantity",
-        cell: ({ row }) => <span className="block text-right">{formatCount(toNumber(row.original.shippedQuantity))}</span>,
-      },
     ],
     [],
   );
@@ -423,7 +415,6 @@ export function ProductionMaterialLogsPage() {
       "Color",
       "Token",
       "Current Quantity",
-      "Shipped Quantity",
     ];
 
     const rows = sortedEntries.map((row) => [
@@ -433,7 +424,6 @@ export function ProductionMaterialLogsPage() {
       row.productColor,
       row.token,
       formatCount(toNumber(row.currentQuantity)),
-      formatCount(toNumber(row.shippedQuantity)),
     ]);
 
     const csvText = [headers, ...rows]
