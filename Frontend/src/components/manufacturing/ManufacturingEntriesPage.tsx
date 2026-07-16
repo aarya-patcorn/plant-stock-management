@@ -456,7 +456,7 @@ export function ManufacturingEntriesPage() {
         accessorFn: (row) => formatProductItems(row),
         header: "Product Items",
         cell: ({ row }) => (
-          <TooltipText as="span" className="block min-w-[260px] max-w-[320px] truncate" content={formatProductItems(row.original) || "N/A"}>
+          <TooltipText as="span" content={formatProductItems(row.original) || "N/A"}>
             {formatProductItems(row.original) || "N/A"}
           </TooltipText>
         ),
