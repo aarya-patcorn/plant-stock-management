@@ -467,11 +467,6 @@ export function ManufacturingEntriesPage() {
         cell: ({ row }) => row.original.totalBagsProduced || "N/A",
       },
       {
-        accessorKey: "wastageQty",
-        header: "Wastage",
-        cell: ({ row }) => row.original.wastageQty || "N/A",
-      },
-      {
         id: "rawMaterials",
         accessorFn: (row) => [row.rawMaterialNames, row.rawMaterialQty, row.rawMaterialUnits].filter(Boolean).join(" / "),
         header: "Raw Materials",

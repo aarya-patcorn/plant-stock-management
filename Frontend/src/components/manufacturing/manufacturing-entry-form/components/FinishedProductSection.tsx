@@ -115,10 +115,11 @@ export function FinishedProductSection({
                 value={isEpoxyProduct ? item.bucketSize || item.bagSize : item.bagSize}
                 onChange={(e) => {
                   const bagSize = e.target.value;
+                  const isManualBlenderTileAdhesive = formTphBatch === "Manual Blender" && isTileAdhesiveProduct;
                   const nextTotalBagsProduced =
                     formProductCategory === "Tile Cleaner" || formProductCategory === "Epoxy"
                       ? item.totalBagsProduced
-                      : selectedProductCategory === "Bondure"
+                      : selectedProductCategory === "Bondure" || isManualBlenderTileAdhesive
                         ? getBondureTotalBagsProduced(bagSize, batchKg)
                         : isAutoCalculatedPackagingProduct
                           ? getAutoProducedQuantity(selectedProductCategory, batchKg, bagSize)

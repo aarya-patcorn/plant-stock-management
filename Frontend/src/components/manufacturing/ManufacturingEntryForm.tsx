@@ -341,10 +341,34 @@ export function ManufacturingEntryForm() {
   };
 
   useEffect(() => {
-    if (selectedProductCategory === "Bondure" || selectedProductCategory === "Epoxy" || selectedProductCategory === "Tile Cleaner") {
+    if (selectedProductCategory === "Epoxy" || selectedProductCategory === "Tile Cleaner") {
       return;
     }
 
+    const isManualBlenderTileAdhesive = formData.tphBatch === "Manual Blender" && selectedProductCategory === "Tile Adhesive";
+
+    // Handle Bondure and Manual Blender + Tile Adhesive separately - both use getBondureTotalBagsProduced for calculation plus wastage
+    if (selectedProductCategory === "Bondure" || isManualBlenderTileAdhesive) {
+      setProductItems((current) =>
+        current.map((item) => {
+          const baseTotalBagsProduced = getBondureTotalBagsProduced(
+            item.bucketSize || item.bagSize,
+            batchKg,
+          );
+          const wastageBags = Number(wastageTotalBags || 0);
+          const nextTotalBagsProduced = String(
+            Number(baseTotalBagsProduced || 0) + wastageBags
+          );
+
+          return item.totalBagsProduced === nextTotalBagsProduced
+            ? item
+            : { ...item, totalBagsProduced: nextTotalBagsProduced };
+        }),
+      );
+      return;
+    }
+
+    // Handle other products with wastage calculation
     setProductItems((current) =>
       current.map((item) => {
         const nextTotalBagsProduced = isAutoCalculatedPackagingProduct
