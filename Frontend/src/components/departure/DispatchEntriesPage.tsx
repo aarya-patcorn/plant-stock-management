@@ -417,22 +417,24 @@ export function DispatchEntriesPage() {
         accessorFn: (row) => row.productCategory || "",
         header: "Product Category",
         cell: ({ row }) => (
-            row.original.productCategory ? (
-              <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
-            ) : null
+          row.original.productCategory ? (
+            <DataBadge type="productCategory">{row.original.productCategory}</DataBadge>
+          ) : null
         ),
       },
       {
-        id: "product",
-        accessorFn: (row) => buildDispatchLabel(row),
+        accessorKey: "productName",
         header: "Product",
         cell: ({ row }) => (
-          <div className="min-w-[220px] max-w-[260px] space-y-1">
-            <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildDispatchLabel(row.original) || "N/A"}>
-              {buildDispatchLabel(row.original) || "N/A"}
-            </TooltipText>
-          </div>
+          <TooltipText as="p" className="truncate font-medium text-slate-900" content={buildDispatchLabel(row.original) || "N/A"}>
+            {row.original.productName}
+          </TooltipText>
         ),
+      },
+      {
+        accessorKey: "productColor",
+        header: "Color",
+        cell: ({ row }) => row.original.productColor || "N/A",
       },
       {
         accessorKey: "token",

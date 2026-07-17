@@ -1,11 +1,11 @@
 const axios = require("axios");
 
 const uploadFileToDriveViaAppsScript = async (file) => {
-  const appsScriptUrl = String(process.env.GOOGLE_APPS_SCRIPT_URL || "").trim();
+  const appsScriptUrl = String(process.env.GOOGLE_APPS_SCRIPT_URL1 || "").trim();
 
   if (!appsScriptUrl) {
-    throw new Error("GOOGLE_APPS_SCRIPT_URL is not configured.");
-    console.log("GOOGLE_APPS_SCRIPT_URL exists:", !!process.env.GOOGLE_APPS_SCRIPT_URL);
+    throw new Error("GOOGLE_APPS_SCRIPT_URL1 is not configured.");
+    console.log("GOOGLE_APPS_SCRIPT_URL exists:", !!process.env.GOOGLE_APPS_SCRIPT_URL1);
   }
 
   if (!file?.buffer?.length) {

@@ -192,6 +192,7 @@ export function ManufacturingEntriesPage() {
       createSelectFilterField("tphBatch", "Batch Type", createSelectOptions(entries.map((entry) => entry.tphBatch))),
       createSelectFilterField("productCategory", "Category", createSelectOptions(entries.map((entry) => entry.productCategory))),
       createTextFilterField("finishedProductName", "Product"),
+      createTextFilterField("token", "Token"),
       createSelectFilterField("color", "Color", createSelectOptions(entries.map((entry) => entry.color))),
       createNumberFilterField("totalBagsProduced", "Total Quantity"),
       createNumberFilterField("wastageQty", "Wastage"),
@@ -211,6 +212,7 @@ export function ManufacturingEntriesPage() {
           tphBatch: (entry) => entry.tphBatch,
           productCategory: (entry) => entry.productCategory,
           finishedProductName: (entry) => entry.finishedProductName,
+          token: (entry) => entry.token,
           color: (entry) => entry.color,
           totalBagsProduced: (entry) => entry.totalBagsProduced,
           wastageQty: (entry) => entry.wastageQty,
@@ -446,25 +448,26 @@ export function ManufacturingEntriesPage() {
         ),
       },
       {
+        accessorKey: "token",
+        header: "Token",
+        cell: ({ row }) =>
+          row.original.token ? <DataBadge type="token">{row.original.token}</DataBadge> : "N/A",
+      },
+      {
         accessorKey: "color",
         header: "Color",
         cell: ({ row }) =>
           row.original.color ? <DataBadge type="color">{row.original.color}</DataBadge> : "N/A",
       },
       {
-        id: "productItems",
-        accessorFn: (row) => formatProductItems(row),
-        header: "Product Items",
-        cell: ({ row }) => (
-          <TooltipText as="span" content={formatProductItems(row.original) || "N/A"}>
-            {formatProductItems(row.original) || "N/A"}
-          </TooltipText>
-        ),
+        accessorKey: "bagSize",
+        header: "Bag Size",
+        cell: ({ row }) => row.original.bagSize || "N/A",
       },
       {
         accessorKey: "totalBagsProduced",
         header: "Total Quantity",
-        cell: ({ row }) => row.original.totalBagsProduced || "N/A",
+        cell: ({ row }) => `${row.original.totalBagsProduced} qty` || "N/A",
       },
       {
         id: "rawMaterials",

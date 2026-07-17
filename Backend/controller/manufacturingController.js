@@ -3,6 +3,7 @@ const Inventory = require("../model/Inventory");
 const DispatchEntry = require("../model/DispatchEntry");
 const ProductMaterialLog = require("../model/ProductMaterialLog");
 const Wastage = require("../model/Wastage");
+const syncToGoogleSheet = require("../utils/googleSheetSync");
 
 const parseNumber = (value) => {
   const num = Number(value);
@@ -1324,6 +1325,18 @@ const updateWastageStock = async (data) => {
   );
 };
 
+const syncProductionToGoogleSheet = async (productionEntry) => {
+  try {
+    const finishedGoods = await ProductMaterialLog.find().sort({ updatedAt: -1 }).lean();
+    await syncToGoogleSheet({
+      action: "PRODUCTION",
+      productionRows: [productionEntry.toObject ? productionEntry.toObject() : productionEntry],
+      finishedGoods,
+    });
+  } catch (error) {
+    console.error("Google Sheet production sync failed:", error.message);
+  }
+};
 const createManufacturingEntry = async (req, res) => {
   try {
     console.log("req.body:", req.body);
@@ -1377,6 +1390,8 @@ const createManufacturingEntry = async (req, res) => {
     if (productionWastageQty > 0) {
       await updateWastageStock(data);
     }
+
+    await syncProductionToGoogleSheet(entry);
 
     res.status(201).json({
       success: true,
@@ -1446,6 +1461,7 @@ const updateManufacturingEntry = async (req, res) => {
     await applyProductMaterialLogDeltas(current, data);
 
     const updated = await ManufacturingEntry.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true });
+    await syncProductionToGoogleSheet(updated);
     res.json({ success: true, message: "Production entry updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

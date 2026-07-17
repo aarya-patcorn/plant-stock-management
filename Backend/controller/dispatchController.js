@@ -1,6 +1,7 @@
 const DispatchEntry = require("../model/DispatchEntry");
 const ProductMaterialLog  = require("../model/ProductMaterialLog");
 const Wastage = require("../model/Wastage");
+const syncToGoogleSheet = require("../utils/googleSheetSync");
 
 const parseNumber = (value) => {
   const num = Number(value);
@@ -142,6 +143,18 @@ const normalizeDispatchData = (data) => ({
   remarks: data.remarks || "",
 });
 
+const syncDispatchToGoogleSheet = async (dispatchEntry) => {
+  try {
+    const finishedGoods = await ProductMaterialLog.find().sort({ updatedAt: -1 }).lean();
+    await syncToGoogleSheet({
+      action: "DISPATCH",
+      dispatch: dispatchEntry.toObject ? dispatchEntry.toObject() : dispatchEntry,
+      finishedGoods,
+    });
+  } catch (error) {
+    console.error("Google Sheet dispatch sync failed:", error.message);
+  }
+};
 const getDispatchEntries = async (_req, res) => {
   try {
     const entries = await DispatchEntry.find().sort({ createdAt: -1 });
@@ -185,6 +198,8 @@ const createDispatchEntry = async (req, res) => {
         });
       }
     }
+
+    await syncDispatchToGoogleSheet(entry);
 
     res.status(201).json({ success: true, message: "Dispatch entry created successfully", data: entry });
   } catch (error) {
