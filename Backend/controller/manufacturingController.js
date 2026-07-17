@@ -50,6 +50,24 @@ const convertQuantityToInventoryUnit = (quantity, fromUnit, toUnit) => {
   return qty;
 };
 
+const isKgInventoryMlMaterial = (inventoryUnit, materialUnit) =>
+  String(inventoryUnit || "").toLowerCase() === "kg" &&
+  String(materialUnit || "").toLowerCase() === "ml";
+
+const getRawMaterialQuantityInInventoryUnit = (item, inventory) => {
+  const materialQuantity = parseNumber(item.quantity);
+
+  if (isKgInventoryMlMaterial(inventory.unit, item.materialUnit)) {
+    return materialQuantity / 1000;
+  }
+
+  return convertQuantityToInventoryUnit(
+    materialQuantity,
+    item.materialUnit,
+    inventory.unit,
+  );
+};
+
 const compactFilter = (fields) =>
   Object.fromEntries(
     Object.entries(fields).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
@@ -982,15 +1000,15 @@ const reduceRawMaterialStock = async (rawMaterials) => {
     }
 
     const currentStock = parseNumber(inventory.currentStock);
-    const requiredQty = convertQuantityToInventoryUnit(
-      item.quantity,
-      item.materialUnit,
-      inventory.unit,
-    );
+    const isKgInventoryMl = isKgInventoryMlMaterial(inventory.unit, item.materialUnit);
+    const requiredQty = getRawMaterialQuantityInInventoryUnit(item, inventory);
+    const availableQty = isKgInventoryMl ? currentStock * 1000 : currentStock;
+    const requiredDisplayQty = isKgInventoryMl ? parseNumber(item.quantity) : requiredQty;
+    const requiredDisplayUnit = isKgInventoryMl ? item.materialUnit : inventory.unit || item.materialUnit || "stock";
 
-    if (currentStock < requiredQty) {
+    if (availableQty < requiredDisplayQty) {
       throw new Error(
-        `${item.label} has only ${currentStock} ${inventory.unit || item.materialUnit || "stock"} available, but ${requiredQty} ${inventory.unit || item.materialUnit || "stock"} is required.`
+        `${item.label} has only ${availableQty} ${requiredDisplayUnit} available, but ${requiredDisplayQty} ${requiredDisplayUnit} is required.`
       );
     }
   }
@@ -1002,18 +1020,25 @@ const reduceRawMaterialStock = async (rawMaterials) => {
       throw new Error(`${item.label} stock is not available in inventory.`);
     }
 
-    const requiredQty = convertQuantityToInventoryUnit(
-      item.quantity,
-      item.materialUnit,
-      inventory.unit,
-    );
+    const requiredQty = getRawMaterialQuantityInInventoryUnit(item, inventory);
 
-    await Inventory.updateOne(item.filter, {
-      $inc: {
-        usedInProduction: requiredQty,
-        currentStock: -requiredQty,
-      },
-    });
+    if (isKgInventoryMlMaterial(inventory.unit, item.materialUnit)) {
+      await Inventory.updateOne(item.filter, {
+        $set: {
+          currentStock: parseNumber(inventory.currentStock) - requiredQty,
+        },
+        $inc: {
+          usedInProduction: requiredQty,
+        },
+      });
+    } else {
+      await Inventory.updateOne(item.filter, {
+        $inc: {
+          usedInProduction: requiredQty,
+          currentStock: -requiredQty,
+        },
+      });
+    }
   }
 };
 
@@ -1107,11 +1132,7 @@ const addRawMaterialStockBack = async (rawMaterials) => {
       continue;
     }
 
-    const restoreQty = convertQuantityToInventoryUnit(
-      item.quantity,
-      item.materialUnit,
-      inventory.unit,
-    );
+    const restoreQty = getRawMaterialQuantityInInventoryUnit(item, inventory);
     const usedInProduction = parseNumber(inventory.usedInProduction);
     const quantityToRestore = Math.min(usedInProduction, restoreQty);
 

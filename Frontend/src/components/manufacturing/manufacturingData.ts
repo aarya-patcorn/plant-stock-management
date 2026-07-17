@@ -184,6 +184,7 @@ export const bondureRecipes: RawMaterialRecipeItem[] = [
   { rawMaterialName: "Chemical", packagingType: "Tile Adhesive", level2: "K50", level3: "", colorOfSandEpoxy: "", materialQuantity: "4", materialUnit: "kg" },
 ];
 
+
 export const MANUAL_BLENDER_PRODUCT_CATEGORIES = ["Grout", "Tile Adhesive", "Bondure"];
 export const MANUAL_BLENDER_TILE_ADHESIVE_COLORS = ["White", "Grey"];
 export const MANUAL_BLENDER_TILE_ADHESIVE_WHITE_PRODUCTS = ["K60", "K80", "K90", "KamdhenuX"];
