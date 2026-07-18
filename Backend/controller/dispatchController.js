@@ -146,6 +146,7 @@ const normalizeDispatchData = (data) => ({
 const syncDispatchToGoogleSheet = async (dispatchEntry) => {
   try {
     const finishedGoods = await ProductMaterialLog.find().sort({ updatedAt: -1 }).lean();
+    console.log("[dispatchController] syncing dispatch entry to Google Sheet", dispatchEntry?._id || "new");
     await syncToGoogleSheet({
       action: "DISPATCH",
       dispatch: dispatchEntry.toObject ? dispatchEntry.toObject() : dispatchEntry,
@@ -153,6 +154,7 @@ const syncDispatchToGoogleSheet = async (dispatchEntry) => {
     });
   } catch (error) {
     console.error("Google Sheet dispatch sync failed:", error.message);
+    console.error(error.stack);
   }
 };
 const getDispatchEntries = async (_req, res) => {
