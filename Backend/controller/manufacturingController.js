@@ -1327,7 +1327,15 @@ const updateWastageStock = async (data) => {
 
 const syncProductionToGoogleSheet = async (productionEntry) => {
   try {
-    const finishedGoods = await ProductMaterialLog.find().sort({ updatedAt: -1 }).lean();
+    const finishedGoods = (await ProductMaterialLog.find().sort({ updatedAt: -1 }).lean()).map(
+      ({ productName, token, color, bagSize, currentQuantity }) => ({
+        product: productName || "",
+        token: token || "",
+        color: color || "",
+        bagSize: bagSize || "",
+        quantity: currentQuantity || 0,
+      }),
+    );
     console.log("[manufacturingController] syncing production entry to Google Sheet", productionEntry?._id || "new");
     await syncToGoogleSheet({
       action: "PRODUCTION",
@@ -1339,6 +1347,7 @@ const syncProductionToGoogleSheet = async (productionEntry) => {
     console.error(error.stack);
   }
 };
+
 const createManufacturingEntry = async (req, res) => {
   try {
     console.log("req.body:", req.body);
