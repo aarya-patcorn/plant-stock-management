@@ -12,7 +12,7 @@ const buildProductMaterialFilter = (data) => {
   return {
     productCategory: data.productCategory || "",
     token: data.token || "",
-    color: data.productColor || data.color || "",
+    color: data.color || data.productColor || "",
     productName: data.productName || "",
     bagSize: data.bagSize || "",
   };
@@ -144,19 +144,19 @@ const normalizeDispatchData = (data) => ({
 });
 
 const syncDispatchToGoogleSheet = async (dispatchEntry) => {
-  try {
-    const finishedGoods = await ProductMaterialLog.find().sort({ updatedAt: -1 }).lean();
-    console.log("[dispatchController] syncing dispatch entry to Google Sheet", dispatchEntry?._id || "new");
-    await syncToGoogleSheet({
-      action: "DISPATCH",
-      dispatch: dispatchEntry.toObject ? dispatchEntry.toObject() : dispatchEntry,
-      finishedGoods,
-    });
-  } catch (error) {
-    console.error("Google Sheet dispatch sync failed:", error.message);
-    console.error(error.stack);
-  }
+  const entry = dispatchEntry.toObject ? dispatchEntry.toObject() : dispatchEntry;
+  console.log("[dispatchController] syncing dispatch entry to Google Sheet", entry?._id || "new");
+  await syncToGoogleSheet({
+    action: "DISPATCH",
+    dispatch: entry,
+    productMaterialRows: [{
+      productCategory: entry.productCategory || "", productName: entry.productName || "",
+      token: entry.token || "", color: entry.productColor || entry.color || "",
+      bagSize: entry.bagSize || "", quantity: Number(entry.totalBags) || 0,
+    }],
+  });
 };
+
 const getDispatchEntries = async (_req, res) => {
   try {
     const entries = await DispatchEntry.find().sort({ createdAt: -1 });

@@ -1325,27 +1325,25 @@ const updateWastageStock = async (data) => {
   );
 };
 
-const syncProductionToGoogleSheet = async (productionEntry) => {
-  try {
-    const finishedGoods = (await ProductMaterialLog.find().sort({ updatedAt: -1 }).lean()).map(
-      ({ productName, token, color, bagSize, currentQuantity }) => ({
-        product: productName || "",
-        token: token || "",
-        color: color || "",
-        bagSize: bagSize || "",
-        quantity: currentQuantity || 0,
-      }),
-    );
-    console.log("[manufacturingController] syncing production entry to Google Sheet", productionEntry?._id || "new");
-    await syncToGoogleSheet({
-      action: "PRODUCTION",
-      productionRows: [productionEntry.toObject ? productionEntry.toObject() : productionEntry],
-      finishedGoods,
-    });
-  } catch (error) {
-    console.error("Google Sheet production sync failed:", error.message);
-    console.error(error.stack);
-  }
+const buildProductMaterialSyncRows = (data, direction = 1) =>
+  Array.from(groupProductMaterialDeltas(data, direction).values()).map(({ filter, quantity }) => ({
+    productCategory: filter.productCategory, productName: filter.productName, token: filter.token,
+    color: filter.color, bagSize: filter.bagSize, quantity,
+  }));
+
+const buildProductMaterialSyncRowsForChange = (previousData, nextData) =>
+  Array.from(combineProductMaterialDeltas(previousData, nextData).values()).map(({ filter, quantity }) => ({
+    productCategory: filter.productCategory, productName: filter.productName, token: filter.token,
+    color: filter.color, bagSize: filter.bagSize, quantity,
+  }));
+
+const syncProductionToGoogleSheet = async (productionEntry, productMaterialRows) => {
+  console.log("[manufacturingController] syncing production entry to Google Sheet", productionEntry?._id || "new");
+  await syncToGoogleSheet({
+    action: "PRODUCTION",
+    production: productionEntry.toObject ? productionEntry.toObject() : productionEntry,
+    productMaterialRows,
+  });
 };
 
 const createManufacturingEntry = async (req, res) => {
@@ -1402,7 +1400,7 @@ const createManufacturingEntry = async (req, res) => {
       await updateWastageStock(data);
     }
 
-    await syncProductionToGoogleSheet(entry);
+    await syncProductionToGoogleSheet(entry, buildProductMaterialSyncRows(data, 1));
 
     res.status(201).json({
       success: true,
@@ -1472,7 +1470,7 @@ const updateManufacturingEntry = async (req, res) => {
     await applyProductMaterialLogDeltas(current, data);
 
     const updated = await ManufacturingEntry.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true });
-    await syncProductionToGoogleSheet(updated);
+    await syncProductionToGoogleSheet(updated, buildProductMaterialSyncRowsForChange(current, data));
     res.json({ success: true, message: "Production entry updated successfully", data: updated });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
