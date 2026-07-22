@@ -1351,7 +1351,7 @@ const syncProductionToGoogleSheet = async (
   );
 
   await syncToGoogleSheet({
-    action: "PRODUCTION_ENTRY",
+    action: "PRODUCTION",
     production: entry,
     productMaterialRows:
       productMaterialRows?.length
