@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+﻿import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Eye, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
@@ -117,6 +117,7 @@ export function ProductDepartureForm() {
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [submitMessage, setSubmitMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [recentDepartures, setRecentDepartures] = useState<DispatchEntry[]>([]);
   const [recentDeparturesPage, setRecentDeparturesPage] = useState(1);
   const [recentDeparturesPageSize, setRecentDeparturesPageSize] = useState(() =>
@@ -594,6 +595,10 @@ export function ProductDepartureForm() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (isSubmitting) return;
+    if (isSubmittingRef.current) return;
+
     setSubmitStatus("idle");
     setSubmitMessage("");
 
@@ -608,6 +613,7 @@ export function ProductDepartureForm() {
 
     const productsToSubmit = getProductsForSubmission();
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -630,6 +636,7 @@ export function ProductDepartureForm() {
       setSubmitStatus("error");
       setSubmitMessage(error instanceof Error ? error.message : "Unable to save dispatch entry.");
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

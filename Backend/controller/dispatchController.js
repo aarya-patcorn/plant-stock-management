@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const DispatchEntry = require("../model/DispatchEntry");
 const ProductMaterialLog  = require("../model/ProductMaterialLog");
 const Wastage = require("../model/Wastage");
@@ -143,11 +144,43 @@ const normalizeDispatchData = (data) => ({
   remarks: data.remarks || "",
 });
 
+const normalizeRequestKeyPart = (value) => String(value ?? "").trim().toLowerCase();
+
+const buildDispatchDuplicateFilter = (data) => ({
+  date: data.date,
+  time: data.time,
+  challanNo: data.challanNo,
+  productCategory: data.productCategory,
+  productName: data.productName,
+  token: data.token,
+  productColor: data.productColor,
+  bagSize: data.bagSize,
+  totalBags: data.totalBags,
+});
+
+const buildDispatchRequestKey = (data) =>
+  crypto
+    .createHash("sha256")
+    .update(
+      JSON.stringify([
+        normalizeRequestKeyPart(data.date),
+        normalizeRequestKeyPart(data.time),
+        normalizeRequestKeyPart(data.challanNo),
+        normalizeRequestKeyPart(data.productCategory),
+        normalizeRequestKeyPart(data.productName),
+        normalizeRequestKeyPart(data.token),
+        normalizeRequestKeyPart(data.productColor || data.color),
+        normalizeRequestKeyPart(data.bagSize),
+        parseNumber(data.totalBags),
+      ]),
+    )
+    .digest("hex");
+
 const syncDispatchToGoogleSheet = async (dispatchEntry) => {
   const entry = dispatchEntry.toObject ? dispatchEntry.toObject() : dispatchEntry;
   console.log("[dispatchController] syncing dispatch entry to Google Sheet", entry?._id || "new");
   await syncToGoogleSheet({
-    action: "DISPATCH",
+    action: "DISPATCH_ENTRY",
     dispatch: entry,
     productMaterialRows: [{
       productCategory: entry.productCategory || "", productName: entry.productName || "",
@@ -167,10 +200,33 @@ const getDispatchEntries = async (_req, res) => {
 };
 
 const createDispatchEntry = async (req, res) => {
+  let requestKey = "";
+
   try {
     const wastageDetails = validateDispatchWastage(req.body);
-    const entry = await DispatchEntry.create(normalizeDispatchData(req.body));
-    
+    const data = normalizeDispatchData(req.body);
+    requestKey = buildDispatchRequestKey(data);
+
+    await DispatchEntry.init();
+
+    const existingEntry = await DispatchEntry.findOne({
+      $or: [
+        { requestKey },
+        buildDispatchDuplicateFilter(data),
+      ],
+    });
+
+    if (existingEntry) {
+      return res.status(200).json({
+        success: true,
+        duplicate: true,
+        message: "This dispatch entry was already saved.",
+        data: existingEntry,
+      });
+    }
+
+    const entry = await DispatchEntry.create({ ...data, requestKey });
+
     await reduceProductMaterialStock(entry);
 
     if (wastageDetails.wastageQty > 0) {
@@ -201,15 +257,41 @@ const createDispatchEntry = async (req, res) => {
       }
     }
 
-    await syncDispatchToGoogleSheet(entry);
+    let googleSheetSynced = true;
 
-    res.status(201).json({ success: true, message: "Dispatch entry created successfully", data: entry });
+    try {
+      await syncDispatchToGoogleSheet(entry);
+    } catch (syncError) {
+      googleSheetSynced = false;
+      console.error("Google Sheet dispatch sync failed after MongoDB save:", syncError.message);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: googleSheetSynced
+        ? "Dispatch entry created successfully"
+        : "Dispatch entry saved, but Google Sheet sync failed.",
+      googleSheetSynced,
+      data: entry,
+    });
   } catch (error) {
+    if (error?.code === 11000 && requestKey) {
+      const existingEntry = await DispatchEntry.findOne({ requestKey });
+
+      if (existingEntry) {
+        return res.status(200).json({
+          success: true,
+          duplicate: true,
+          message: "This dispatch entry was already saved.",
+          data: existingEntry,
+        });
+      }
+    }
+
     console.error("Error creating dispatch entry:", error);
-    res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 const updateDispatchEntry = async (req, res) => {
   try {
     validateDispatchWastage(req.body);

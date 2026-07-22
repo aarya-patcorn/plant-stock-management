@@ -345,7 +345,7 @@ const groupRawMaterialsByInventory = (rawMaterials) => {
 
   rawMaterials.forEach((item) => {
     const filter = buildRawMaterialFilter(item);
-    const key = JSON.stringify(filter); 
+    const key = JSON.stringify(filter);
     const current = groupedItems.get(key);
 
     groupedItems.set(key, {
@@ -1337,12 +1337,32 @@ const buildProductMaterialSyncRowsForChange = (previousData, nextData) =>
     color: filter.color, bagSize: filter.bagSize, quantity,
   }));
 
-const syncProductionToGoogleSheet = async (productionEntry, productMaterialRows) => {
-  console.log("[manufacturingController] syncing production entry to Google Sheet", productionEntry?._id || "new");
+const syncProductionToGoogleSheet = async (
+  productionEntry,
+  productMaterialRows,
+) => {
+  const entry = productionEntry.toObject
+    ? productionEntry.toObject()
+    : productionEntry;
+
+  console.log(
+    "[manufacturingController] syncing production entry to Google Sheet",
+    entry?._id || "new",
+  );
+
   await syncToGoogleSheet({
-    action: "PRODUCTION",
-    production: productionEntry.toObject ? productionEntry.toObject() : productionEntry,
-    productMaterialRows,
+    action: "PRODUCTION_ENTRY",
+    production: entry,
+    productMaterialRows:
+      productMaterialRows?.length
+        ? productMaterialRows
+        : (entry.productItems || []).map((item) => ({
+            productName: entry.finishedProductName || entry.productName || "",
+            token: item.token || "",
+            color: entry.color || "",
+            bagSize: item.bagSize || "",
+            quantity: Number(item.totalBagsProduced) || 0,
+          })),
   });
 };
 

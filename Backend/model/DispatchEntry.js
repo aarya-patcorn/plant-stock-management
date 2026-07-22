@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const dispatchEntrySchema = new mongoose.Schema(
   {
+    requestKey: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
     date: String,
     time: String,
     user: String,
