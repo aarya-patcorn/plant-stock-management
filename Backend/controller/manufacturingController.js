@@ -1337,32 +1337,28 @@ const buildProductMaterialSyncRowsForChange = (previousData, nextData) =>
     color: filter.color, bagSize: filter.bagSize, quantity,
   }));
 
-const syncProductionToGoogleSheet = async (
-  productionEntry,
-  productMaterialRows,
-) => {
+const syncProductionToGoogleSheet = async (productionEntry) => {
   const entry = productionEntry.toObject
     ? productionEntry.toObject()
     : productionEntry;
 
+  const productionRows = (entry.productItems || []).map((item) => ({
+    date: entry.productionDate || "",
+    product: entry.finishedProductName || "",
+    token: item.token || "",
+    color: entry.color || "",
+    bagSize: item.bagSize || "",
+    quantity: Number(item.totalBagsProduced) || 0,
+  }));
+
   console.log(
-    "[manufacturingController] syncing production entry to Google Sheet",
-    entry?._id || "new",
+    "[manufacturingController] final productionRows payload",
+    productionRows,
   );
 
   await syncToGoogleSheet({
     action: "PRODUCTION",
-    production: entry,
-    productMaterialRows:
-      productMaterialRows?.length
-        ? productMaterialRows
-        : (entry.productItems || []).map((item) => ({
-            productName: entry.finishedProductName || entry.productName || "",
-            token: item.token || "",
-            color: entry.color || "",
-            bagSize: item.bagSize || "",
-            quantity: Number(item.totalBagsProduced) || 0,
-          })),
+    productionRows,
   });
 };
 
