@@ -617,13 +617,13 @@ export function ProductDepartureForm() {
     setIsSubmitting(true);
 
     try {
-      for (const product of productsToSubmit) {
-        await submitEntry("dispatch", {
-          ...formData,
+      await submitEntry("dispatch", {
+        ...formData,
+        productItems: productsToSubmit.map((product) => ({
           ...product,
           productColor: product.productCategory === "Tile Cleaner" ? "" : product.productColor,
-        });
-      }
+        })),
+      });
       setFormData(createInitialFormData());
       setOtherSelections(initialDispatchOtherState);
       setSelectedProducts([]);

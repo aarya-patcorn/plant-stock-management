@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const DispatchEntry = require("../model/DispatchEntry");
 const ProductMaterialLog  = require("../model/ProductMaterialLog");
 const Wastage = require("../model/Wastage");
@@ -85,7 +86,7 @@ const validateDispatchWastage = (data) => {
   };
 };
 
-const reduceProductMaterialStock = async (dispatchItems) => {
+const reduceProductMaterialStock = async (dispatchItems, session) => {
   const items = Array.isArray(dispatchItems) ? dispatchItems : [dispatchItems];
 
   for (const item of items) {
@@ -93,7 +94,7 @@ const reduceProductMaterialStock = async (dispatchItems) => {
     const label = buildProductMaterialLabel(item);
     const dispatchQty = parseNumber(item.totalBags || item.quantity);
 
-    const productStock = await ProductMaterialLog.findOne(filter);
+    const productStock = await ProductMaterialLog.findOne(filter).session(session);
 
     if (!productStock) {
       throw new Error(`${label} stock is not available in product material log.`);
@@ -117,7 +118,7 @@ const reduceProductMaterialStock = async (dispatchItems) => {
         currentQuantity: -dispatchQty,
         shippedQuantity: dispatchQty,
       },
-    });
+    }, { session });
   }
 };
 
@@ -180,8 +181,11 @@ const syncDispatchToGoogleSheet = async (dispatchEntry) => {
   const entry = dispatchEntry.toObject ? dispatchEntry.toObject() : dispatchEntry;
   console.log("[dispatchController] syncing dispatch entry to Google Sheet", entry?._id || "new");
   await syncToGoogleSheet({
-    action: "DISPATCH_ENTRY",
-    dispatch: entry,
+    action: "DISPATCH",
+    dispatch: {
+      ...entry,
+      quantity: Number(entry.totalBags) || 0,
+    },
     productMaterialRows: [{
       productCategory: entry.productCategory || "", productName: entry.productName || "",
       token: entry.token || "", color: entry.productColor || entry.color || "",
@@ -200,96 +204,136 @@ const getDispatchEntries = async (_req, res) => {
 };
 
 const createDispatchEntry = async (req, res) => {
-  let requestKey = "";
+  const productItems = Array.isArray(req.body?.productItems) ? req.body.productItems : [];
+  const rawEntries = productItems.length > 0
+    ? productItems.map((product) => ({ ...req.body, ...product, productItems: undefined }))
+    : [req.body];
+
+  if (rawEntries.length === 0) {
+    return res.status(400).json({ success: false, message: "At least one dispatch product is required." });
+  }
+
+  const preparedEntries = [];
+  const requestKeys = new Set();
 
   try {
-    const wastageDetails = validateDispatchWastage(req.body);
-    const data = normalizeDispatchData(req.body);
-    requestKey = buildDispatchRequestKey(data);
+    for (let index = 0; index < rawEntries.length; index += 1) {
+      const rawEntry = rawEntries[index];
+      let wastageDetails;
+      let data;
+
+      try {
+        wastageDetails = validateDispatchWastage(rawEntry);
+        data = normalizeDispatchData(rawEntry);
+
+        if (data.totalBags <= 0) {
+          throw new Error("Departed bags must be greater than 0.");
+        }
+      } catch (error) {
+        error.message = `Product ${index + 1}: ${error.message}`;
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const requestKey = buildDispatchRequestKey(data);
+      if (requestKeys.has(requestKey)) {
+        const duplicateError = new Error(`Product ${index + 1}: The same product appears more than once in this dispatch.`);
+        duplicateError.statusCode = 400;
+        throw duplicateError;
+      }
+
+      requestKeys.add(requestKey);
+      preparedEntries.push({ data, requestKey, wastageDetails });
+    }
 
     await DispatchEntry.init();
-
-    const existingEntry = await DispatchEntry.findOne({
-      $or: [
-        { requestKey },
-        buildDispatchDuplicateFilter(data),
-      ],
-    });
-
-    if (existingEntry) {
-      return res.status(200).json({
-        success: true,
-        duplicate: true,
-        message: "This dispatch entry was already saved.",
-        data: existingEntry,
-      });
-    }
-
-    const entry = await DispatchEntry.create({ ...data, requestKey });
-
-    await reduceProductMaterialStock(entry);
-
-    if (wastageDetails.wastageQty > 0) {
-      const wastageFilter = {
-        tphBatch: wastageDetails.tphBatch,
-        finishedProductName: wastageDetails.finishedProductName,
-      };
-
-      console.log("[Dispatch Wastage] filter:", wastageFilter);
-
-      const existingWastage = await Wastage.findOne(wastageFilter);
-
-      console.log("[Dispatch Wastage] existing:", existingWastage);
-      console.log("[Dispatch Wastage] adding qty:", req.body.wastageQty);
-
-      if (existingWastage) {
-        existingWastage.wastageQty =
-          (Number(existingWastage.wastageQty) || 0) + wastageDetails.wastageQty;
-        existingWastage.date = req.body.date || req.body.dispatchDate || existingWastage.date;
-        await existingWastage.save();
-      } else {
-        await Wastage.create({
-          date: req.body.date || req.body.dispatchDate || "",
-          tphBatch: wastageDetails.tphBatch,
-          finishedProductName: wastageDetails.finishedProductName,
-          wastageQty: wastageDetails.wastageQty,
-        });
-      }
-    }
-
-    let googleSheetSynced = true;
+    const session = await mongoose.startSession();
+    const savedEntries = [];
+    let committed = false;
 
     try {
-      await syncDispatchToGoogleSheet(entry);
-    } catch (syncError) {
-      googleSheetSynced = false;
-      console.error("Google Sheet dispatch sync failed after MongoDB save:", syncError.message);
+      session.startTransaction();
+
+      for (const { data, requestKey, wastageDetails } of preparedEntries) {
+        const existingEntry = await DispatchEntry.findOne({
+          $or: [
+            { requestKey },
+            buildDispatchDuplicateFilter(data),
+          ],
+        }).session(session);
+
+        if (existingEntry) {
+          savedEntries.push({ entry: existingEntry, duplicate: true });
+          continue;
+        }
+
+        const entry = new DispatchEntry({ ...data, requestKey });
+        await entry.save({ session });
+        await reduceProductMaterialStock(entry, session);
+
+        if (wastageDetails.wastageQty > 0) {
+          const wastageFilter = {
+            tphBatch: wastageDetails.tphBatch,
+            finishedProductName: wastageDetails.finishedProductName,
+          };
+          const existingWastage = await Wastage.findOne(wastageFilter).session(session);
+
+          if (existingWastage) {
+            existingWastage.wastageQty =
+              parseNumber(existingWastage.wastageQty) + wastageDetails.wastageQty;
+            existingWastage.date = data.date || existingWastage.date;
+            await existingWastage.save({ session });
+          } else {
+            const wastage = new Wastage({
+              date: data.date,
+              tphBatch: wastageDetails.tphBatch,
+              finishedProductName: wastageDetails.finishedProductName,
+              wastageQty: wastageDetails.wastageQty,
+            });
+            await wastage.save({ session });
+          }
+        }
+
+        await syncDispatchToGoogleSheet(entry);
+        savedEntries.push({ entry, duplicate: false });
+      }
+
+      await session.commitTransaction();
+      committed = true;
+    } catch (error) {
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+      throw error;
+    } finally {
+      await session.endSession();
     }
 
-    return res.status(201).json({
+    if (!committed) {
+      throw new Error("Dispatch transaction did not commit.");
+    }
+
+    const entries = savedEntries.map(({ entry }) => entry);
+    const savedCount = savedEntries.filter(({ duplicate }) => !duplicate).length;
+    const isSingleEntry = entries.length === 1;
+
+    return res.status(savedCount === 0 ? 200 : 201).json({
       success: true,
-      message: googleSheetSynced
-        ? "Dispatch entry created successfully"
-        : "Dispatch entry saved, but Google Sheet sync failed.",
-      googleSheetSynced,
-      data: entry,
+      duplicate: savedCount === 0,
+      message: isSingleEntry
+        ? (savedCount === 0
+          ? "This dispatch entry was already saved."
+          : "Dispatch entry created successfully")
+        : `${entries.length} dispatch entries processed successfully.`,
+      savedCount,
+      duplicateCount: entries.length - savedCount,
+      googleSheetSynced: true,
+      data: isSingleEntry ? entries[0] : entries,
     });
   } catch (error) {
-    if (error?.code === 11000 && requestKey) {
-      const existingEntry = await DispatchEntry.findOne({ requestKey });
-
-      if (existingEntry) {
-        return res.status(200).json({
-          success: true,
-          duplicate: true,
-          message: "This dispatch entry was already saved.",
-          data: existingEntry,
-        });
-      }
-    }
-
-    console.error("Error creating dispatch entry:", error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Error creating dispatch entries:", error);
+    const statusCode = Number(error?.statusCode) || (error?.code === 11000 ? 409 : 500);
+    return res.status(statusCode).json({ success: false, message: error.message });
   }
 };
 const updateDispatchEntry = async (req, res) => {

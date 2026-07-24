@@ -9,7 +9,7 @@ function doPost(e) {
       const d = payload.production || {};
       sheet.appendRow(["PRODUCTION",d.productionDate||"",d.batchNo||"",d.productCategory||"",d.finishedProductName||"",d.color||"",d.user||"",d.tphBatch||"",d.materialQuantity||"",d.totalCan||"",d.wastageQty||"",d.remarks||"",JSON.stringify(d.productItems||[]),JSON.stringify(d.rawMaterials||[]),""]);
       updateFinishedGoodsRows(fg, payload.productMaterialRows, 1);
-    } else if (action === "DISPATCH_ENTRY") {
+    } else if (action === "DISPATCH_ENTRY" || action === "DISPATCH") {
       const d = payload.dispatch || {};
       sheet.appendRow(["DISPATCH",d.date||"",d.challanNo||"",d.productCategory||"",d.productName||"",d.productColor||d.color||"",d.user||"","",d.quantity||"",d.totalBags||"",d.wastageQty||"",d.remarks||"",JSON.stringify([]),JSON.stringify([]),""]);
       updateFinishedGoodsRows(fg, payload.productMaterialRows, -1);
